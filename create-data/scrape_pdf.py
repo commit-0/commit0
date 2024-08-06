@@ -1,0 +1,128 @@
+import asyncio
+import sys
+from pyppeteer import launch
+from urllib.parse import urljoin, urlparse
+from bs4 import BeautifulSoup
+import os
+import fitz
+from PyPDF2 import PdfMerger
+
+# Function to clean PDFs
+def is_page_blank(page):
+    text = page.get_text("text")
+    return not text.strip()
+
+def remove_blank_pages(pdf_path):
+    document = fitz.open(pdf_path)
+    if document.page_count < 2:
+        print(f"No empty page to remove in {pdf_path}")
+        return
+
+    output_document = fitz.open()
+    for i in range(document.page_count):
+        page = document.load_page(i)
+        if not is_page_blank(page):
+            output_document.insert_pdf(document, from_page=i, to_page=i)
+
+    output_document.save(pdf_path)
+    output_document.close()
+    document.close()
+    print(f"Saved PDF without blank pages: {pdf_path}")
+
+def clean_pdf_directory(docs):
+    for doc in docs:
+        remove_blank_pages(doc)
+
+async def generate_pdf(page, url, output_dir):
+    try:
+        await page.goto(url, {'waitUntil': 'networkidle2'})
+
+        out_name = f"{urlparse(url).path.replace('/', '_').strip('_')}.pdf"
+        if out_name == '.pdf':
+            out_name = 'base.pdf'
+        pdf_path = os.path.join(output_dir, out_name)
+
+        pdf_options = {
+            'path': pdf_path,
+            'printBackground': True,
+            'format': 'A3',
+            'margin': {
+                'top': '0px', 
+                'bottom': '0px',
+                'left': '0px',
+                'right': '0px',
+            }
+        }
+        
+        await page.pdf(pdf_options)
+        print(f"Saved PDF: {pdf_path}")
+    except Exception as e:
+        print(f"Error creating PDF for {url}: {e}")
+    return pdf_path
+
+def is_valid_link(link, base_url):
+    parsed_url = urlparse(link)
+    # this is section title, not actual webpage
+    if parsed_url.fragment:
+        return None
+    if not parsed_url.scheme:
+        return urljoin(base_url, link)
+    if parsed_url.netloc == urlparse(base_url).netloc:
+        return link
+    return None
+
+async def crawl_website(browser, base_url, output_dir):
+    page = await browser.newPage()
+    visited = set()
+    to_visit = [base_url]
+    sequence = []
+
+    while to_visit:
+        current_url = to_visit.pop(0)
+        if current_url in visited:
+            continue
+        
+        print(f"Crawling URL: {current_url}")
+        visited.add(current_url)
+        try:
+            response = await page.goto(current_url, {'waitUntil': 'domcontentloaded'})
+            if response.status == 404:
+                print(f"404 Not Found: {current_url}")
+                continue
+            content = await page.content()
+            soup = BeautifulSoup(content, 'html.parser')
+
+            links = soup.find_all('a', href=True)
+            for link in links:
+                full_url = is_valid_link(link['href'], base_url)
+                if full_url and full_url not in visited and full_url.startswith(base_url):
+                    to_visit.append(full_url)
+
+            pdf = await generate_pdf(page, current_url, output_dir)
+            sequence.append(pdf)
+        except Exception as e:
+            print(f"Error crawling {current_url}: {e}")
+    return sequence
+
+def merge_pdfs(docs, output_filename):
+    merger = PdfMerger()
+    for pdf in docs:
+        merger.append(pdf)
+    merger.write(output_filename)
+    merger.close()
+
+async def main(base_url, output_dir):
+    browser = await launch(args=['--no-sandbox'])
+    os.makedirs(output_dir, exist_ok=True)
+    pdfs = await crawl_website(browser, base_url, output_dir)
+    await browser.close()
+    
+    # Clean the generated PDFs to remove any blank pages
+    clean_pdf_directory(pdfs)
+    # merge all pdfs together
+    merge_pdfs(pdfs, os.path.join(output_dir, "complete.pdf"))
+
+if __name__ == "__main__":
+    base_url = sys.argv[1]
+    output_dir = sys.argv[2]
+    asyncio.get_event_loop().run_until_complete(main(base_url, output_dir))
