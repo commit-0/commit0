@@ -1,0 +1,4 @@
+PyMuPDF
+pyppeteer
+beautifulsoup4
+PyPDF2
