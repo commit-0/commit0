@@ -2,3 +2,4 @@ PyMuPDF
 pyppeteer
 beautifulsoup4
 PyPDF2
+gitpython
