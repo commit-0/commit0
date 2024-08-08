@@ -275,4 +275,5 @@ MAP_REPO_TO_PARSER = {
     "sqlfluff/sqlfluff": parse_log_sqlfluff,
     "sphinx-doc/sphinx": parse_log_sphinx,
     "sympy/sympy": parse_log_sympy,
+    "spec2repo/minitorch": parse_log_pytest_options
 }

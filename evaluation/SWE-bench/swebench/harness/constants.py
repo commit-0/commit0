@@ -898,6 +898,29 @@ SPECS_PYDICOM.update(
 
 SPECS_HUMANEVAL = {k: {"python": "3.9", "test_cmd": "python"} for k in ["1.0"]}
 
+SPECS_MINITORCH = {
+    k: {
+        "python": "3.9",
+        "install": "python -m pip install -Ue .",
+        "packages": "requirements.txt",
+        "pip_packages": [
+            "datasets==2.4.0",
+            "embeddings==0.0.8",
+            "networkx==2.4",
+            "plotly==4.14.3",
+            "pydot==1.4.1",
+            "python-mnist",
+            "streamlit==1.12.0",
+            "streamlit-ace",
+            "torch",
+            "watchdog==1.0.2",
+            "numba==0.60"
+        ],
+        "test_cmd": TEST_PYTEST,
+    }
+    for k in ["0.4"]
+}
+
 # Constants - Task Instance Instllation Environment
 MAP_REPO_VERSION_TO_SPECS = {
     "astropy/astropy": SPECS_ASTROPY,
@@ -920,6 +943,7 @@ MAP_REPO_VERSION_TO_SPECS = {
     "sqlfluff/sqlfluff": SPECS_SQLFLUFF,
     "swe-bench/humaneval": SPECS_HUMANEVAL,
     "sympy/sympy": SPECS_SYMPY,
+    "spec2repo/minitorch": SPECS_MINITORCH,
 }
 
 # Constants - Repository Specific Installation Instructions
@@ -939,6 +963,7 @@ MAP_REPO_TO_REQS_PATHS = {
     "pyvista/pyvista": ["requirements_test.txt", "requirements.txt"],
     "sqlfluff/sqlfluff": ["requirements_dev.txt"],
     "sympy/sympy": ["requirements-dev.txt"],
+    "spec2repo/minitorch": ["requirements.txt"]
 }
 
 
