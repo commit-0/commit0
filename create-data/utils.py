@@ -3,6 +3,7 @@ from typing import Callable, Iterator, Optional
 from unidiff import PatchSet
 
 from ghapi.core import GhApi
+from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class Repo:
-    def __init__(self, owner: str, name: str, token: Optional[str] = None):
+    def __init__(self, owner: str, name: str, organization: str = "spec2repo", token: Optional[str] = None):
         """
         Init to retrieve target repository and create ghapi tool
 
@@ -24,7 +25,9 @@ class Repo:
         self.name = name
         self.token = token
         self.api = GhApi(token=token)
-        self.repo = self.call_api(self.api.repos.get, owner=owner, repo=name)
+        self.repo = self.call_api(self.api.repos.get, owner=organization, repo=name)
+        if self.repo is None:
+            self.repo = self.call_api(self.api.repos.create_fork, owner=owner, repo=name, organization=organization)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
         """
