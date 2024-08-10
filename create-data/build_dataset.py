@@ -9,6 +9,7 @@ from typing import Optional
 from utils import (
     generate_base_commit,
     extract_patches,
+    extract_test_names,
     Repo,
 )
 
@@ -18,9 +19,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, commit: str) -> dict:
+def create_instance(repo: Repo, commit: str, test_requirements: list) -> dict:
     """
-    Create a single task instance from a pull request, where task instance is:
+    Create a single task instance from a commit, where task instance is:
 
     {
         repo (str): owner/repo this task instance is from,
@@ -36,6 +37,7 @@ def create_instance(repo: Repo, commit: str) -> dict:
     patch, test_patch = "", ""
     #created_at = repo.commit(base_commit.committed_datetime)
     created_at = ""
+    test_names = extract_test_names(repo, commit, test_requirements)
     return {
         "repo": repo.repo.full_name,
         "instance_id": (repo.repo.full_name + "-01").replace(
@@ -48,6 +50,8 @@ def create_instance(repo: Repo, commit: str) -> dict:
         "problem_statement": "",
         "hints_text": "",
         "created_at": created_at,
+        "PASS_TO_PASS": [],
+        "PASS_TO_PASS": test_names,
     }
 
 
@@ -74,17 +78,25 @@ def main(repo_file: str, output: str, token: Optional[str] = None):
         for ix, line in enumerate(open(repo_file)):
             info = json.loads(line)
             repo = load_repo(info['name'])
-            commit = info['commit']
+            # can only provide tag or commit
+            assert (info["tag"] is None) ^ (info["commit"] is None)
+            if info["tag"] is not None:
+                if not info["tag"].startswith("tags/"):
+                    info["tag"] = "tags/" + info["tag"]
+                commit = repo.get_commit_by_tag(info["tag"])
+            else:
+                commit = info['commit']
             # Construct instance fields
             instance_id = (
                 info['name'] + "-01"
             )
             instance_id = instance_id.replace("/", "__")
             # Create task instance
-            instance = create_instance(repo, commit)
+            instance = create_instance(repo, commit, info["test_requirements"])
             print(
                 json.dumps(instance), end="\n", flush=True, file=output
             )
+            repo.remove_local_repo(repo.clone_dir)
 
 
 if __name__ == "__main__":
