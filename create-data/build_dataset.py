@@ -10,6 +10,7 @@ from utils import (
     generate_base_commit,
     extract_patches,
     extract_test_names,
+    retrieve_commit_time,
     Repo,
 )
 
@@ -31,13 +32,12 @@ def create_instance(repo: Repo, commit: str) -> dict:
         test_patch (str): test suite as .patch (apply to base commit),
     }
     """
+    # extract_test_names needs to be called on the environment set up commit
+    test_names = extract_test_names(repo, commit)
     base_commit = generate_base_commit(repo, commit)
     #patch, test_patch = extract_patches(repo, base_commit)
     patch, test_patch = "", ""
-    #created_at = repo.commit(base_commit.committed_datetime)
-    created_at = ""
-    #test_names = extract_test_names(repo, commit)
-    test_names = []
+    created_at = retrieve_commit_time(repo, base_commit)
     return {
         "repo": repo.repo.full_name,
         "instance_id": (repo.repo.full_name + "-01").replace(
@@ -68,16 +68,15 @@ def main(repo_file: str, output: str, token: Optional[str] = None):
         # Get GitHub token from environment variable if not provided
         token = os.environ.get("GITHUB_TOKEN")
 
-    def load_repo(repo_name):
+    def load_repo(repo_name, setup):
         # Return repo object for a given repo name
         owner, repo = repo_name.split("/")
-        return Repo(owner, repo, token=token)
+        return Repo(owner, repo, setup=setup, token=token)
 
-    # todo: fork
     with open(output, 'w') as output:
         for ix, line in enumerate(open(repo_file)):
             info = json.loads(line)
-            repo = load_repo(info['name'])
+            repo = load_repo(info['name'], info['setup'])
             # can only provide tag or commit
             assert (info["tag"] is None) ^ (info["commit"] is None)
             if info["tag"] is not None:
@@ -96,7 +95,7 @@ def main(repo_file: str, output: str, token: Optional[str] = None):
             print(
                 json.dumps(instance), end="\n", flush=True, file=output
             )
-            #repo.remove_local_repo(repo.clone_dir)
+            repo.remove_local_repo(repo.clone_dir)
 
 
 if __name__ == "__main__":

@@ -5,12 +5,14 @@ import shutil
 import subprocess
 import sys
 import pytest
+import venv
 from glob import glob
 from typing import Callable, Iterator, Optional
 from unidiff import PatchSet
 
 import ast
 import astor
+import git
 from ghapi.core import GhApi
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
 
@@ -35,7 +37,7 @@ def silent():
 
 
 class Repo:
-    def __init__(self, owner: str, name: str, organization: str = "spec2repo", token: Optional[str] = None):
+    def __init__(self, owner: str, name: str, organization: str = "spec2repo", setup: [str] = [], token: Optional[str] = None):
         """
         Init to retrieve target repository and create ghapi tool
 
@@ -44,15 +46,15 @@ class Repo:
             name (str): name of target repository
             token (str): github token
         """
-        self.owner = owner
         self.name = name
         self.token = token
         self.api = GhApi(token=token)
         self.repo = self.call_api(self.api.repos.get, owner=organization, repo=name)
         if self.repo is None:
             self.repo = self.call_api(self.api.repos.create_fork, owner=owner, repo=name, organization=organization)
-        with silent():
-            self.clone_repo()
+        self.owner = organization
+        self.cwd = os.getcwd()
+        self.clone_repo(setup=setup)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
         """
@@ -82,7 +84,7 @@ class Repo:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
 
-    def clone_repo(self, tmp_dir: str = './tmp/') -> None:
+    def clone_repo(self, tmp_dir: str = './tmp/', setup: str = []) -> None:
         """
         Clone repo into a temporary directory
 
@@ -92,12 +94,23 @@ class Repo:
             None
         """
         clone_url = self.repo.clone_url
-        self.clone_dir = os.path.join(tmp_dir, self.name)
+        self.clone_dir = os.path.abspath(os.path.join(tmp_dir, self.name))
         if os.path.exists(self.clone_dir):
             self.remove_local_repo(self.clone_dir)
         logger.info(f"cloning {clone_url} into {self.clone_dir}")
         with open(os.devnull, 'w') as devnull:
             subprocess.run(["git", "clone", clone_url, self.clone_dir], check=True, stdout=devnull, stderr=devnull)
+        env_dir = os.path.join(self.clone_dir, 'venv')
+        venv.create(env_dir, with_pip=True)
+        logger.info(f"Virtual environment created at {env_dir}")
+        os.chdir(self.clone_dir)
+        for one in setup:
+            one = one.strip().split(' ')
+            cmd = os.path.join(env_dir, 'bin', one[0])
+            cmd = ' '.join([cmd] + one[1:])
+            logger.info(f"Executing {cmd}")
+            os.system(cmd)
+        os.chdir(self.cwd)
 
     def remove_local_repo(self, path_to_repo: str) -> None:
         """
@@ -126,6 +139,9 @@ class Repo:
 
 
 class RemoveMethod(ast.NodeTransformer):
+    """
+    Class to replace method code with NotImplementedError
+    """
     def visit_FunctionDef(self, node):
         transform = node
 
@@ -149,14 +165,68 @@ class RemoveMethod(ast.NodeTransformer):
             node.body = [not_implemented_error_node]
         return ast.copy_location(transform, node)
 
-def generate_base_commit(repo: Repo, commit: str) -> str:
-    path_src = os.path.join(repo.clone_dir, repo.name, "**", "*.py")
-    files = glob(path_src, recursive=True)
-    for f in files:
-        tree = astor.parse_file(f)
-        tree = RemoveMethod().visit(tree)
-        open(f, "w").write(astor.to_source(tree))
-    return files
+
+def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo") -> str:
+    """
+    Generate a base commit by removing all function contents
+
+    Args:
+        repo (Repo): from which repo to generate the base commit
+        commit (str): from which commit to generate the base commit
+        branch_name (str): the branch name of the base commit
+    Return:
+        collected_tests (list[str]): a list of test function names
+    """
+    # check if base commit has already been generated
+    local_repo = git.Repo(repo.clone_dir)
+    remote = local_repo.remote()
+    remote.fetch()
+    exists = False
+    for ref in local_repo.refs:
+        if ref.name.endswith(f"/{branch_name}"):
+            branch_name = ref.name
+            exists = True
+            break
+    if exists:
+        branch = local_repo.refs[branch_name]
+        if branch.commit.message == "Generated base commit.":
+            logger.info(f"Base commit has already been created.")
+            return branch.commit.hexsha
+        else:
+            raise ValueError(f"{branch_name} exists but it's not the base commit")
+    else:
+        logger.info(f"Creating the base commit {repo.owner}/{repo.name}")
+        local_repo.git.checkout('-b', branch_name)
+        path_src = os.path.join(repo.clone_dir, repo.name, "**", "*.py")
+        files = glob(path_src, recursive=True)
+        path_test = os.path.join(repo.clone_dir, repo.name, "**", "test*", "**", "*.py")
+        test_files = glob(path_test, recursive=True)
+        files = list(set(files) - set(test_files))
+        for f in files:
+            tree = astor.parse_file(f)
+            tree = RemoveMethod().visit(tree)
+            open(f, "w").write(astor.to_source(tree))
+            local_repo.git.add(f)
+        commit = local_repo.index.commit("Generated base commit.")
+        origin = local_repo.remote(name='origin')
+        origin.push(branch_name)
+        os.chdir(repo.clone_dir)
+        return commit.hexsha
+
+
+def retrieve_commit_time(repo: Repo, commit: str) -> str:
+    """
+    Generate a base commit by removing all function contents
+
+    Args:
+        repo (Repo): repository of the commit
+        commit (str): which commit to retrieve creation time
+    Return:
+        commit_time (str): time at which the commit was created
+    """
+    commit_info = repo.call_api(repo.api.repos.get_commit, owner=repo.owner, repo=repo.name, ref=commit)
+    commit_time = commit_info.commit.author.date
+    return commit_time
 
 def extract_patches(repo: Repo, commit: str) -> tuple[str, str]:
     raise NotImplementedError
