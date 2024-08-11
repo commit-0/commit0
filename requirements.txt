@@ -3,3 +3,8 @@ pyppeteer
 beautifulsoup4
 PyPDF2
 gitpython
+wget
+nbconvert
+pytest
+coverage
+astor

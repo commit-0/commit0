@@ -5,9 +5,12 @@ import shutil
 import subprocess
 import sys
 import pytest
+from glob import glob
 from typing import Callable, Iterator, Optional
 from unidiff import PatchSet
 
+import ast
+import astor
 from ghapi.core import GhApi
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
 
@@ -122,30 +125,53 @@ class Repo:
         return tag_ref.object.sha
 
 
-def generate_base_commit(self, repo: Repo, commit: str) -> str:
-    raise NotImplementedError
+class RemoveMethod(ast.NodeTransformer):
+    def visit_FunctionDef(self, node):
+        transform = node
 
+        if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant):
+            docstring_node = node.body[0]
+        else:
+            docstring_node = None
+
+        not_implemented_error_node = ast.Raise(
+            exc=ast.Call(
+                func=ast.Name(id='NotImplementedError', ctx=ast.Load()),
+                args=[ast.Constant(value="IMPLEMENT ME HERE")],
+                keywords=[]
+            ),
+            cause=None
+        )
+
+        if docstring_node:
+            node.body = [docstring_node, not_implemented_error_node]
+        else:
+            node.body = [not_implemented_error_node]
+        return ast.copy_location(transform, node)
+
+def generate_base_commit(repo: Repo, commit: str) -> str:
+    path_src = os.path.join(repo.clone_dir, repo.name, "**", "*.py")
+    files = glob(path_src, recursive=True)
+    for f in files:
+        tree = astor.parse_file(f)
+        tree = RemoveMethod().visit(tree)
+        open(f, "w").write(astor.to_source(tree))
+    return files
 
 def extract_patches(repo: Repo, commit: str) -> tuple[str, str]:
     raise NotImplementedError
 
 
-def extract_test_names(repo: Repo, commit: str, test_requirements: list[str]) -> list[str]:
+def extract_test_names(repo: Repo, commit: str) -> list[str]:
     """
     extract all test function names
 
     Args:
         repo (Repo): test names from which repo
         commit (str): test functions from which commit
-        test_requirements (list[str]): additional libraries some test files imports
     Return:
         collected_tests (list[str]): a list of test function names
     """
-    if test_requirements is not None:
-        for requirement in test_requirements:
-            with open(os.devnull, 'w') as devnull:
-                subprocess.run(["pip", "install", requirement], check=True, stdout=devnull)
-
     def list_pytest_functions():
         plugin = Plugin()
         # Run pytest in "collect-only" mode and use our custom plugin
