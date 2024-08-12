@@ -5,10 +5,11 @@ from swebench.harness.constants import (
 )
 from swebench.harness.log_parsers import (
     MAP_REPO_TO_PARSER,
-    parse_log_pytest_options
 )
 from swebench.harness.run_evaluation import main
 from swebench.harness.utils import str2bool
+from configs.log_parsers import ADD_MAP_REPO_TO_PARSER
+
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -50,7 +51,7 @@ if __name__ == "__main__":
 
     for key in spec_config:
         MAP_REPO_TO_PARSER.update({
-            key: parse_log_pytest_options
+            key: ADD_MAP_REPO_TO_PARSER[key]
         })
 
     main(**vars(args))
