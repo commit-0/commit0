@@ -76,8 +76,8 @@ def parse_log_tinydb(log: str) -> dict[str, str]:
         line = line.strip()
         m = re.match(pattern, line)
         if m:
-            line = line.split('[')[0].strip()
-            test, value = line.split(' ')
+            line = line.split()
+            test, value = line[:2]
             if value == "PASSED":
                 test_status_map[test] = TestStatus.PASSED.value
             else:
