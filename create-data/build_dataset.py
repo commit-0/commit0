@@ -35,8 +35,7 @@ def create_instance(repo: Repo, commit: str) -> dict:
     # extract_test_names needs to be called on the environment set up commit
     test_names = extract_test_names(repo, commit)
     base_commit = generate_base_commit(repo, commit)
-    #patch, test_patch = extract_patches(repo, base_commit)
-    patch, test_patch = "", ""
+    patch, test_patch = extract_patches(repo, base_commit, commit)
     created_at = retrieve_commit_time(repo, base_commit)
     return {
         "repo": repo.repo.full_name,
@@ -51,7 +50,7 @@ def create_instance(repo: Repo, commit: str) -> dict:
         "hints_text": "",
         "created_at": created_at,
         "PASS_TO_PASS": [],
-        "PASS_TO_PASS": test_names,
+        "FAIL_TO_PASS": test_names,
     }
 
 

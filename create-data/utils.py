@@ -1,4 +1,5 @@
 import contextlib
+import difflib
 import logging
 import os
 import shutil
@@ -8,7 +9,6 @@ import pytest
 import venv
 from glob import glob
 from typing import Callable, Iterator, Optional
-from unidiff import PatchSet
 
 import ast
 import astor
@@ -166,6 +166,27 @@ class RemoveMethod(ast.NodeTransformer):
         return ast.copy_location(transform, node)
 
 
+def _find_files_to_edit(base_dir: str) -> list[str]:
+    """
+    Identify files to remove content by heuristics.
+    We assume source code is under [lib]/[lib] or [lib]/src.
+    We exclude test code. This function would not work
+    if test code doesn't have its own directory.
+
+    Args:
+        base_dir (str): the path to local library.
+
+    Return:
+        files (list[str]): a list of files to be edited.
+    """
+    name = os.path.basename(base_dir)
+    path_src = os.path.join(base_dir, name, "**", "*.py")
+    files = glob(path_src, recursive=True)
+    path_test = os.path.join(base_dir, name, "**", "test*", "**", "*.py")
+    test_files = glob(path_test, recursive=True)
+    files = list(set(files) - set(test_files))
+    return files
+
 def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo") -> str:
     """
     Generate a base commit by removing all function contents
@@ -197,11 +218,7 @@ def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo"
     else:
         logger.info(f"Creating the base commit {repo.owner}/{repo.name}")
         local_repo.git.checkout('-b', branch_name)
-        path_src = os.path.join(repo.clone_dir, repo.name, "**", "*.py")
-        files = glob(path_src, recursive=True)
-        path_test = os.path.join(repo.clone_dir, repo.name, "**", "test*", "**", "*.py")
-        test_files = glob(path_test, recursive=True)
-        files = list(set(files) - set(test_files))
+        files = _find_files_to_edit(repo.clone_dir)
         for f in files:
             tree = astor.parse_file(f)
             tree = RemoveMethod().visit(tree)
@@ -228,13 +245,56 @@ def retrieve_commit_time(repo: Repo, commit: str) -> str:
     commit_time = commit_info.commit.author.date
     return commit_time
 
-def extract_patches(repo: Repo, commit: str) -> tuple[str, str]:
-    raise NotImplementedError
+def extract_patches(repo: Repo, commit1: str, commit2: str) -> tuple[str, str]:
+    """
+    Generate both the gold patch and a dummy test patch (required by SWE-bench)
 
+    Args:
+        repo: which repo to generate patches
+        commit1: commit before changes
+        commit2: commit after changes
+
+    Return:
+        patches (tuple[str, str]): the gold patch and a dummy test patch
+    """
+    files = _find_files_to_edit(repo.clone_dir)
+    local_repo = git.Repo(repo.clone_dir)
+    befores = []
+    local_repo.git.checkout(commit1)
+    for f in files:
+        with open(f, 'r') as fin:
+            befores.append(fin.readlines())
+    afters = []
+    local_repo.git.checkout(commit2)
+    for f in files:
+        with open(f, 'r') as fin:
+            afters.append(fin.readlines())
+    diffs = []
+    for before, after, f in zip(befores, afters, files):
+        shortened_f = f.replace(repo.clone_dir, '')
+        if shortened_f.startswith('/'):
+            shortened_f = shortened_f[1:]
+        diff = difflib.unified_diff(
+            before,
+            after,
+            fromfile='a/'+shortened_f,
+            tofile='b/'+shortened_f,
+        )
+        diffs.append(''.join(diff))
+    patch = '\n'.join(diffs)
+    dummy_f = os.path.join(repo.name, "dummy.txt")
+    test_patch = difflib.unified_diff(
+        [],
+        ['Dummy TestPatch'],
+        fromfile='a/'+dummy_f,
+        tofile='b/'+dummy_f,
+    )
+    test_patch = ''.join(test_patch)+'\n' # patch file needs a new line at the end
+    return patch, test_patch
 
 def extract_test_names(repo: Repo, commit: str) -> list[str]:
     """
-    extract all test function names
+    Extract all test function names
 
     Args:
         repo (Repo): test names from which repo
