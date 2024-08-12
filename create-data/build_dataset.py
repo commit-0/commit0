@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, commit: str, version: str) -> dict:
+def create_instance(repo: Repo, commit: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -51,7 +51,7 @@ def create_instance(repo: Repo, commit: str, version: str) -> dict:
         "created_at": created_at,
         "PASS_TO_PASS": [],
         "FAIL_TO_PASS": test_names,
-        "version": version
+        "version": "1.0"
     }
 
 
@@ -91,7 +91,7 @@ def main(repo_file: str, output: str, token: Optional[str] = None):
             )
             instance_id = instance_id.replace("/", "__")
             # Create task instance
-            instance = create_instance(repo, commit, info["version"])
+            instance = create_instance(repo, commit)
             print(
                 json.dumps(instance), end="\n", flush=True, file=output
             )
