@@ -29,7 +29,7 @@ export GITHUB_TOKEN=[github_token]
 ```
 Now run,
 ```
-python create-data/build_dataset.py repos.json wentingzhao/spec2repo
+python create-data/build_dataset.py repos.json --hf_name wentingzhao/spec2repo
 ```
 where ``repos.json`` is the file we specified above, and ``wentingzhao/spec2repo`` is where you want to upload the dataset on HF.
 This command produces the base commit (with function body removed), gold patch that passes all unit tests, and all test function names.
