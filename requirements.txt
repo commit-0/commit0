@@ -9,3 +9,5 @@ pytest
 coverage
 astor
 gitpython
+ghapi
+fastcore
