@@ -142,8 +142,12 @@ class RemoveMethod(ast.NodeTransformer):
     """
     Class to replace method code with NotImplementedError
     """
+    def __init__(self, removal_method):
+        self.removal_method = removal_method
+
     def visit_FunctionDef(self, node):
         transform = node
+        print(f"Processing function: {node.name}")
 
         if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant):
             docstring_node = node.body[0]
@@ -159,10 +163,16 @@ class RemoveMethod(ast.NodeTransformer):
             cause=None
         )
 
-        if docstring_node:
-            node.body = [docstring_node, not_implemented_error_node]
+        if self.removal_method == "all":
+            if docstring_node:
+                node.body = [docstring_node, not_implemented_error_node]
+            else:
+                node.body = [not_implemented_error_node]
+        elif self.removal_method == "docstring":
+            if docstring_node:
+                node.body = [docstring_node, not_implemented_error_node]
         else:
-            node.body = [not_implemented_error_node]
+            raise NotImplementedError(f"Removal method {self.removal_method} is not implemented")
         return ast.copy_location(transform, node)
 
 
@@ -187,7 +197,7 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     files = list(set(files) - set(test_files))
     return files
 
-def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo") -> str:
+def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo", removal: str = "all") -> str:
     """
     Generate a base commit by removing all function contents
 
@@ -221,7 +231,7 @@ def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo"
         files = _find_files_to_edit(repo.clone_dir)
         for f in files:
             tree = astor.parse_file(f)
-            tree = RemoveMethod().visit(tree)
+            tree = RemoveMethod(removal).visit(tree)
             open(f, "w").write(astor.to_source(tree))
             local_repo.git.add(f)
         dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")

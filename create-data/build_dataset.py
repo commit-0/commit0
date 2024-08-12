@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, commit: str) -> dict:
+def create_instance(repo: Repo, commit: str, removal: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -36,7 +36,7 @@ def create_instance(repo: Repo, commit: str) -> dict:
     """
     # extract_test_names needs to be called on the environment set up commit
     test_names = extract_test_names(repo, commit)
-    base_commit = generate_base_commit(repo, commit)
+    base_commit = generate_base_commit(repo, commit, removal=removal)
     patch, test_patch = extract_patches(repo, base_commit, commit)
     created_at = retrieve_commit_time(repo, base_commit)
     return {
@@ -57,7 +57,7 @@ def create_instance(repo: Repo, commit: str) -> dict:
     }
 
 
-def main(repo_file: str, hf_name: str, token: Optional[str] = None):
+def main(repo_file: str, hf_name: str, token: Optional[str] = None, removal: str = "all"):
     """
     Main thread for creating task instances from existing repositories
 
@@ -94,7 +94,7 @@ def main(repo_file: str, hf_name: str, token: Optional[str] = None):
         )
         instance_id = instance_id.replace("/", "__")
         # Create task instance
-        instance = create_instance(repo, commit)
+        instance = create_instance(repo, commit, removal)
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)
@@ -106,5 +106,6 @@ if __name__ == "__main__":
     parser.add_argument("repo_file", type=str, help="Path to pull request JSONL file")
     parser.add_argument("--hf_name", type=str, help="HF dataset name")
     parser.add_argument("--token", type=str, help="GitHub token")
+    parser.add_argument("--removal", type=str, help="Removal method")
     args = parser.parse_args()
     main(**vars(args))
