@@ -6,6 +6,8 @@ import logging
 import os
 from typing import Optional
 
+from datasets import Dataset
+
 from utils import (
     generate_base_commit,
     extract_patches,
@@ -55,13 +57,14 @@ def create_instance(repo: Repo, commit: str) -> dict:
     }
 
 
-def main(repo_file: str, output: str, token: Optional[str] = None):
+def main(repo_file: str, hf_name: str, token: Optional[str] = None):
     """
     Main thread for creating task instances from existing repositories
 
     Args:
         pr_file (str): path to pull request JSONL file
         output (str): output file name
+        hf_name (str): where to upload the dataset
         token (str): GitHub token
     """
     if token is None:
@@ -73,35 +76,35 @@ def main(repo_file: str, output: str, token: Optional[str] = None):
         owner, repo = repo_name.split("/")
         return Repo(owner, repo, setup=setup, token=token)
 
-    with open(output, 'w') as output:
-        for ix, line in enumerate(open(repo_file)):
-            info = json.loads(line)
-            repo = load_repo(info['name'], info['setup'])
-            # can only provide tag or commit
-            assert (info["tag"] is None) ^ (info["commit"] is None)
-            if info["tag"] is not None:
-                if not info["tag"].startswith("tags/"):
-                    info["tag"] = "tags/" + info["tag"]
-                commit = repo.get_commit_by_tag(info["tag"])
-            else:
-                commit = info['commit']
-            # Construct instance fields
-            instance_id = (
-                info['name'] + "-01"
-            )
-            instance_id = instance_id.replace("/", "__")
-            # Create task instance
-            instance = create_instance(repo, commit)
-            print(
-                json.dumps(instance), end="\n", flush=True, file=output
-            )
-            repo.remove_local_repo(repo.clone_dir)
+    examples = []
+    for ix, line in enumerate(open(repo_file)):
+        info = json.loads(line)
+        repo = load_repo(info['name'], info['setup'])
+        # can only provide tag or commit
+        assert (info["tag"] is None) ^ (info["commit"] is None)
+        if info["tag"] is not None:
+            if not info["tag"].startswith("tags/"):
+                info["tag"] = "tags/" + info["tag"]
+            commit = repo.get_commit_by_tag(info["tag"])
+        else:
+            commit = info['commit']
+        # Construct instance fields
+        instance_id = (
+            info['name'] + "-01"
+        )
+        instance_id = instance_id.replace("/", "__")
+        # Create task instance
+        instance = create_instance(repo, commit)
+        examples.append(instance)
+        repo.remove_local_repo(repo.clone_dir)
+    ds = Dataset.from_list(examples)
+    #ds.push_to_hub(hf_name)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("repo_file", type=str, help="Path to pull request JSONL file")
-    parser.add_argument("output", type=str, help="Output file name")
+    parser.add_argument("--hf_name", type=str, help="HF dataset name")
     parser.add_argument("--token", type=str, help="GitHub token")
     args = parser.parse_args()
     main(**vars(args))
