@@ -23,7 +23,11 @@ repos.json
 {"name":"msiemens/tinydb","commit":null,"tag":"v4.8.0","setup":["python -m pip install --upgrade pip twine","pip install poetry","poetry install"]}
 ```
 
-We are now ready to generate the dataset. Simply run,
+We are now ready to generate the dataset. Before that, add your GitHub token in the environment.
+```
+export GITHUB_TOKEN=[github_token]
+```
+Now run,
 ```
 python create-data/build_dataset.py repos.json out.json
 ```
