@@ -8,3 +8,4 @@ nbconvert
 pytest
 coverage
 astor
+gitpython

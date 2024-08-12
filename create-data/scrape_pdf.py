@@ -6,6 +6,35 @@ from bs4 import BeautifulSoup
 import os
 import fitz
 from PyPDF2 import PdfMerger
+from datasets import load_dataset
+import requests
+import wget
+import nbformat
+from nbconvert import PDFExporter
+from nbconvert.writers import FilesWriter
+
+def convert_to_raw_github_url(github_url):
+    base_url = 'https://raw.githubusercontent.com/'
+    
+    # Split the provided URL into parts
+    parts = github_url.split('/')
+    
+    # Ensure the URL is of the correct form
+    if not (len(parts) >= 5 and parts[2] == "github.com"):
+        raise ValueError("Provided URL is not a valid GitHub URL")
+    
+    # Extract the user, repository, branch, and file path
+    user = parts[3]
+    repo = parts[4]
+    branch = parts[6] if len(parts) > 6 else 'master'
+    file_path = '/'.join(parts[7:])
+    
+    # Form the raw URL
+    raw_url = f"{base_url}{user}/{repo}/{branch}/{file_path}"
+    
+    return raw_url
+
+# Example usage
 
 # Function to clean PDFs
 def is_page_blank(page):
@@ -123,6 +152,17 @@ async def main(base_url, output_dir):
     merge_pdfs(pdfs, os.path.join(output_dir, "complete.pdf"))
 
 if __name__ == "__main__":
-    base_url = sys.argv[1]
-    output_dir = sys.argv[2]
-    asyncio.get_event_loop().run_until_complete(main(base_url, output_dir))
+    ds = load_dataset('json', data_files=sys.argv[1], split="train")
+    for one in ds:
+        base_url = one['url']
+        output_dir = f"pdfs/{one['name']}/"
+        os.makedirs(output_dir, exist_ok=True)
+        print(base_url)
+        print(output_dir)
+        if base_url.endswith('pdf'):
+            if 'github.com' in base_url:
+                base_url = convert_to_raw_github_url(base_url)
+            wget.download(base_url, os.path.join(output_dir, "complete.pdf"))
+        else:
+            asyncio.get_event_loop().run_until_complete(main(base_url, output_dir))
+        print("Done:", one['name'])

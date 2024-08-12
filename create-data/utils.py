@@ -224,6 +224,10 @@ def generate_base_commit(repo: Repo, commit: str, branch_name: str = "spec2repo"
             tree = RemoveMethod().visit(tree)
             open(f, "w").write(astor.to_source(tree))
             local_repo.git.add(f)
+        dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")
+        with open(dummy_test_file, 'w'):
+            pass
+        local_repo.git.add(dummy_test_file)
         commit = local_repo.index.commit("Generated base commit.")
         origin = local_repo.remote(name='origin')
         origin.push(branch_name)
@@ -282,7 +286,7 @@ def extract_patches(repo: Repo, commit1: str, commit2: str) -> tuple[str, str]:
         )
         diffs.append(''.join(diff))
     patch = '\n'.join(diffs)
-    dummy_f = os.path.join(repo.name, "dummy.txt")
+    dummy_f = "dummy.txt"
     test_patch = difflib.unified_diff(
         [],
         ['Dummy TestPatch'],

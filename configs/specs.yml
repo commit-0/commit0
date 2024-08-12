@@ -15,4 +15,10 @@ spec2repo/minitorch:
       - "torch"
       - "watchdog==1.0.2"
       - "numba==0.60"
-    test_cmd: TEST_PYTEST
+    test_cmd: "pytest"
+
+spec2repo/tinydb:
+  "4.8":
+    python: 3.11
+    install: "python -m pip install --upgrade pip twine; pip install poetry; poetry install"
+    test_cmd: "pytest"
