@@ -6,7 +6,7 @@ We lay out the steps to create a spec2repo example and perform an evaluation on 
 
 First, to install required packages,
 ```
-pip install -r requirements
+pip install -r requirements.txt
 ```
 
 Please provide the following information for the list of repositories in a JSON file,
