@@ -1,5 +1,5 @@
 python -m swebench.harness.run_evaluation \
-    --dataset_name spec2repo \
+    --dataset_name spec2repo/spec2repo \
     --split test \
     --max_workers 2 \
     --predictions_path 'gold' \
