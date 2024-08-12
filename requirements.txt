@@ -11,3 +11,4 @@ astor
 gitpython
 ghapi
 fastcore
+datasets

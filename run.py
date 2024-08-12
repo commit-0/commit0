@@ -2,7 +2,6 @@ import yaml
 from argparse import ArgumentParser
 from swebench.harness.constants import (
     MAP_REPO_VERSION_TO_SPECS,
-    MAP_REPO_TO_REQS_PATHS
 )
 from swebench.harness.log_parsers import (
     MAP_REPO_TO_PARSER,
@@ -39,7 +38,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--run_id", type=str, required=True, help="Run ID - identifies the run")
     parser.add_argument("--spec_config", type=str, required=True, help="Spec YAML config file for repositories")
-    parser.add_argument("--req_config", type=str, required=True, help="Req YAML config file for repositories")
     args = parser.parse_args()
 
     with open(args.spec_config, 'r') as f:
@@ -48,14 +46,6 @@ if __name__ == "__main__":
     for key in spec_config:
         MAP_REPO_VERSION_TO_SPECS.update({
             key: spec_config[key]
-        })
-
-    with open(args.req_config, 'r') as f:
-        req_config = yaml.safe_load(f)
-    delattr(args, 'req_config')
-    for key in req_config:
-        MAP_REPO_TO_REQS_PATHS.update({
-            key: req_config[key]
         })
 
     for key in spec_config:
