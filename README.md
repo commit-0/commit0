@@ -74,7 +74,7 @@ def parse_log_tinydb(log: str) -> dict[str, str]:
     pattern = r"^(.*\/.*)::(.*)\s+\w+\s+\[\s*(\d+%)\]$"
     for line in log.split("\n"):
         line = line.strip()
-        m = re.match(pattern, string)
+        m = re.match(pattern, line)
         if m:
             line = line.split('[')[0].strip()
             test, value = line.split(' ')
