@@ -4,7 +4,12 @@ We set up a task where, given a specification, the goal is to produce an impleme
 Specifically, we are interested in converting library specifications to implementations (i.e., repositories).
 We lay out the steps to create a spec2repo example and perform an evaluation on the example using the SWE-bench framework.
 
-First, please provide the following information for the list of repositories in a JSON file,
+First, to install required packages,
+```
+pip install -r requirements
+```
+
+Please provide the following information for the list of repositories in a JSON file,
 ```
 repos.json
 {"name":[repo_name],"commit":null,"tag":"v4.8.0","setup":["python -m pip install --upgrade pip twine","pip install poetry","poetry install"]}
