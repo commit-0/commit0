@@ -29,6 +29,8 @@ python create-data/build_dataset.py repos.json out.json
 ```
 where ``repos.json`` is the file we specified above, and out.json is the output dataset file.
 This command produces the base commit (with function body removed), gold patch that passes all unit tests, and all test function names.
+Note that this script will create a fork for the libaray. The fork will be created under organization ``spec2repo``.
+You can change the organization to somewhere else. But if you want to create a fork under ``spec2repo``, please contact Wenting Zhao to be added to the organization.
 
 Now that dataset has been generated, we move on to using SWE-bench to perform an evaluation.
 First, follow the instructions in the [Docker setup guide](https://docs.docker.com/engine/install/) to install Docker on your machine.
