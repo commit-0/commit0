@@ -58,6 +58,37 @@ spec2repo/tinydb:
 ```
 To make this for your own library, leave the ``1.0`` unchanged, specify the Python version with ``python``, and how to locally build the library with ``install``, and how to run tests with ``test_cmd``.
 
+You also need to write your own function to process the test logs. Please add your function in ``configs/log_parsers.py``. The function should take in a log text file and return a dictionary that maps from a test function to its test stutas such as passed or failed. After that, update the global variable ``ADD_MAP_REPO_TO_PARSER``.
+```
+configs/log_parsers.py
+def parse_log_tinydb(log: str) -> dict[str, str]:
+    """
+    Parser for test logs generated with TinyDB framework
+
+    Args:
+        log (str): log content
+    Returns:
+        dict: test case to test status mapping
+    """
+    test_status_map = {}
+    pattern = r"^(.*\/.*)::(.*)\s+\w+\s+\[\s*(\d+%)\]$"
+    for line in log.split("\n"):
+        line = line.strip()
+        m = re.match(pattern, string)
+        if m:
+            line = line.split('[')[0].strip()
+            test, value = line.split(' ')
+            if value == "PASSED":
+                test_status_map[test] = TestStatus.PASSED.value
+            else:
+                test_status_map[test] = TestStatus.FAILED.value
+    return test_status_map
+
+ADD_MAP_REPO_TO_PARSER = {
+    "spec2repo/tinydb": parse_log_tinydb,
+}
+```
+
 Finally, to run evaluation for the created example using the gold patch with the following script:
 ```
 python run.py \
