@@ -104,13 +104,14 @@ class Repo:
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")
         os.chdir(self.clone_dir)
-        for one in setup:
-            one = one.strip().split(' ')
-            cmd = os.path.join(env_dir, 'bin', one[0])
-            cmd = ' '.join([cmd] + one[1:])
-            logger.info(f"Executing {cmd}")
-            os.system(cmd)
-        os.chdir(self.cwd)
+        if setup is not None:
+            for one in setup:
+                one = one.strip().split(' ')
+                cmd = os.path.join(env_dir, 'bin', one[0])
+                cmd = ' '.join([cmd] + one[1:])
+                logger.info(f"Executing {cmd}")
+                os.system(cmd)
+            os.chdir(self.cwd)
 
     def remove_local_repo(self, path_to_repo: str) -> None:
         """

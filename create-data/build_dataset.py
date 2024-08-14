@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
 import logging
 import os
+import yaml
 from typing import Optional
 
 from datasets import Dataset
@@ -77,8 +77,9 @@ def main(repo_file: str, hf_name: str, token: Optional[str] = None):
         return Repo(owner, repo, setup=setup, token=token)
 
     examples = []
-    for ix, line in enumerate(open(repo_file)):
-        info = json.loads(line)
+    with open(repo_file, 'r') as f:
+        repo_file = yaml.safe_load(f)
+    for _, info in repo_file.items():
         repo = load_repo(info['name'], info['setup'])
         # can only provide tag or commit
         assert (info["tag"] is None) ^ (info["commit"] is None)

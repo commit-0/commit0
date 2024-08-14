@@ -9,18 +9,32 @@ First, to install required packages,
 pip install -r requirements.txt
 ```
 
-Please provide the following information for the list of repositories in a JSON file,
+Please provide the following information for the list of repositories in a YAML file,
 ```
-repos.json
-{"name":[repo_name],"commit":null,"tag":"v4.8.0","setup":["python -m pip install --upgrade pip twine","pip install poetry","poetry install"]}
+repos.yml
+0: # just an index
+  name: [repository_name] # in the form of {organization_name}/{library_name}
+  commit: [commit_sha]
+  tag: [version_tag]
+  setup:
+    - [command_1]
+    - [command_2]
+    - ...
 ```
 There are two options to specify the version of the library:
 you can either provide a specific commit or a specific tag. You cannot specify both at the same time.
 Finally, include the commands that sets up the library from a local repository.
 For example, to create an example for the ``msiemens/tinydb`` with version 4.8, 
 ```
-repos.json
-{"name":"msiemens/tinydb","commit":null,"tag":"v4.8.0","setup":["python -m pip install --upgrade pip twine","pip install poetry","poetry install"]}
+repos.yml
+0:
+  name: "msiemens/tinydb"
+  commit: null
+  tag: "v4.8.0"
+  setup:
+    - "python -m pip install --upgrade pip twine"
+    - "pip install poetry"
+    - "poetry install"
 ```
 
 We are now ready to generate the dataset. Before that, add your GitHub token in the environment.
