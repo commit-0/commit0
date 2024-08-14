@@ -1,0 +1,404 @@
+0:
+  name: "minitorch/minitorch"
+  commit: "7d35d597ad226e73289e6920fbc1e83ea6148c8b"
+  tag: null
+  setup:
+    - "python -m pip install -r requirements.txt"
+    - "python -m pip install -r requirements.extra.txt"
+    - "python -m pip install -Ue ."
+  specification: "https://minitorch.github.io/"
+
+1:
+  name: "wenting-zhao/simpy"
+  commit: null
+  tag: "4.0.1"
+  setup:
+    - "python setup.py install"
+  specification: "https://simpy.readthedocs.io/_/downloads/en/4.0.1/pdf/"
+
+2:
+  name: "wenting-zhao/BitVector"
+  commit: "1a283fafeac0952b496f29acc7d5f0e446348872"
+  tag: null
+  setup:
+    - "python3 setup.py install"
+  specification: "https://engineering.purdue.edu/kak/dist/BitVector-3.5.0.html"
+
+3:
+  name: "msiemens/tinydb"
+  commit: null
+  tag: "v4.8.0"
+  setup:
+    - "python -m pip install --upgrade pip twine"
+    - "pip install poetry"
+    - "poetry install"
+
+4:
+  name: "marshmallow-code/marshmallow"
+  commit: null
+  tag: "3.21.3"
+  setup:
+    - "pip install -Ue ."
+  specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
+
+5:
+  name: "alecthomas/voluptuous"
+  commit: null
+  tag: "0.14.2"
+  setup:
+    - "pip install -r requirements.txt"
+  specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
+
+6:
+  name: "scrapy/parsel"
+  commit: null
+  tag: "v1.9.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
+
+7:
+  name: "pybrain/pybrain"
+  commit: null
+  tag: "0.3"
+  setup:
+    - "python setup.py install"
+  specification: "https://github.com/pybrain/pybrain/blob/master/docs/documentation.pdf"
+
+8:
+  name: "networkx/networkx"
+  commit: null
+  tag: "networkx-3.3"
+  setup: "pip install -e ."
+  specification: "https://networkx.org/documentation/networkx-3.3/"
+
+9:
+  name: "graphql-python/graphene"
+  commit: null
+  tag: "v3.3.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.graphene-python.org/en/stable/"
+
+10:
+  name: "tlslite-ng"
+  commit: null
+  tag: "v0.7.6"
+  setup:
+    - "python setup.py install"
+  specification: "https://tlslite-ng.readthedocs.io/_/downloads/en/stable/pdf/"
+
+11:
+  name: "Python-Markdown/markdown"
+  commit: null
+  tag: "3.6"
+  setup:
+    - "pip install -e ."
+  specification: "https://python-markdown.github.io/"
+
+12:
+  name: "gawel/irc3"
+  commit: null
+  tag: "1.1.5"
+  setup:
+    - "pip install -e ."
+  specification: "https://irc3.readthedocs.io/_/downloads/en/stable/pdf/"
+
+13:
+  name: "rthalley/dnspython"
+  commit: null
+  tag: "v2.6.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://dnspython.readthedocs.io/en/stable/"
+
+14:
+  name: "mjs/imapclient"
+  commit: null
+  tag: "2.3.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://imapclient.readthedocs.io/_/downloads/en/2.3.1/pdf/"
+
+15:
+  name: "stefan-jansen/zipline-reloaded"
+  commit: null
+  tag: "3.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://zipline.ml4trading.io/"
+
+16:
+  name: "EpistasisLab/tpot"
+  commit: null
+  tag: "v0.12.2"
+  setup:
+    - "pip install numpy scipy scikit-learn pandas joblib pytorch"
+    - "pip install deap update_checker tqdm stopit xgboost"
+    - "pip install -e ."
+  specification: "https://epistasislab.github.io/tpot/"
+
+17:
+  name: "ethereum/web3.py"
+  commit: null
+  tag: "v6.20.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.1/pdf/"
+
+18:
+  name: "ethereum/py-evm"
+  commit: null
+  tag: "v0.10.1-beta.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
+
+19:
+  name: "geopandas/geopandas"
+  commit: null
+  tag: "v1.0.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://geopandas.org/en/stable/"
+
+20:
+  name: "pyro-ppl/pyro"
+  commit: null
+  tag: "1.8.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.pyro.ai/_/downloads/en/1.8.0/pdf/"
+
+21:
+  name: "pallets/flask"
+  commit: null
+  tag: "3.0.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://flask.palletsprojects.com/en/3.0.x/"
+
+22:
+  name: "pytube/pytube"
+  commit: null
+  tag: "v15.0.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://pytube.io/_/downloads/en/latest/pdf/"
+
+23:
+  name: "pallets/jinja"
+  commit: null
+  tag: "3.1.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://jinja.palletsprojects.com/en/3.1.x/"
+
+24:
+  name: "mwaskom/seaborn"
+  commit: null
+  tag: "v0.13.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://seaborn.pydata.org/"
+
+25:
+  name: "psf/requests"
+  commit: null
+  tag: "v2.32.3"
+  setup:
+    - "pip install -e ."
+  specification: "https://requests.readthedocs.io/_/downloads/en/latest/pdf/"
+
+26:
+  name: "scrapy/scrapy"
+  commit: null
+  tag: "2.11.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.scrapy.org/_/downloads/en/2.11/pdf/"
+
+27:
+  name: "fastapi/fastapi"
+  commit: null
+  tag: "0.112.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://fastapi.tiangolo.com/"
+
+28:
+  name: "pallets/click"
+  commit: null
+  tag: "8.1.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://click.palletsprojects.com/en/8.1.x/"
+
+29:
+  name: "sympy/sympy"
+  commit: null
+  tag: "sympy-1.13.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.sympy.org/latest/"
+
+30:
+  name: "statsmodels/statsmodels"
+  commit: null
+  tag: "v0.14.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://www.statsmodels.org/stable/"
+
+31:
+  name: "paramiko/paramiko"
+  commit: null
+  tag: ""
+  setup:
+    - "pip install -e ."
+  specification: "https://www.paramiko.org/"
+
+32:
+  name: "Zulko/moviepy"
+  commit: null
+  tag: "v1.0.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://zulko.github.io/moviepy/"
+
+33:
+  name: "fabric/fabric"
+  commit: null
+  tag: "3.2.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://www.fabfile.org/"
+
+34:
+  name: "pydantic/pydantic"
+  commit: null
+  tag: "v2.8.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.pydantic.dev/2.8/"
+
+35:
+  name: "Delgan/loguru"
+  commit: null
+  tag: "0.7.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://loguru.readthedocs.io/_/downloads/en/0.7.2/pdf/"
+
+36:
+  name: "py-pdf/pypdf"
+  commit: null
+  tag: "4.3.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://pypdf.readthedocs.io/_/downloads/en/4.3.1/pdf/"
+
+37:
+  name: "python-attrs/attrs"
+  commit: null
+  tag: "24.2.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://www.attrs.org/en/24.2.0/"
+
+38:
+  name: "lk-geimfari/mimesis"
+  commit: null
+  tag: "v17.0.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://mimesis.name/en/v17.0.0/"
+
+39:
+  name: "cookiecutter/cookiecutter"
+  commit: null
+  tag: "2.6.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://cookiecutter.readthedocs.io/_/downloads/en/2.6.0/pdf/"
+
+40:
+  name: "rq/rq"
+  commit: null
+  tag: "v1.16.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://python-rq.org/"
+
+41:
+  name: "scikit-learn-contrib/imbalanced-learn"
+  commit: null
+  tag: "0.12.3"
+  setup:
+    - "pip install -e ."
+  specification: "https://imbalanced-learn.org/stable/"
+
+42:
+  name: "pymc-devs/pymc"
+  commit: null
+  tag: "v5.16.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://www.pymc.io/projects/docs/en/v5.16.2/learn.html"
+
+43:
+  name: "Baekalfen/PyBoy"
+  commit: null
+  tag: "v2.2.2"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.pyboy.dk/"
+
+44:
+  name: "pytest-dev/pytest"
+  commit: null
+  tag: "8.3.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.pytest.org/_/downloads/en/8.3.x/pdf/"
+
+45:
+  name: "pylint-dev/pylint"
+  commit: null
+  tag: "v3.2.6"
+  setup:
+    - "pip install -e ."
+  specification: "https://pylint.readthedocs.io/en/v3.2.6/"
+
+46:
+  name: "sphinx-doc/sphinx"
+  commit: "49c3b21c60a1d376c41aa2715061039cf854fbaa"
+  tag: null
+  setup:
+    - "pip install -e ."
+  specification: "https://www.sphinx-doc.org/_/downloads/en/master/pdf/"
+
+47:
+  name: "fsspec/filesystem_spec"
+  commit: null
+  tag: "2024.6.1"
+  setup:
+    - "pip install -e ."
+  specification: "https://filesystem-spec.readthedocs.io/en/stable/"
+
+48:
+  name: "pydata/xarray"
+  commit: null
+  tag: "v2024.07.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://docs.xarray.dev/en/v2024.07.0/"
+
+49:
+  name: "tkem/cachetools"
+  commit: null
+  tag: "v5.4.0"
+  setup:
+    - "pip install -e ."
+  specification: "https://cachetools.readthedocs.io/en/v5.4.0/"
+
