@@ -3,9 +3,9 @@
   commit: "7d35d597ad226e73289e6920fbc1e83ea6148c8b"
   tag: null
   setup:
-    - "python -m pip install -r requirements.txt"
-    - "python -m pip install -r requirements.extra.txt"
+    - "pip install hypothesis typing_extensions numba==0.60"
     - "python -m pip install -Ue ."
+  test: "pytest"
   specification: "https://minitorch.github.io/"
 
 1:
@@ -13,7 +13,9 @@
   commit: null
   tag: "4.0.1"
   setup:
-    - "python setup.py install"
+    - "pip install py setuptools"
+    - "pip install -e ."
+  test: "pytest"
   specification: "https://simpy.readthedocs.io/_/downloads/en/4.0.1/pdf/"
 
 2:

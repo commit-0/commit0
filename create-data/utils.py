@@ -47,12 +47,12 @@ class Repo:
             token (str): github token
         """
         self.name = name
+        self.owner = organization
         self.token = token
         self.api = GhApi(token=token)
         self.repo = self.call_api(self.api.repos.get, owner=organization, repo=name)
         if self.repo is None:
             self.repo = self.call_api(self.api.repos.create_fork, owner=owner, repo=name, organization=organization)
-        self.owner = organization
         self.cwd = os.getcwd()
         self.clone_repo(setup=setup)
 
@@ -183,6 +183,10 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     name = os.path.basename(base_dir)
     path_src = os.path.join(base_dir, name, "**", "*.py")
     files = glob(path_src, recursive=True)
+    path_src = os.path.join(base_dir, 'src', name, "**", "*.py")
+    files += glob(path_src, recursive=True)
+    path_src = os.path.join(base_dir, 'src', "**", "*.py")
+    files += glob(path_src, recursive=True)
     path_test = os.path.join(base_dir, name, "**", "test*", "**", "*.py")
     test_files = glob(path_test, recursive=True)
     files = list(set(files) - set(test_files))
@@ -297,30 +301,29 @@ def extract_patches(repo: Repo, commit1: str, commit2: str) -> tuple[str, str]:
     test_patch = ''.join(test_patch)+'\n' # patch file needs a new line at the end
     return patch, test_patch
 
-def extract_test_names(repo: Repo, commit: str) -> list[str]:
+
+def _analyze_pytest(text):
+    text = text.split("\n\n")[0]
+    return [one.strip() for one in text.split('\n')]
+
+
+def extract_test_names(repo: Repo, commit: str, test_cmd: str) -> list[str]:
     """
     Extract all test function names
 
     Args:
         repo (Repo): test names from which repo
         commit (str): test functions from which commit
+        test_cmd (str): which test command to run
     Return:
         collected_tests (list[str]): a list of test function names
     """
-    def list_pytest_functions():
-        plugin = Plugin()
-        # Run pytest in "collect-only" mode and use our custom plugin
-        pytest.main(["--collect-only", repo.clone_dir], plugins=[plugin])
-        return plugin.collected_tests
-
-    class Plugin:
-        def __init__(self):
-            self.collected_tests = []
-
-        def pytest_sessionfinish(self, session, exitstatus):
-            # Collect test node IDs into the list
-            for item in session.items:
-                self.collected_tests.append(item.nodeid)
-    with silent():
-        test_names = list_pytest_functions()
+    venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
+    cmd = venv_dir + os.sep + test_cmd
+    cmd = cmd.split()
+    if 'pytest' in test_cmd:
+        os.system(f"{venv_dir}{os.sep}pip install pytest")
+        cmd = cmd + ['--collect-only', '--quiet', repo.clone_dir]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        test_names = _analyze_pytest(result.stdout)
     return test_names

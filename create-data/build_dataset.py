@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, commit: str) -> dict:
+def create_instance(repo: Repo, commit: str, test: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -35,7 +35,7 @@ def create_instance(repo: Repo, commit: str) -> dict:
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    test_names = extract_test_names(repo, commit)
+    test_names = extract_test_names(repo, commit, test)
     base_commit = generate_base_commit(repo, commit)
     patch, test_patch = extract_patches(repo, base_commit, commit)
     created_at = retrieve_commit_time(repo, base_commit)
@@ -79,7 +79,7 @@ def main(repo_file: str, hf_name: str, token: Optional[str] = None):
     examples = []
     with open(repo_file, 'r') as f:
         repo_file = yaml.safe_load(f)
-    for _, info in repo_file.items():
+    for idx, info in repo_file.items():
         repo = load_repo(info['name'], info['setup'])
         # can only provide tag or commit
         assert (info["tag"] is None) ^ (info["commit"] is None)
@@ -95,7 +95,7 @@ def main(repo_file: str, hf_name: str, token: Optional[str] = None):
         )
         instance_id = instance_id.replace("/", "__")
         # Create task instance
-        instance = create_instance(repo, commit)
+        instance = create_instance(repo, commit, info["test"])
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)
