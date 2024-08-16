@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, commit: str, test: str) -> dict:
+def create_instance(repo: Repo, commit: str, base_branch_name: str, test: str, removal: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -36,7 +36,7 @@ def create_instance(repo: Repo, commit: str, test: str) -> dict:
     """
     # extract_test_names needs to be called on the environment set up commit
     test_names = extract_test_names(repo, commit, test)
-    base_commit = generate_base_commit(repo, commit)
+    base_commit = generate_base_commit(repo, commit, base_branch_name, removal)
     patch, test_patch = extract_patches(repo, base_commit, commit)
     created_at = retrieve_commit_time(repo, base_commit)
     return {
@@ -57,14 +57,15 @@ def create_instance(repo: Repo, commit: str, test: str) -> dict:
     }
 
 
-def main(repo_file: str, hf_name: str, token: Optional[str] = None):
+def main(repo_file: str, hf_name: str, base_branch_name: str, removal: str, token: Optional[str] = None):
     """
     Main thread for creating task instances from existing repositories
 
     Args:
-        pr_file (str): path to pull request JSONL file
-        output (str): output file name
+        repo_file (str): path to repository YAML file
         hf_name (str): where to upload the dataset
+        base_branch_name (str): base of the branch name under which the base commit will be sent to
+        removal (str): strategy to remove code body
         token (str): GitHub token
     """
     if token is None:
@@ -95,10 +96,11 @@ def main(repo_file: str, hf_name: str, token: Optional[str] = None):
         )
         instance_id = instance_id.replace("/", "__")
         # Create task instance
-        instance = create_instance(repo, commit, info["test"])
+        instance = create_instance(repo, commit, base_branch_name, info["test"], removal)
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)
+    hf_name = f"{hf_name}_{removal}"
     #ds.push_to_hub(hf_name)
 
 
@@ -107,5 +109,7 @@ if __name__ == "__main__":
     parser.add_argument("repo_file", type=str, help="Path to pull request JSONL file")
     parser.add_argument("--hf_name", type=str, help="HF dataset name")
     parser.add_argument("--token", type=str, help="GitHub token")
+    parser.add_argument("--base_branch_name", type=str, default="spec2repo", help="base of the branch name under which the base commit will be sent to")
+    parser.add_argument("--removal", type=str, default="all", help="Removal method")
     args = parser.parse_args()
     main(**vars(args))
