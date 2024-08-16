@@ -4,7 +4,7 @@
   tag: null
   setup:
     - "pip install hypothesis typing_extensions numba==0.60"
-    - "python -m pip install -Ue ."
+    - "pip install -e ."
   test: "pytest"
   specification: "https://minitorch.github.io/"
 
@@ -19,12 +19,13 @@
   specification: "https://simpy.readthedocs.io/_/downloads/en/4.0.1/pdf/"
 
 2:
-  name: "wenting-zhao/BitVector"
-  commit: "1a283fafeac0952b496f29acc7d5f0e446348872"
-  tag: null
+  name: "scott-griffiths/bitstring"
+  commit: null
+  tag: "bitstring-4.2.0"
   setup:
-    - "python3 setup.py install"
-  specification: "https://engineering.purdue.edu/kak/dist/BitVector-3.5.0.html"
+    - "pip install -e ."
+  test: "pytest"
+  specification: "https://bitstring.readthedocs.io/en/stable/"
 
 3:
   name: "msiemens/tinydb"
@@ -40,7 +41,7 @@
   commit: null
   tag: "3.21.3"
   setup:
-    - "pip install -Ue ."
+    - "pip install -e ."
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
 
 5:
