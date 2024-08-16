@@ -67,14 +67,13 @@
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
 
 7:
-  name: "pybrain/pybrain"
+  name: "jpadilla/pyjwt"
   commit: null
-  tag: "0.3"
+  tag: "2.8.0"
   setup:
-    - "pip install setuptools"
-    - "python setup.py install"
+    - "pip install -e ."
   test: "pytest"
-  specification: "https://github.com/pybrain/pybrain/blob/master/docs/documentation.pdf"
+  specification: "https://pyjwt.readthedocs.io/_/downloads/en/2.8.0/pdf/"
 
 8:
   name: "networkx/networkx"
