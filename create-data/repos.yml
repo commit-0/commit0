@@ -23,6 +23,7 @@
   commit: null
   tag: "bitstring-4.2.0"
   setup:
+    - "pip install hypothesis gfloat"
     - "pip install -e ."
   test: "pytest"
   specification: "https://bitstring.readthedocs.io/en/stable/"
@@ -35,6 +36,8 @@
     - "python -m pip install --upgrade pip twine"
     - "pip install poetry"
     - "poetry install"
+  test: "pytest"
+  specification: "https://tinydb.readthedocs.io/_/downloads/en/v4.8.0/pdf/"
 
 4:
   name: "marshmallow-code/marshmallow"
@@ -42,6 +45,7 @@
   tag: "3.21.3"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
 
 5:
@@ -50,6 +54,7 @@
   tag: "0.14.2"
   setup:
     - "pip install -r requirements.txt"
+  test: "pytest"
   specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
 
 6:
@@ -58,6 +63,7 @@
   tag: "v1.9.1"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
 
 7:
@@ -65,14 +71,18 @@
   commit: null
   tag: "0.3"
   setup:
+    - "pip install setuptools"
     - "python setup.py install"
+  test: "pytest"
   specification: "https://github.com/pybrain/pybrain/blob/master/docs/documentation.pdf"
 
 8:
   name: "networkx/networkx"
   commit: null
   tag: "networkx-3.3"
-  setup: "pip install -e ."
+  setup:
+    - "pip install -e ."
+  test: "pytest"
   specification: "https://networkx.org/documentation/networkx-3.3/"
 
 9:
@@ -81,6 +91,7 @@
   tag: "v3.3.0"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://docs.graphene-python.org/en/stable/"
 
 10:

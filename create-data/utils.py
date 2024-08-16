@@ -2,10 +2,11 @@ import contextlib
 import difflib
 import logging
 import os
+import pytest
 import shutil
 import subprocess
 import sys
-import pytest
+import time
 import venv
 from glob import glob
 from typing import Callable, Iterator, Optional
@@ -22,28 +23,17 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@contextlib.contextmanager
-def silent():
-    with open(os.devnull, "w") as devnull:
-        old_stdout = sys.stdout
-        #old_stderr = sys.stderr
-        try:
-            sys.stdout = devnull
-            #sys.stderr = devnull
-            yield
-        finally:
-            sys.stdout = old_stdout
-            #sys.stderr = old_stderr
-
-
 class Repo:
-    def __init__(self, owner: str, name: str, organization: str = "spec2repo", setup: [str] = [], token: Optional[str] = None):
+    def __init__(self, owner: str, name: str, organization: str, head: str, setup: list[str], token: Optional[str] = None):
         """
         Init to retrieve target repository and create ghapi tool
 
         Args:
             owner (str): owner of target repository
             name (str): name of target repository
+            org (str): under which organization to fork repos to
+            head (str): which head to set the repo to
+            setup (list[str]): a list of setup steps
             token (str): github token
         """
         self.name = name
@@ -53,8 +43,14 @@ class Repo:
         self.repo = self.call_api(self.api.repos.get, owner=organization, repo=name)
         if self.repo is None:
             self.repo = self.call_api(self.api.repos.create_fork, owner=owner, repo=name, organization=organization)
+            # The API call returns immediately when the fork isn't complete. Needed to wait for a few seconds to finish.
+            time.sleep(5)
         self.cwd = os.getcwd()
-        self.clone_repo(setup=setup)
+        if head.startswith("tags/"):
+            self.commit = self.get_commit_by_tag(head)
+        else:
+            self.commit = head
+        self.local_repo = self.clone_repo(setup=setup)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
         """
@@ -84,12 +80,13 @@ class Repo:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
 
-    def clone_repo(self, tmp_dir: str = './tmp/', setup: str = []) -> None:
+    def clone_repo(self, setup: list[str], tmp_dir: str = './tmp/') -> None:
         """
         Clone repo into a temporary directory
 
         Args:
             tmp_dir (str): which temporary directory to clone the repo to
+            setup (list[str]): a list of setup steps
         Return:
             None
         """
@@ -98,20 +95,32 @@ class Repo:
         if os.path.exists(self.clone_dir):
             self.remove_local_repo(self.clone_dir)
         logger.info(f"cloning {clone_url} into {self.clone_dir}")
-        with open(os.devnull, 'w') as devnull:
-            subprocess.run(["git", "clone", clone_url, self.clone_dir], check=True, stdout=devnull, stderr=devnull)
+        try:
+            repo = git.Repo.clone_from(clone_url, self.clone_dir)
+            logger.info(f"Repository cloned successfully to {self.clone_dir}.")
+        except git.exc.GitCommandError as e:
+            logger.info(f"Failed to clone repository: {e}")
+            sys.exit(1)
+        logger.info(f"checking out {self.commit}")
+        try:
+            repo.git.checkout(self.commit)
+            logger.info(f"Checked out {self.commit} successfully.")
+        except git.exc.GitCommandError as e:
+            logger.info(f"Failed to check out {self.commit}: {e}")
+            sys.exit(1)
         env_dir = os.path.join(self.clone_dir, 'venv')
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")
-        os.chdir(self.clone_dir)
         if setup is not None:
+            os.chdir(self.clone_dir)
             for one in setup:
                 one = one.strip().split(' ')
                 cmd = os.path.join(env_dir, 'bin', one[0])
-                cmd = ' '.join([cmd] + one[1:])
-                logger.info(f"Executing {cmd}")
-                os.system(cmd)
+                cmd = [cmd] + one[1:]
+                logger.info(f"Executing {' '.join(cmd)}")
+                subprocess.run(cmd, check=True)
             os.chdir(self.cwd)
+        return repo
 
     def remove_local_repo(self, path_to_repo: str) -> None:
         """
@@ -148,8 +157,6 @@ class RemoveMethod(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node):
         transform = node
-        print(f"Processing function: {node.name}")
-
         if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant):
             docstring_node = node.body[0]
         else:
@@ -202,30 +209,28 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     files = list(set(files) - set(test_files))
     return files
 
-def generate_base_commit(repo: Repo, commit: str, base_branch_name: str = "spec2repo", removal: str = "all") -> str:
+def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", removal: str = "all") -> str:
     """
     Generate a base commit by removing all function contents
 
     Args:
         repo (Repo): from which repo to generate the base commit
-        commit (str): from which commit to generate the base commit
         base_branch_name (str): base of the branch name of the base commit
     Return:
         collected_tests (list[str]): a list of test function names
     """
     # check if base commit has already been generated
-    local_repo = git.Repo(repo.clone_dir)
-    remote = local_repo.remote()
+    remote = repo.local_repo.remote()
     remote.fetch()
     exists = False
     branch_name = f"{base_branch_name}_{removal}"
-    for ref in local_repo.refs:
+    for ref in repo.local_repo.refs:
         if ref.name.endswith(f"/{branch_name}"):
             branch_name = ref.name
             exists = True
             break
     if exists:
-        branch = local_repo.refs[branch_name]
+        branch = repo.local_repo.refs[branch_name]
         if branch.commit.message == "Generated base commit.":
             logger.info(f"Base commit has already been created.")
             return branch.commit.hexsha
@@ -233,22 +238,21 @@ def generate_base_commit(repo: Repo, commit: str, base_branch_name: str = "spec2
             raise ValueError(f"{branch_name} exists but it's not the base commit")
     else:
         logger.info(f"Creating the base commit {repo.owner}/{repo.name}")
-        local_repo.git.checkout('-b', branch_name)
+        repo.local_repo.git.checkout('-b', branch_name)
         files = _find_files_to_edit(repo.clone_dir)
         for f in files:
             tree = astor.parse_file(f)
             tree = RemoveMethod(removal).visit(tree)
             open(f, "w").write(astor.to_source(tree))
-            local_repo.git.add(f)
+            repo.local_repo.git.add(f)
         dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")
         with open(dummy_test_file, 'w'):
             pass
-        local_repo.git.add(dummy_test_file)
-        commit = local_repo.index.commit("Generated base commit.")
-        origin = local_repo.remote(name='origin')
+        repo.local_repo.git.add(dummy_test_file)
+        base_commit = repo.local_repo.index.commit("Generated base commit.")
+        origin = repo.local_repo.remote(name='origin')
         origin.push(branch_name)
-        os.chdir(repo.clone_dir)
-        return commit.hexsha
+        return base_commit.hexsha
 
 
 def retrieve_commit_time(repo: Repo, commit: str) -> str:
@@ -265,27 +269,25 @@ def retrieve_commit_time(repo: Repo, commit: str) -> str:
     commit_time = commit_info.commit.author.date
     return commit_time
 
-def extract_patches(repo: Repo, commit1: str, commit2: str) -> tuple[str, str]:
+def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
     """
     Generate both the gold patch and a dummy test patch (required by SWE-bench)
 
     Args:
         repo: which repo to generate patches
-        commit1: commit before changes
-        commit2: commit after changes
+        base_commit: commit before changes
 
     Return:
         patches (tuple[str, str]): the gold patch and a dummy test patch
     """
     files = _find_files_to_edit(repo.clone_dir)
-    local_repo = git.Repo(repo.clone_dir)
     befores = []
-    local_repo.git.checkout(commit1)
+    repo.local_repo.git.checkout(base_commit)
     for f in files:
         with open(f, 'r') as fin:
             befores.append(fin.readlines())
     afters = []
-    local_repo.git.checkout(commit2)
+    repo.local_repo.git.checkout(repo.commit)
     for f in files:
         with open(f, 'r') as fin:
             afters.append(fin.readlines())
@@ -318,13 +320,12 @@ def _analyze_pytest(text):
     return [one.strip() for one in text.split('\n')]
 
 
-def extract_test_names(repo: Repo, commit: str, test_cmd: str) -> list[str]:
+def extract_test_names(repo: Repo, test_cmd: str) -> list[str]:
     """
     Extract all test function names
 
     Args:
         repo (Repo): test names from which repo
-        commit (str): test functions from which commit
         test_cmd (str): which test command to run
     Return:
         collected_tests (list[str]): a list of test function names
@@ -335,6 +336,6 @@ def extract_test_names(repo: Repo, commit: str, test_cmd: str) -> list[str]:
     if 'pytest' in test_cmd:
         os.system(f"{venv_dir}{os.sep}pip install pytest")
         cmd = cmd + ['--collect-only', '--quiet', repo.clone_dir]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         test_names = _analyze_pytest(result.stdout)
     return test_names

@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, commit: str, base_branch_name: str, test: str, removal: str) -> dict:
+def create_instance(repo: Repo, base_branch_name: str, test: str, removal: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -35,9 +35,9 @@ def create_instance(repo: Repo, commit: str, base_branch_name: str, test: str, r
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    test_names = extract_test_names(repo, commit, test)
-    base_commit = generate_base_commit(repo, commit, base_branch_name, removal)
-    patch, test_patch = extract_patches(repo, base_commit, commit)
+    test_names = extract_test_names(repo, test)
+    base_commit = generate_base_commit(repo, base_branch_name, removal)
+    patch, test_patch = extract_patches(repo, base_commit)
     created_at = retrieve_commit_time(repo, base_commit)
     return {
         "repo": repo.repo.full_name,
@@ -45,7 +45,7 @@ def create_instance(repo: Repo, commit: str, base_branch_name: str, test: str, r
             "/", "__"
         ),
         "base_commit": base_commit,
-        "environment_setup_commit": commit,
+        "environment_setup_commit": repo.commit,
         "patch": patch,
         "test_patch": test_patch,
         "problem_statement": "",
@@ -57,13 +57,14 @@ def create_instance(repo: Repo, commit: str, base_branch_name: str, test: str, r
     }
 
 
-def main(repo_file: str, hf_name: str, base_branch_name: str, removal: str, token: Optional[str] = None):
+def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str, removal: str, token: Optional[str] = None):
     """
     Main thread for creating task instances from existing repositories
 
     Args:
         repo_file (str): path to repository YAML file
         hf_name (str): where to upload the dataset
+        organization (str): under which organization to fork repos to
         base_branch_name (str): base of the branch name under which the base commit will be sent to
         removal (str): strategy to remove code body
         token (str): GitHub token
@@ -72,31 +73,27 @@ def main(repo_file: str, hf_name: str, base_branch_name: str, removal: str, toke
         # Get GitHub token from environment variable if not provided
         token = os.environ.get("GITHUB_TOKEN")
 
-    def load_repo(repo_name, setup):
-        # Return repo object for a given repo name
-        owner, repo = repo_name.split("/")
-        return Repo(owner, repo, setup=setup, token=token)
-
     examples = []
     with open(repo_file, 'r') as f:
         repo_file = yaml.safe_load(f)
     for idx, info in repo_file.items():
-        repo = load_repo(info['name'], info['setup'])
         # can only provide tag or commit
         assert (info["tag"] is None) ^ (info["commit"] is None)
         if info["tag"] is not None:
             if not info["tag"].startswith("tags/"):
                 info["tag"] = "tags/" + info["tag"]
-            commit = repo.get_commit_by_tag(info["tag"])
+            head = info["tag"]
         else:
-            commit = info['commit']
+            head = info['commit']
+        owner, repo = info['name'].split("/")
+        repo = Repo(owner, repo, organization=organization, head=head, setup=info['setup'], token=token)
         # Construct instance fields
         instance_id = (
             info['name'] + "-01"
         )
         instance_id = instance_id.replace("/", "__")
         # Create task instance
-        instance = create_instance(repo, commit, base_branch_name, info["test"], removal)
+        instance = create_instance(repo, base_branch_name, info["test"], removal)
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)
@@ -106,8 +103,9 @@ def main(repo_file: str, hf_name: str, base_branch_name: str, removal: str, toke
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("repo_file", type=str, help="Path to pull request JSONL file")
+    parser.add_argument("repo_file", type=str, help="Path to pull request YAML file")
     parser.add_argument("--hf_name", type=str, help="HF dataset name")
+    parser.add_argument("--organization", type=str, default="spec2repo", help="under which organization to fork repos to")
     parser.add_argument("--token", type=str, help="GitHub token")
     parser.add_argument("--base_branch_name", type=str, default="spec2repo", help="base of the branch name under which the base commit will be sent to")
     parser.add_argument("--removal", type=str, default="all", help="Removal method")
