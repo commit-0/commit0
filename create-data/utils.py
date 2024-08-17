@@ -117,8 +117,15 @@ class Repo:
                 one = one.strip().split(' ')
                 cmd = os.path.join(env_dir, 'bin', one[0])
                 cmd = [cmd] + one[1:]
-                logger.info(f"Executing {' '.join(cmd)}")
-                subprocess.run(cmd, check=True)
+                try:
+                    logger.info(f"Executing {' '.join(cmd)}")
+                    subprocess.run(cmd, check=True, text=True, capture_output=True)
+                    logger.info("Success in executing")
+                except subprocess.CalledProcessError as e:
+                    logger.info(f"Command failed with exit code {e.returncode}")
+                    logger.info(f"STDOUT: {e.stdout}")
+                    logger.info(f"STDERR: {e.stderr}")
+                    sys.exit(1)
             os.chdir(self.cwd)
         return repo
 
@@ -252,6 +259,8 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
         base_commit = repo.local_repo.index.commit("Generated base commit.")
         origin = repo.local_repo.remote(name='origin')
         origin.push(branch_name)
+        # go back to the starting commit
+        repo.local_repo.git.checkout(repo.commit)
         return base_commit.hexsha
 
 
@@ -334,8 +343,25 @@ def extract_test_names(repo: Repo, test_cmd: str) -> list[str]:
     cmd = venv_dir + os.sep + test_cmd
     cmd = cmd.split()
     if 'pytest' in test_cmd:
-        os.system(f"{venv_dir}{os.sep}pip install pytest")
+        os.system(f"{venv_dir}{os.sep}pip install pytest pytest-cov")
         cmd = cmd + ['--collect-only', '--quiet', repo.clone_dir]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        try:
+            logger.info(f"Executing {' '.join(cmd)}")
+            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+            logger.info("Success in executing")
+        except subprocess.CalledProcessError as e:
+            logger.info(f"Command failed with exit code {e.returncode}")
+            if "Error" in e.stdout:
+                logger.info(f"STDOUT: {e.stdout}")
+                logger.info(f"STDERR: {e.stderr}")
+                sys.exit(1)
+            else:
+                # Warning is fine
+                if "Warning" in e.stdout:
+                    logger.info(f"You have WARNINGs but we are ignoring them.")
+                else:
+                    logger.info(f"STDOUT: {e.stdout}")
+                    logger.info(f"STDERR: {e.stderr}")
+                    sys.exit(1)
         test_names = _analyze_pytest(result.stdout)
     return test_names

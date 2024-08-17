@@ -33,9 +33,7 @@
   commit: null
   tag: "v4.8.0"
   setup:
-    - "python -m pip install --upgrade pip twine"
-    - "pip install poetry"
-    - "poetry install"
+    - "pip install -e ."
   test: "pytest"
   specification: "https://tinydb.readthedocs.io/_/downloads/en/v4.8.0/pdf/"
 
@@ -45,6 +43,7 @@
   tag: "3.21.3"
   setup:
     - "pip install -e ."
+    - "pip install pytz simplejson"
   test: "pytest"
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
 
@@ -53,7 +52,7 @@
   commit: null
   tag: "0.14.2"
   setup:
-    - "pip install -r requirements.txt"
+    - "pip install -e ."
   test: "pytest"
   specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
 
@@ -63,6 +62,7 @@
   tag: "v1.9.1"
   setup:
     - "pip install -e ."
+    - "pip install psutil sybil"
   test: "pytest"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
 
@@ -90,32 +90,38 @@
   tag: "v3.3.0"
   setup:
     - "pip install -e ."
+    - "pip install pytz"
   test: "pytest"
   specification: "https://docs.graphene-python.org/en/stable/"
 
 10:
-  name: "tlslite-ng"
+  name: "tlsfuzzer/tlslite-ng"
   commit: null
   tag: "v0.7.6"
   setup:
-    - "python setup.py install"
+    - "pip install -e ."
+    - "pip install pyasyncore hypothesis"
+  test: "pytest"
   specification: "https://tlslite-ng.readthedocs.io/_/downloads/en/stable/pdf/"
 
 11:
-  name: "Python-Markdown/markdown"
-  commit: null
-  tag: "3.6"
+  name: "wenting-zhao/markdown"
+  commit: "f50e26b5de947b2c472c0745955110c7558d2173"
+  tag: null
   setup:
     - "pip install -e ."
+    - "pip install PyYAML"
+  test: "pytest"
   specification: "https://python-markdown.github.io/"
 
 12:
-  name: "gawel/irc3"
+  name: "chardet/chardet"
   commit: null
-  tag: "1.1.5"
+  tag: "5.0.0"
   setup:
     - "pip install -e ."
-  specification: "https://irc3.readthedocs.io/_/downloads/en/stable/pdf/"
+  test: "pytest"
+  specification: "https://chardet.readthedocs.io/_/downloads/en/latest/pdf/"
 
 13:
   name: "rthalley/dnspython"
@@ -123,6 +129,7 @@
   tag: "v2.6.1"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://dnspython.readthedocs.io/en/stable/"
 
 14:
@@ -131,6 +138,7 @@
   tag: "2.3.1"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://imapclient.readthedocs.io/_/downloads/en/2.3.1/pdf/"
 
 15:
@@ -139,6 +147,7 @@
   tag: "3.0"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://zipline.ml4trading.io/"
 
 16:
@@ -149,6 +158,7 @@
     - "pip install numpy scipy scikit-learn pandas joblib pytorch"
     - "pip install deap update_checker tqdm stopit xgboost"
     - "pip install -e ."
+  test: "pytest"
   specification: "https://epistasislab.github.io/tpot/"
 
 17:
@@ -157,6 +167,7 @@
   tag: "v6.20.1"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.1/pdf/"
 
 18:
@@ -165,6 +176,7 @@
   tag: "v0.10.1-beta.1"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
 
 19:
@@ -173,6 +185,7 @@
   tag: "v1.0.1"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://geopandas.org/en/stable/"
 
 20:
@@ -181,6 +194,7 @@
   tag: "1.8.0"
   setup:
     - "pip install -e ."
+  test: "pytest"
   specification: "https://docs.pyro.ai/_/downloads/en/1.8.0/pdf/"
 
 21:
