@@ -110,22 +110,26 @@ class Repo:
         env_dir = os.path.join(self.clone_dir, 'venv')
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")
-        if setup is not None:
-            os.chdir(self.clone_dir)
-            for one in setup:
-                one = one.strip().split(' ')
-                cmd = os.path.join(env_dir, 'bin', one[0])
-                cmd = [cmd] + one[1:]
-                try:
-                    logger.info(f"Executing {' '.join(cmd)}")
-                    subprocess.run(cmd, check=True, text=True, capture_output=True)
-                    logger.info("Success in executing")
-                except subprocess.CalledProcessError as e:
-                    logger.info(f"Command failed with exit code {e.returncode}")
-                    logger.info(f"STDOUT: {e.stdout}")
-                    logger.info(f"STDERR: {e.stderr}")
-                    sys.exit(1)
-            os.chdir(self.cwd)
+        if setup is None:
+            setup = ["pip install pytest pytest-cov"]
+        elif isinstance(setup, list):
+            setup += ["pip install pytest pytest-cov"]
+        else:
+            raise ValueError(f"setup commands are not provided in a list.")
+        os.chdir(self.clone_dir)
+        for one in setup:
+            one = one.strip().split(' ')
+            cmd = os.path.join(env_dir, 'bin', one[0])
+            cmd = [cmd] + one[1:]
+            try:
+                logger.info(f"Executing {' '.join(cmd)}")
+                subprocess.run(cmd, check=True, text=True, capture_output=True)
+            except subprocess.CalledProcessError as e:
+                logger.info(f"Command failed with exit code {e.returncode}")
+                logger.info(f"STDOUT: {e.stdout}")
+                logger.info(f"STDERR: {e.stderr}")
+                raise RuntimeError(f"unable to execute {one}")
+        os.chdir(self.cwd)
         return repo
 
     def remove_local_repo(self, path_to_repo: str) -> None:
@@ -250,8 +254,13 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
             tree = astor.parse_file(f)
             tree = RemoveMethod(removal).visit(tree)
             open(f, "w").write(astor.to_source(tree))
-            # TODO: instead of force, maybe handle this more elegantly
-            repo.local_repo.git.add(f, force=True)
+            try:
+                repo.local_repo.git.add(f)
+            except git.exc.GitCommandError as e:
+                if "paths are ignored by one of your .gitignore files" in e.stderr:
+                    logger.warning(f"File {f} is ignored due to .gitignore rules and won't be added.")
+                else:
+                    raise
         dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")
         with open(dummy_test_file, 'w'):
             pass
@@ -325,11 +334,10 @@ def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
 
 
 def _analyze_pytest(text):
-    text = text.split("\n\n")[0]
     return [one.strip() for one in text.split('\n')]
 
 
-def extract_test_names(repo: Repo, test_cmd: str) -> list[str]:
+def extract_test_names(repo: Repo) -> list[str]:
     """
     Extract all test function names
 
@@ -339,28 +347,19 @@ def extract_test_names(repo: Repo, test_cmd: str) -> list[str]:
     Return:
         collected_tests (list[str]): a list of test function names
     """
+    # make sure we are collecting tests in environment setup commit
+    repo.local_repo.git.checkout(repo.commit)
+
     venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
-    cmd = venv_dir + os.sep + test_cmd
+    cmd = venv_dir + os.sep + 'python'
     cmd = cmd.split()
-    os.system(f"{venv_dir}{os.sep}pip install pytest pytest-cov")
-    cmd = cmd + ['--collect-only', '--quiet', repo.clone_dir]
+    cmd = cmd + ['run_pytest.py', repo.clone_dir]
     try:
         logger.info(f"Executing {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-        logger.info("Success in executing")
     except subprocess.CalledProcessError as e:
-        logger.info(f"Command failed with exit code {e.returncode}")
-        if "Error" in e.stdout:
-            logger.info(f"STDOUT: {e.stdout}")
-            logger.info(f"STDERR: {e.stderr}")
-            sys.exit(1)
-        else:
-            # Warning is fine
-            if "Warning" in e.stdout:
-                logger.info(f"You have WARNINGs but we are ignoring them.")
-            else:
-                logger.info(f"STDOUT: {e.stdout}")
-                logger.info(f"STDERR: {e.stderr}")
-                sys.exit(1)
+        logger.info(f"STDOUT: {e.stdout}")
+        logger.info(f"STDERR: {e.stderr}")
+        raise RuntimeError(f"unable to execute {' '.join(cmd)}")
     test_names = _analyze_pytest(result.stdout)
     return test_names
