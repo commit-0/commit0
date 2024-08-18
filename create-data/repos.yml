@@ -147,7 +147,8 @@
   commit: null
   tag: "v6.20.1"
   setup:
-    - "pip install -e ."
+    - "pip install eth-typing==4.4"
+    - "pip install -e .[dev]"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.1/pdf/"
 
 18:
@@ -171,7 +172,7 @@
   commit: null
   tag: "1.8.0"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev]"
   specification: "https://docs.pyro.ai/_/downloads/en/1.8.0/pdf/"
 
 21:

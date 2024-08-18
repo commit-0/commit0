@@ -96,14 +96,12 @@ class Repo:
         logger.info(f"cloning {clone_url} into {self.clone_dir}")
         try:
             repo = git.Repo.clone_from(clone_url, self.clone_dir)
-            logger.info(f"Repository cloned successfully to {self.clone_dir}.")
         except git.exc.GitCommandError as e:
             logger.info(f"Failed to clone repository: {e}")
             sys.exit(1)
         logger.info(f"checking out {self.commit}")
         try:
             repo.git.checkout(self.commit)
-            logger.info(f"Checked out {self.commit} successfully.")
         except git.exc.GitCommandError as e:
             logger.info(f"Failed to check out {self.commit}: {e}")
             sys.exit(1)
@@ -334,7 +332,7 @@ def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
 
 
 def _analyze_pytest(text):
-    return [one.strip() for one in text.split('\n')]
+    return [one.strip() for one in text.split('\n') if one.strip() != ""]
 
 
 def extract_test_names(repo: Repo) -> list[str]:
@@ -362,4 +360,5 @@ def extract_test_names(repo: Repo) -> list[str]:
         logger.info(f"STDERR: {e.stderr}")
         raise RuntimeError(f"unable to execute {' '.join(cmd)}")
     test_names = _analyze_pytest(result.stdout)
+    logger.info(f"Found {len(test_names)} unit tests.")
     return test_names

@@ -77,6 +77,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
     with open(repo_file, 'r') as f:
         repo_file = yaml.safe_load(f)
     for idx, info in repo_file.items():
+        logger.info(f"Working on {info['name']}")
         # can only provide tag or commit
         assert (info["tag"] is None) ^ (info["commit"] is None)
         if info["tag"] is not None:
