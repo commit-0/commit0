@@ -5,7 +5,6 @@
   setup:
     - "pip install hypothesis typing_extensions numba==0.60"
     - "pip install -e ."
-  test: "pytest"
   specification: "https://minitorch.github.io/"
 
 1:
@@ -15,7 +14,6 @@
   setup:
     - "pip install py setuptools"
     - "pip install -e ."
-  test: "pytest"
   specification: "https://simpy.readthedocs.io/_/downloads/en/4.0.1/pdf/"
 
 2:
@@ -25,7 +23,6 @@
   setup:
     - "pip install hypothesis gfloat"
     - "pip install -e ."
-  test: "pytest"
   specification: "https://bitstring.readthedocs.io/en/stable/"
 
 3:
@@ -34,7 +31,6 @@
   tag: "v4.8.0"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://tinydb.readthedocs.io/_/downloads/en/v4.8.0/pdf/"
 
 4:
@@ -44,7 +40,6 @@
   setup:
     - "pip install -e ."
     - "pip install pytz simplejson"
-  test: "pytest"
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
 
 5:
@@ -53,7 +48,6 @@
   tag: "0.14.2"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
 
 6:
@@ -63,7 +57,6 @@
   setup:
     - "pip install -e ."
     - "pip install psutil sybil"
-  test: "pytest"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
 
 7:
@@ -72,7 +65,6 @@
   tag: "2.8.0"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://pyjwt.readthedocs.io/_/downloads/en/2.8.0/pdf/"
 
 8:
@@ -81,7 +73,6 @@
   tag: "networkx-3.3"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://networkx.org/documentation/networkx-3.3/"
 
 9:
@@ -91,7 +82,6 @@
   setup:
     - "pip install -e ."
     - "pip install pytz"
-  test: "pytest"
   specification: "https://docs.graphene-python.org/en/stable/"
 
 10:
@@ -101,7 +91,6 @@
   setup:
     - "pip install -e ."
     - "pip install pyasyncore hypothesis"
-  test: "pytest"
   specification: "https://tlslite-ng.readthedocs.io/_/downloads/en/stable/pdf/"
 
 11:
@@ -111,7 +100,6 @@
   setup:
     - "pip install -e ."
     - "pip install PyYAML"
-  test: "pytest"
   specification: "https://python-markdown.github.io/"
 
 12:
@@ -120,7 +108,6 @@
   tag: "5.0.0"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://chardet.readthedocs.io/_/downloads/en/latest/pdf/"
 
 13:
@@ -129,7 +116,6 @@
   tag: "v2.6.1"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://dnspython.readthedocs.io/en/stable/"
 
 14:
@@ -138,28 +124,23 @@
   tag: "2.3.1"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://imapclient.readthedocs.io/_/downloads/en/2.3.1/pdf/"
 
 15:
-  name: "stefan-jansen/zipline-reloaded"
+  name: "pypa/virtualenv"
   commit: null
-  tag: "3.0"
+  tag: "20.26.3"
   setup:
-    - "pip install -e ."
-  test: "pytest"
-  specification: "https://zipline.ml4trading.io/"
+    - "pip install -e .[test]"
+  specification: "https://virtualenv.pypa.io/en/20.26.3/"
 
 16:
-  name: "EpistasisLab/tpot"
+  name: "pexpect/pexpect"
   commit: null
-  tag: "v0.12.2"
+  tag: "4.8.0"
   setup:
-    - "pip install numpy scipy scikit-learn pandas joblib pytorch"
-    - "pip install deap update_checker tqdm stopit xgboost"
     - "pip install -e ."
-  test: "pytest"
-  specification: "https://epistasislab.github.io/tpot/"
+  specification: "https://pexpect.readthedocs.io/_/downloads/en/stable/pdf/"
 
 17:
   name: "ethereum/web3.py"
@@ -167,7 +148,6 @@
   tag: "v6.20.1"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.1/pdf/"
 
 18:
@@ -176,7 +156,6 @@
   tag: "v0.10.1-beta.1"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
 
 19:
@@ -185,7 +164,6 @@
   tag: "v1.0.1"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://geopandas.org/en/stable/"
 
 20:
@@ -194,7 +172,6 @@
   tag: "1.8.0"
   setup:
     - "pip install -e ."
-  test: "pytest"
   specification: "https://docs.pyro.ai/_/downloads/en/1.8.0/pdf/"
 
 21:

@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, base_branch_name: str, test: str, removal: str) -> dict:
+def create_instance(repo: Repo, base_branch_name: str, removal: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -35,7 +35,7 @@ def create_instance(repo: Repo, base_branch_name: str, test: str, removal: str) 
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    test_names = extract_test_names(repo, test)
+    test_names = extract_test_names(repo)
     base_commit = generate_base_commit(repo, base_branch_name, removal)
     patch, test_patch = extract_patches(repo, base_commit)
     created_at = retrieve_commit_time(repo, base_commit)
@@ -93,7 +93,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         )
         instance_id = instance_id.replace("/", "__")
         # Create task instance
-        instance = create_instance(repo, base_branch_name, info["test"], removal)
+        instance = create_instance(repo, base_branch_name, removal)
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)

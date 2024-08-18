@@ -2,7 +2,6 @@ import contextlib
 import difflib
 import logging
 import os
-import pytest
 import shutil
 import subprocess
 import sys
@@ -251,7 +250,8 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
             tree = astor.parse_file(f)
             tree = RemoveMethod(removal).visit(tree)
             open(f, "w").write(astor.to_source(tree))
-            repo.local_repo.git.add(f)
+            # TODO: instead of force, maybe handle this more elegantly
+            repo.local_repo.git.add(f, force=True)
         dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")
         with open(dummy_test_file, 'w'):
             pass
@@ -342,26 +342,25 @@ def extract_test_names(repo: Repo, test_cmd: str) -> list[str]:
     venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
     cmd = venv_dir + os.sep + test_cmd
     cmd = cmd.split()
-    if 'pytest' in test_cmd:
-        os.system(f"{venv_dir}{os.sep}pip install pytest pytest-cov")
-        cmd = cmd + ['--collect-only', '--quiet', repo.clone_dir]
-        try:
-            logger.info(f"Executing {' '.join(cmd)}")
-            result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-            logger.info("Success in executing")
-        except subprocess.CalledProcessError as e:
-            logger.info(f"Command failed with exit code {e.returncode}")
-            if "Error" in e.stdout:
+    os.system(f"{venv_dir}{os.sep}pip install pytest pytest-cov")
+    cmd = cmd + ['--collect-only', '--quiet', repo.clone_dir]
+    try:
+        logger.info(f"Executing {' '.join(cmd)}")
+        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+        logger.info("Success in executing")
+    except subprocess.CalledProcessError as e:
+        logger.info(f"Command failed with exit code {e.returncode}")
+        if "Error" in e.stdout:
+            logger.info(f"STDOUT: {e.stdout}")
+            logger.info(f"STDERR: {e.stderr}")
+            sys.exit(1)
+        else:
+            # Warning is fine
+            if "Warning" in e.stdout:
+                logger.info(f"You have WARNINGs but we are ignoring them.")
+            else:
                 logger.info(f"STDOUT: {e.stdout}")
                 logger.info(f"STDERR: {e.stderr}")
                 sys.exit(1)
-            else:
-                # Warning is fine
-                if "Warning" in e.stdout:
-                    logger.info(f"You have WARNINGs but we are ignoring them.")
-                else:
-                    logger.info(f"STDOUT: {e.stdout}")
-                    logger.info(f"STDERR: {e.stderr}")
-                    sys.exit(1)
-        test_names = _analyze_pytest(result.stdout)
+    test_names = _analyze_pytest(result.stdout)
     return test_names
