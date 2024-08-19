@@ -2,6 +2,7 @@ import contextlib
 import difflib
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -116,7 +117,9 @@ class Repo:
             raise ValueError(f"setup commands are not provided in a list.")
         os.chdir(self.clone_dir)
         for one in setup:
-            one = one.strip().split(' ')
+            # anything in the quotation marks cannot be split
+            pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
+            one = pattern.findall(one)
             cmd = os.path.join(env_dir, 'bin', one[0])
             cmd = [cmd] + one[1:]
             try:
@@ -126,7 +129,7 @@ class Repo:
                 logger.info(f"Command failed with exit code {e.returncode}")
                 logger.info(f"STDOUT: {e.stdout}")
                 logger.info(f"STDERR: {e.stderr}")
-                raise RuntimeError(f"unable to execute {one}")
+                raise RuntimeError(f"unable to execute {' '.join(cmd)}")
         os.chdir(self.cwd)
         return repo
 
@@ -360,5 +363,7 @@ def extract_test_names(repo: Repo) -> list[str]:
         logger.info(f"STDERR: {e.stderr}")
         raise RuntimeError(f"unable to execute {' '.join(cmd)}")
     test_names = _analyze_pytest(result.stdout)
+    if len(test_names) == 0:
+        raise ValueError("Something is wrong because only 0 unit cases are found.")
     logger.info(f"Found {len(test_names)} unit tests.")
     return test_names

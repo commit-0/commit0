@@ -170,10 +170,10 @@
 20:
   name: "pyro-ppl/pyro"
   commit: null
-  tag: "1.8.0"
+  tag: "1.9.1"
   setup:
     - "pip install -e .[dev]"
-  specification: "https://docs.pyro.ai/_/downloads/en/1.8.0/pdf/"
+  specification: "https://docs.pyro.ai/en/1.9.1/"
 
 21:
   name: "pallets/flask"
@@ -240,12 +240,12 @@
   specification: "https://click.palletsprojects.com/en/8.1.x/"
 
 29:
-  name: "sympy/sympy"
+  name: "sybrenstuvel/python-rsa"
   commit: null
-  tag: "sympy-1.13.2"
+  tag: "version-4.9"
   setup:
     - "pip install -e ."
-  specification: "https://docs.sympy.org/latest/"
+  specification: "https://stuvel.eu/python-rsa-doc/"
 
 30:
   name: "statsmodels/statsmodels"
@@ -258,9 +258,10 @@
 31:
   name: "paramiko/paramiko"
   commit: null
-  tag: ""
+  tag: "3.4.1"
   setup:
     - "pip install -e ."
+    - "pip install invoke icecream pytest-relaxed"
   specification: "https://www.paramiko.org/"
 
 32:
@@ -276,15 +277,16 @@
   commit: null
   tag: "3.2.2"
   setup:
-    - "pip install -e ."
+    - "pip install -r dev-requirements.txt"
   specification: "https://www.fabfile.org/"
 
 34:
   name: "pydantic/pydantic"
   commit: null
-  tag: "v2.8.0"
+  tag: "v2.8.2"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev]"
+    - "pip install pytest-benchmark dirty_equals pytz cloudpickle"
   specification: "https://docs.pydantic.dev/2.8/"
 
 35:
@@ -292,7 +294,7 @@
   commit: null
   tag: "0.7.2"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev]"
   specification: "https://loguru.readthedocs.io/_/downloads/en/0.7.2/pdf/"
 
 36:
@@ -300,7 +302,7 @@
   commit: null
   tag: "4.3.1"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev]"
   specification: "https://pypdf.readthedocs.io/_/downloads/en/4.3.1/pdf/"
 
 37:
