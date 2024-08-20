@@ -109,12 +109,6 @@ class Repo:
         env_dir = os.path.join(self.clone_dir, 'venv')
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")
-        if setup is None:
-            setup = ["pip install pytest pytest-cov"]
-        elif isinstance(setup, list):
-            setup += ["pip install pytest pytest-cov"]
-        else:
-            raise ValueError(f"setup commands are not provided in a list.")
         os.chdir(self.clone_dir)
         for one in setup:
             # anything in the quotation marks cannot be split
@@ -350,11 +344,12 @@ def extract_test_names(repo: Repo) -> list[str]:
     """
     # make sure we are collecting tests in environment setup commit
     repo.local_repo.git.checkout(repo.commit)
+    os.chdir(repo.clone_dir)
 
     venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
     cmd = venv_dir + os.sep + 'python'
     cmd = cmd.split()
-    cmd = cmd + ['run_pytest.py', repo.clone_dir]
+    cmd = cmd + [os.path.join(repo.cwd, 'run_pytest.py'), repo.clone_dir]
     try:
         logger.info(f"Executing {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
@@ -366,4 +361,5 @@ def extract_test_names(repo: Repo) -> list[str]:
     if len(test_names) == 0:
         raise ValueError("Something is wrong because only 0 unit cases are found.")
     logger.info(f"Found {len(test_names)} unit tests.")
+    os.chdir(repo.cwd)
     return test_names

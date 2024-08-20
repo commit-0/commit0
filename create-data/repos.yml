@@ -3,26 +3,28 @@
   commit: "7d35d597ad226e73289e6920fbc1e83ea6148c8b"
   tag: null
   setup:
-    - "pip install hypothesis typing_extensions numba==0.60"
+    - "pip install numba==0.60"
+    - "pip install -r requirements.txt"
+    - "pip install -r requirements.extra.txt"
     - "pip install -e ."
   specification: "https://minitorch.github.io/"
 
 1:
   name: "wenting-zhao/simpy"
   commit: null
-  tag: "4.0.1"
+  tag: "4.1.1"
   setup:
-    - "pip install py setuptools"
+    - "pip install -r requirements-dev.txt"
     - "pip install -e ."
-  specification: "https://simpy.readthedocs.io/_/downloads/en/4.0.1/pdf/"
+  specification: "https://simpy.readthedocs.io/en/4.1.1/"
 
 2:
   name: "scott-griffiths/bitstring"
   commit: null
-  tag: "bitstring-4.2.0"
+  tag: "bitstring-4.2.3"
   setup:
-    - "pip install hypothesis gfloat"
     - "pip install -e ."
+    - "pip install -r tests/requirements.txt"
   specification: "https://bitstring.readthedocs.io/en/stable/"
 
 3:
@@ -31,6 +33,15 @@
   tag: "v4.8.0"
   setup:
     - "pip install -e ."
+    - "pip install pytest>=7.2.0,<8.0.0"
+    - "pip install pytest-pycodestyle>=2.3.1,<3.0.0"
+    - "pip install pytest-cov>=4.0.0,<5.0.0"
+    - "pip install pycodestyle>=2.10.0,<3.0.0"
+    - "pip install sphinx>=7.0.0,<8.0.0"
+    - "pip install coveralls>=3.3.1,<4.0.0"
+    - "pip install pyyaml>=6.0,<7.0"
+    - "pip install types-PyYAML>=6.0.0,<7.0.0"
+    - "pip install typing-extensions>=4.4.0,<5.0.0"
   specification: "https://tinydb.readthedocs.io/_/downloads/en/v4.8.0/pdf/"
 
 4:
@@ -38,16 +49,16 @@
   commit: null
   tag: "3.21.3"
   setup:
-    - "pip install -e ."
-    - "pip install pytz simplejson"
+    - "pip install -e .[dev]"
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
 
 5:
   name: "alecthomas/voluptuous"
   commit: null
-  tag: "0.14.2"
+  tag: "0.15.2"
   setup:
     - "pip install -e ."
+    - "pip install pytest pytest-cov coverage>=3.0"
   specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
 
 6:
@@ -56,7 +67,7 @@
   tag: "v1.9.1"
   setup:
     - "pip install -e ."
-    - "pip install psutil sybil"
+    - "pip install -r tests/requirements.txt"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
 
 7:
@@ -64,7 +75,7 @@
   commit: null
   tag: "2.8.0"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[crypto,tests,dev]"
   specification: "https://pyjwt.readthedocs.io/_/downloads/en/2.8.0/pdf/"
 
 8:
@@ -72,7 +83,7 @@
   commit: null
   tag: "networkx-3.3"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[default,developer,test]"
   specification: "https://networkx.org/documentation/networkx-3.3/"
 
 9:
@@ -80,26 +91,24 @@
   commit: null
   tag: "v3.3.0"
   setup:
-    - "pip install -e ."
-    - "pip install pytz"
+    - "pip install -e .[dev]"
   specification: "https://docs.graphene-python.org/en/stable/"
 
 10:
   name: "tlsfuzzer/tlslite-ng"
-  commit: null
-  tag: "v0.7.6"
-  setup:
-    - "pip install -e ."
-    - "pip install pyasyncore hypothesis"
-  specification: "https://tlslite-ng.readthedocs.io/_/downloads/en/stable/pdf/"
-
-11:
-  name: "wenting-zhao/markdown"
-  commit: "f50e26b5de947b2c472c0745955110c7558d2173"
+  commit: "2020609db2b435437ccb22cca5129dfcad3caa76"
   tag: null
   setup:
+    - "pip install -r build-requirements.txt"
     - "pip install -e ."
-    - "pip install PyYAML"
+  specification: "https://tlslite-ng.readthedocs.io/en/latest/"
+
+11:
+  name: "Python-Markdown/markdown"
+  commit: null
+  tag: "3.7"
+  setup:
+    - "pip install -e .[testing]"
   specification: "https://python-markdown.github.io/"
 
 12:
@@ -108,23 +117,29 @@
   tag: "5.0.0"
   setup:
     - "pip install -e ."
-  specification: "https://chardet.readthedocs.io/_/downloads/en/latest/pdf/"
+    - "pip install hypothesis>=6.0.0,<7.0.0"
+    - "pip install pre-commit>=3.5,<4.0"
+    - "pip install pytest>=8.3.2,<9.0.0"
+    - "pip install ruff>=0.5.5,<0.6.0"
+    - "pip install sphinx_rtd_theme>=1.0.0,<2.0.0"
+  specification: "https://chardet.readthedocs.io/_/downloads/en/stable/pdf/"
 
 13:
   name: "rthalley/dnspython"
   commit: null
   tag: "v2.6.1"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev]"
   specification: "https://dnspython.readthedocs.io/en/stable/"
 
 14:
   name: "mjs/imapclient"
   commit: null
-  tag: "2.3.1"
+  tag: "3.0.1"
   setup:
+    - "pip install -r requirements-dev.txt"
     - "pip install -e ."
-  specification: "https://imapclient.readthedocs.io/_/downloads/en/2.3.1/pdf/"
+  specification: "https://imapclient.readthedocs.io/en/3.0.1/"
 
 15:
   name: "pypa/virtualenv"
@@ -137,26 +152,27 @@
 16:
   name: "pexpect/pexpect"
   commit: null
-  tag: "4.8.0"
+  tag: "4.9"
   setup:
+    - "pip install -r requirements-testing.txt"
     - "pip install -e ."
   specification: "https://pexpect.readthedocs.io/_/downloads/en/stable/pdf/"
 
 17:
   name: "ethereum/web3.py"
   commit: null
-  tag: "v6.20.1"
+  tag: "v6.20.2"
   setup:
-    - "pip install eth-typing==4.4"
     - "pip install -e .[dev]"
-  specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.1/pdf/"
+  specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.2/pdf/"
 
 18:
   name: "ethereum/py-evm"
   commit: null
   tag: "v0.10.1-beta.1"
   setup:
-    - "pip install -e ."
+    - "pip install web3==6.20.2"
+    - "pip install -e .[benchmark,dev,eth,test]"
   specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
 
 19:
@@ -164,7 +180,7 @@
   commit: null
   tag: "v1.0.1"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[all,dev]"
   specification: "https://geopandas.org/en/stable/"
 
 20:
@@ -178,8 +194,10 @@
 21:
   name: "pallets/flask"
   commit: null
-  tag: "3.0.0"
+  tag: "3.0.3"
   setup:
+    - "pip install -r requirements/dev.txt"
+    - "pip install -r requirements/tests.txt"
     - "pip install -e ."
   specification: "https://flask.palletsprojects.com/en/3.0.x/"
 
@@ -189,13 +207,48 @@
   tag: "v15.0.0"
   setup:
     - "pip install -e ."
+    - "pip install bumpversion"
+    - "pip install twine"
+    - "pip install black==19.10b0"
+    - "pip install coveralls"
+    - "pip install coverage"
+    - "pip install flake8"
+    - "pip install flake8-breakpoint"
+    - "pip install flake8-broken-line"
+    - "pip install flake8-bugbear"
+    - "pip install flake8-builtins"
+    - "pip install flake8-comprehensions"
+    - "pip install flake8-eradicate"
+    - "pip install flake8-executable"
+    - "pip install flake8-if-expr"
+    - "pip install flake8-logging-format"
+    - "pip install flake8-mock"
+    - "pip install flake8-mutable"
+    - "pip install flake8-print"
+    - "pip install flake8-pytest"
+    - "pip install flake8-pytest-style"
+    - "pip install flake8-quotes"
+    - "pip install flake8-return"
+    - "pip install flake8-strict"
+    - "pip install flake8-string-format"
+    - "pip install mypy"
+    - "pip install pep8-naming"
+    - "pip install pre-commit"
+    - "pip install pytest"
+    - "pip install pytest-cov"
+    - "pip install pytest-mock"
+    - "pip install pytest-profiling"
+    - "pip install sphinx_rtd_theme"
+    - "pip install pipenv-to-requirements"
   specification: "https://pytube.io/_/downloads/en/latest/pdf/"
 
 23:
   name: "pallets/jinja"
   commit: null
-  tag: "3.1.0"
+  tag: "3.1.4"
   setup:
+    - "pip install -r requirements/dev.txt"
+    - "pip install -r requirements/tests.txt"
     - "pip install -e ."
   specification: "https://jinja.palletsprojects.com/en/3.1.x/"
 
@@ -204,7 +257,7 @@
   commit: null
   tag: "v0.13.2"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev,stats]"
   specification: "https://seaborn.pydata.org/"
 
 25:
@@ -212,6 +265,7 @@
   commit: null
   tag: "v2.32.3"
   setup:
+    - "pip install -r requirements-dev.txt"
     - "pip install -e ."
   specification: "https://requests.readthedocs.io/_/downloads/en/latest/pdf/"
 
@@ -221,21 +275,32 @@
   tag: "2.11.2"
   setup:
     - "pip install -e ."
+    - "pip install attrs"
+    - "pip install pexpect>=4.8.0"
+    - "pip install pyftpdlib>=1.5.8"
+    - "pip install pygments"
+    - "pip install pytest"
+    - "pip install pytest-cov==4.0.0"
+    - "pip install pytest-xdist"
+    - "pip install sybil>=1.3.0"
+    - "pip install testfixtures"
   specification: "https://docs.scrapy.org/_/downloads/en/2.11/pdf/"
 
 27:
   name: "fastapi/fastapi"
   commit: null
-  tag: "0.112.0"
+  tag: "0.112.1"
   setup:
-    - "pip install -e ."
+    - "pip install -r requirements.txt"
   specification: "https://fastapi.tiangolo.com/"
 
 28:
   name: "pallets/click"
   commit: null
-  tag: "8.1.0"
+  tag: "8.1.7"
   setup:
+    - "pip install -r requirements/dev.txt"
+    - "pip install -r requirements/tests.txt"
     - "pip install -e ."
   specification: "https://click.palletsprojects.com/en/8.1.x/"
 
@@ -245,6 +310,13 @@
   tag: "version-4.9"
   setup:
     - "pip install -e ."
+    - "pip install coveralls>=3.0.0,<4.0.0"
+    - "pip install Sphinx>=5.0.0,<6.0.0"
+    - "pip install pytest>=7.2,<8.0"
+    - "pip install pytest-cov>=4.0,<5.0"
+    - "pip install tox>=3.22.0,<4.0.0"
+    - "pip install mypy>=1.2,<2.0"
+    - "pip install flake8>=3.8.4,<4.0.0"
   specification: "https://stuvel.eu/python-rsa-doc/"
 
 30:
@@ -252,6 +324,8 @@
   commit: null
   tag: "v0.14.1"
   setup:
+    - "pip install -r requirements.txt"
+    - "pip install -r requirements-dev.txt"
     - "pip install -e ."
   specification: "https://www.statsmodels.org/stable/"
 
@@ -260,15 +334,24 @@
   commit: null
   tag: "3.4.1"
   setup:
-    - "pip install -e ."
-    - "pip install invoke icecream pytest-relaxed"
+    - "pip install -r dev-requirements.txt"
   specification: "https://www.paramiko.org/"
 
 32:
   name: "Zulko/moviepy"
   commit: null
-  tag: "v1.0.2"
+  tag: "v1.0.3"
   setup:
+    - "pip install opencv-python"
+    - "pip install scikit-image"
+    - "pip install scipy"
+    - "pip install matplotlib"
+    - "pip install youtube_dl"
+    - "pip install coverage"
+    - "pip install coveralls"
+    - "pip install pytest-cov"
+    - "pip install pytest"
+    - "pip install requests"
     - "pip install -e ."
   specification: "https://zulko.github.io/moviepy/"
 
@@ -285,8 +368,26 @@
   commit: null
   tag: "v2.8.2"
   setup:
-    - "pip install -e .[dev]"
-    - "pip install pytest-benchmark dirty_equals pytz cloudpickle"
+    - "pip install -e ."
+    - "pip install cloudpickle"
+    - "pip install coverage[toml]"
+    - "pip install dirty-equals"
+    - "pip install eval-type-backport"
+    - "pip install pytest>=8.2.2"
+    - "pip install pytest-mock"
+    - "pip install pytest-pretty"
+    - "pip install pytest-examples"
+    - "pip install faker>=18.13.0"
+    - "pip install pytest-benchmark>=4.0.0"
+    - "pip install pytest-codspeed~=2.2.0"
+    - "pip install packaging>=23.2"
+    - "pip install ansi2html"
+    - "pip install devtools"
+    - "pip install sqlalchemy>=2.0,<3.0"
+    - "pip install greenlet>=3.0.0rc3"
+    - "pip install mypy"
+    - "pip install pydantic-settings>=2.0.0"
+    - "pip install pytest-memray"
   specification: "https://docs.pydantic.dev/2.8/"
 
 35:
@@ -302,7 +403,7 @@
   commit: null
   tag: "4.3.1"
   setup:
-    - "pip install -e .[dev]"
+    - "pip install -e .[dev,image]"
   specification: "https://pypdf.readthedocs.io/_/downloads/en/4.3.1/pdf/"
 
 37:
@@ -310,7 +411,7 @@
   commit: null
   tag: "24.2.0"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev,tests-mypy,benchmark,cov]"
   specification: "https://www.attrs.org/en/24.2.0/"
 
 38:
@@ -319,6 +420,27 @@
   tag: "v17.0.0"
   setup:
     - "pip install -e ."
+    - "pip install pytest>=7.2,<8.0"
+    - "pip install pytest-mock>=3.10,<4.0"
+    - "pip install requests>=2.28,<3.0"
+    - "pip install mypy>=1.1,<2.0"
+    - "pip install colorama>=0.4.6,<0.5.0"
+    - "pip install pygments>=2.13,<3.0"
+    - "pip install pytest-randomly>=3.12,<4.0"
+    - "pip install pytz>=2023.3,<2024.0"
+    - "pip install black>=22.10,<24.0"
+    - "pip install autoflake>=2.0,<3.0"
+    - "pip install types-pytz>=2023.3,<2024.0"
+    - "pip install taskipy>=1.10.1,<2.0"
+    - "pip install validators>=0.20.0,<0.21.0"
+    - "pip install pytest-repeat>=0.9.1,<0.10.0"
+    - "pip install isort>=5.12,<6.0"
+    - "pip install coverage>=7.2.3,<8.0"
+    - "pip install pytest-cov>=4.0.0,<5.0"
+    - "pip install Sphinx>=5.1.1,<8.0.0"
+    - "pip install sphinx-copybutton>=0.5.0,<0.6.0"
+    - "pip install sphinx-autodoc-typehints>=1.19.2,<2.0"
+    - "pip install pytest-factoryboy>=2.6.0,<3.0"
   specification: "https://mimesis.name/en/v17.0.0/"
 
 39:
@@ -327,6 +449,7 @@
   tag: "2.6.0"
   setup:
     - "pip install -e ."
+    - "pip install -r test_requirements.txt"
   specification: "https://cookiecutter.readthedocs.io/_/downloads/en/2.6.0/pdf/"
 
 40:
@@ -334,7 +457,16 @@
   commit: null
   tag: "v1.16.2"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[test]"
+    - "pip install black"
+    - "pip install coverage"
+    - "pip install packaging"
+    - "pip install psutil"
+    - "pip install pytest"
+    - "pip install pytest-cov"
+    - "pip install ruff"
+    - "pip install sentry-sdk<2"
+    - "pip install tox"
   specification: "https://python-rq.org/"
 
 41:
@@ -342,7 +474,7 @@
   commit: null
   tag: "0.12.3"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[install,optional,tests]"
   specification: "https://imbalanced-learn.org/stable/"
 
 42:
@@ -351,6 +483,8 @@
   tag: "v5.16.2"
   setup:
     - "pip install -e ."
+    - "pip install -r requirements.txt"
+    - "pip install -r requirements-dev.txt"
   specification: "https://www.pymc.io/projects/docs/en/v5.16.2/learn.html"
 
 43:
@@ -358,15 +492,17 @@
   commit: null
   tag: "v2.2.2"
   setup:
-    - "pip install -e ."
+    - "pip install -r requirements.txt"
+    - "pip install -r requirements_tests.txt"
+    - "pip install -e .[all]"
   specification: "https://docs.pyboy.dk/"
 
 44:
   name: "pytest-dev/pytest"
   commit: null
-  tag: "8.3.0"
+  tag: "8.3.2"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[dev]"
   specification: "https://docs.pytest.org/_/downloads/en/8.3.x/pdf/"
 
 45:
@@ -374,23 +510,23 @@
   commit: null
   tag: "v3.2.6"
   setup:
-    - "pip install -e ."
+    - "pip install -r requirements_test.txt"
   specification: "https://pylint.readthedocs.io/en/v3.2.6/"
 
 46:
   name: "sphinx-doc/sphinx"
-  commit: "49c3b21c60a1d376c41aa2715061039cf854fbaa"
+  commit: "1c131dfffe2d359eda93f7d4cc6d920fbe76efe4"
   tag: null
   setup:
-    - "pip install -e ."
-  specification: "https://www.sphinx-doc.org/_/downloads/en/master/pdf/"
+    - "pip install -e .[test]"
+  specification: "https://www.sphinx-doc.org/en/master/"
 
 47:
   name: "fsspec/filesystem_spec"
   commit: null
   tag: "2024.6.1"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[test_full,test_downstream]"
   specification: "https://filesystem-spec.readthedocs.io/en/stable/"
 
 48:
@@ -398,14 +534,15 @@
   commit: null
   tag: "v2024.07.0"
   setup:
-    - "pip install -e ."
+    - "pip install -e .[complete]"
   specification: "https://docs.xarray.dev/en/v2024.07.0/"
 
 49:
   name: "tkem/cachetools"
   commit: null
-  tag: "v5.4.0"
+  tag: "v5.5.0"
   setup:
     - "pip install -e ."
-  specification: "https://cachetools.readthedocs.io/en/v5.4.0/"
-
+    - "pip install pytest"
+    - "pip install pytest-cov"
+  specification: "https://cachetools.readthedocs.io/en/v5.5.0/"
