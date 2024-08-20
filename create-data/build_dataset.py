@@ -88,18 +88,13 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
             head = info['commit']
         owner, repo = info['name'].split("/")
         repo = Repo(owner, repo, organization=organization, head=head, setup=info['setup'], token=token)
-        # Construct instance fields
-        instance_id = (
-            info['name'] + "-01"
-        )
-        instance_id = instance_id.replace("/", "__")
         # Create task instance
         instance = create_instance(repo, base_branch_name, removal)
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)
     hf_name = f"{hf_name}_{removal}"
-    #ds.push_to_hub(hf_name)
+    ds.push_to_hub(hf_name, private=True)
 
 
 if __name__ == "__main__":
