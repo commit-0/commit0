@@ -108,6 +108,7 @@
   commit: null
   tag: "3.7"
   setup:
+    - "pip install pytest pytest-cov"
     - "pip install -e .[testing]"
   specification: "https://python-markdown.github.io/"
 
@@ -138,6 +139,7 @@
   tag: "3.0.1"
   setup:
     - "pip install -r requirements-dev.txt"
+    - "pip install pytest pytest-cov"
     - "pip install -e ."
   specification: "https://imapclient.readthedocs.io/en/3.0.1/"
 
