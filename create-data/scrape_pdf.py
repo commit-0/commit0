@@ -173,7 +173,7 @@ if __name__ == "__main__":
         splitted = [x for x in base_url.split('/') if x!= '']
         if splitted[-1] == 'pdf':
             response = requests.get(base_url)
-            with open(os.path.join("pdfs", f"{name}.pdf"), 'wb') as pdf_file:
+            with open(os.path.join("pdfs", f"{lib_name}.pdf"), 'wb') as pdf_file:
                 pdf_file.write(response.content)
         else:
             asyncio.get_event_loop().run_until_complete(main(base_url, output_dir, lib_name))

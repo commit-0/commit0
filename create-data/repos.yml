@@ -526,7 +526,7 @@
   commit: null
   tag: "2024.6.1"
   setup:
-    - "pip install -e .[test_full,test_downstream]"
+    - "pip install -e .[full,test]"
   specification: "https://filesystem-spec.readthedocs.io/en/stable/"
 
 48:
