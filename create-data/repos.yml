@@ -15,6 +15,7 @@
   tag: "4.1.1"
   setup:
     - "pip install -r requirements-dev.txt"
+    - "pip install py"
     - "pip install -e ."
   specification: "https://simpy.readthedocs.io/en/4.1.1/"
 

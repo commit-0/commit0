@@ -110,9 +110,10 @@ class Repo:
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")
         os.chdir(self.clone_dir)
+        setup = setup + ['pip install pytest-xdist']
+        pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
         for one in setup:
             # anything in the quotation marks cannot be split
-            pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
             one = pattern.findall(one)
             cmd = os.path.join(env_dir, 'bin', one[0])
             cmd = [cmd] + one[1:]
@@ -327,20 +328,33 @@ def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
     test_patch = ''.join(test_patch)+'\n' # patch file needs a new line at the end
     return patch, test_patch
 
+def _analyze_pytest(text, option):
+    text = [one.strip() for one in text.split('\n') if one.strip() != ""]
+    text = [one.replace("[HERE]", "") for one in text if one.startswith("[HERE]")]
+    out = []
+    if option == "run":
+        for one in text:
+            # my unique seperator
+            one = one.split("[SEPSEPSEP]")
+            if len(one) != 3:
+                raise ValueError(f"{one} is not of the correct format of the pytest report. It should have exactly three elements: test name, status of the test, and the runtime of the test.")
+            out.append(one)
+        out = [{"test":one[0],"status":one[1],"time":one[2]} for one in out]
+    return out
 
-def _analyze_pytest(text):
-    return [one.strip() for one in text.split('\n') if one.strip() != ""]
 
-
-def extract_test_names(repo: Repo) -> list[str]:
+def run_pytest(repo: Repo, option: str) -> list[str]:
     """
     Extract all test function names
 
     Args:
         repo (Repo): test names from which repo
+        option (str): whether to actually run the unit tests or just to collect the test names. Choose from ["list", "run"].
     Return:
         collected_tests (list[str]): a list of test function names
     """
+    if option not in ["list", "run"]:
+        raise ValueError(f"Currently we only support 'list' and 'run' for pytest, but you provided {option}.")
     # make sure we are collecting tests in environment setup commit
     repo.local_repo.git.checkout(repo.commit)
     os.chdir(repo.clone_dir)
@@ -348,7 +362,7 @@ def extract_test_names(repo: Repo) -> list[str]:
     venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
     cmd = venv_dir + os.sep + 'python'
     cmd = cmd.split()
-    cmd = cmd + [os.path.join(repo.cwd, 'run_pytest.py'), repo.clone_dir]
+    cmd = cmd + [os.path.join(repo.cwd, 'run_pytest.py'), option, repo.clone_dir]
     try:
         logger.info(f"Executing {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
@@ -356,9 +370,9 @@ def extract_test_names(repo: Repo) -> list[str]:
         logger.info(f"STDOUT: {e.stdout}")
         logger.info(f"STDERR: {e.stderr}")
         raise RuntimeError(f"unable to execute {' '.join(cmd)}")
-    test_names = _analyze_pytest(result.stdout)
+    test_names = _analyze_pytest(result.stdout, option)
     if len(test_names) == 0:
-        raise ValueError("Something is wrong because only 0 unit cases are found.")
-    logger.info(f"Found {len(test_names)} unit tests.")
+        raise ValueError("Something is wrong because only 0 unit cases are found/ran.")
+    logger.info(f"Found/Ran {len(test_names)} unit tests.")
     os.chdir(repo.cwd)
     return test_names

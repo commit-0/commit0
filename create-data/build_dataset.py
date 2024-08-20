@@ -11,7 +11,7 @@ from datasets import Dataset, DatasetDict
 from utils import (
     generate_base_commit,
     extract_patches,
-    extract_test_names,
+    run_pytest,
     retrieve_commit_time,
     Repo,
 )
@@ -35,7 +35,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_comma
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    test_names = extract_test_names(repo)
+    test_names = run_pytest(repo, "list")
     base_commit = generate_base_commit(repo, base_branch_name, removal)
     patch, test_patch = extract_patches(repo, base_commit)
     created_at = retrieve_commit_time(repo, base_commit)
