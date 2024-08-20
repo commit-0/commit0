@@ -6,7 +6,7 @@ import os
 import yaml
 from typing import Optional
 
-from datasets import Dataset
+from datasets import Dataset, DatasetDict
 
 from utils import (
     generate_base_commit,
@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, base_branch_name: str, removal: str) -> dict:
+def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_commands: list[str]) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -46,6 +46,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str) -> dict:
         ),
         "base_commit": base_commit,
         "environment_setup_commit": repo.commit,
+        "environment_setup_commands": setup_commands,
         "patch": patch,
         "test_patch": test_patch,
         "problem_statement": "",
@@ -89,10 +90,11 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         owner, repo = info['name'].split("/")
         repo = Repo(owner, repo, organization=organization, head=head, setup=info['setup'], token=token)
         # Create task instance
-        instance = create_instance(repo, base_branch_name, removal)
+        instance = create_instance(repo, base_branch_name, removal, info['setup'])
         examples.append(instance)
         repo.remove_local_repo(repo.clone_dir)
     ds = Dataset.from_list(examples)
+    ds = DatasetDict({"test": ds})
     hf_name = f"{hf_name}_{removal}"
     ds.push_to_hub(hf_name, private=True)
 

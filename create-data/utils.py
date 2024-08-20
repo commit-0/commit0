@@ -338,7 +338,6 @@ def extract_test_names(repo: Repo) -> list[str]:
 
     Args:
         repo (Repo): test names from which repo
-        test_cmd (str): which test command to run
     Return:
         collected_tests (list[str]): a list of test function names
     """
