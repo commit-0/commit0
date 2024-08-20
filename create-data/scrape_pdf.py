@@ -1,15 +1,17 @@
 import asyncio
+import os
 import sys
+
+import fitz
+import nbformat
+import requests
+import wget
+import yaml
+
 from pyppeteer import launch
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
-import os
-import fitz
 from PyPDF2 import PdfMerger
-from datasets import load_dataset
-import requests
-import wget
-import nbformat
 from nbconvert import PDFExporter
 from nbconvert.writers import FilesWriter
 
@@ -74,7 +76,7 @@ async def generate_pdf(page, url, output_dir):
         pdf_options = {
             'path': pdf_path,
             'printBackground': True,
-            'format': 'A3',
+            'format': 'A4',
             'margin': {
                 'top': '0px', 
                 'bottom': '0px',
@@ -108,6 +110,13 @@ async def crawl_website(browser, base_url, output_dir):
 
     while to_visit:
         current_url = to_visit.pop(0)
+        if 'fastapi' in current_url:
+            splitted = current_url.replace("https://", "")
+            splitted = [x for x in splitted.split('/') if x != '']
+            # this is doc in another language..
+            if len(splitted) > 1 and splitted[1] in ["az","bn","de","es","fa","fr","he","hu","id","it","ja","ko","pl","pt","ru","tr","uk","ur","vi","yo","zh","zh-hant","em","?q="]:
+                print(f"Skip URL: {current_url}")
+                continue
         if current_url in visited:
             continue
         
@@ -140,7 +149,7 @@ def merge_pdfs(docs, output_filename):
     merger.write(output_filename)
     merger.close()
 
-async def main(base_url, output_dir):
+async def main(base_url, output_dir, name):
     browser = await launch(args=['--no-sandbox'])
     os.makedirs(output_dir, exist_ok=True)
     pdfs = await crawl_website(browser, base_url, output_dir)
@@ -149,20 +158,23 @@ async def main(base_url, output_dir):
     # Clean the generated PDFs to remove any blank pages
     clean_pdf_directory(pdfs)
     # merge all pdfs together
-    merge_pdfs(pdfs, os.path.join(output_dir, "complete.pdf"))
+    merge_pdfs(pdfs, os.path.join("pdfs", f"{name}.pdf"))
 
 if __name__ == "__main__":
-    ds = load_dataset('json', data_files=sys.argv[1], split="train")
-    for one in ds:
-        base_url = one['url']
-        output_dir = f"pdfs/{one['name']}/"
+    with open(sys.argv[1], 'r') as f:
+        ds = yaml.safe_load(f)
+    for idx, one in ds.items():
+        base_url = one['specification']
+        lib_name = one['name'].split('/')[-1]
+        output_dir = os.path.join("pdfs", lib_name)
         os.makedirs(output_dir, exist_ok=True)
         print(base_url)
         print(output_dir)
-        if base_url.endswith('pdf'):
-            if 'github.com' in base_url:
-                base_url = convert_to_raw_github_url(base_url)
-            wget.download(base_url, os.path.join(output_dir, "complete.pdf"))
+        splitted = [x for x in base_url.split('/') if x!= '']
+        if splitted[-1] == 'pdf':
+            response = requests.get(base_url)
+            with open(os.path.join("pdfs", f"{name}.pdf"), 'wb') as pdf_file:
+                pdf_file.write(response.content)
         else:
-            asyncio.get_event_loop().run_until_complete(main(base_url, output_dir))
+            asyncio.get_event_loop().run_until_complete(main(base_url, output_dir, lib_name))
         print("Done:", one['name'])
