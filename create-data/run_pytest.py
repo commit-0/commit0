@@ -26,9 +26,18 @@ class TestResults:
             }
             self.results.append(result)
 
+def decide_num_workers(path):
+    if 'marshmallow' in path:
+        return '4'
+    elif 'web3.py' in path:
+        return '2'
+    else:
+        return '8'
+
 def list_pytest_functions(path):
     plugin = Plugin()
-    pytest.main(["--collect-only", '-n', '2', path], plugins=[plugin])
+    num_workers = decide_num_workers(path)
+    pytest.main(["--collect-only", '-n', num_workers, path], plugins=[plugin])
     for one in plugin.collected_tests:
         print(f"{SOS}{one}")
 
@@ -36,8 +45,9 @@ def list_pytest_functions(path):
 def run_unit_tests(path):
     test_results = TestResults()
 
+    num_workers = decide_num_workers(path)
     # Run the tests and pass the TestResults instance as a plugin
-    pytest.main(['-q', '--tb=short', '-n', '2', path], plugins=[test_results])
+    pytest.main(['-q', '--tb=short', '-n', num_workers, path], plugins=[test_results])
 
     # Print the collected results
     for result in test_results.results:
