@@ -133,7 +133,10 @@ class Repo:
         Remove the cloned repository directory from the local filesystem.
         """
         if os.path.exists(self.clone_dir):
-            shutil.rmtree(self.clone_dir)
+            try:
+                shutil.rmtree(self.clone_dir)
+            except OSError:
+                os.system(f"rm -rf {self.clone_dir}")
             logger.info(f"Cleaned up the cloned repository at {self.clone_dir}")
 
     def get_commit_by_tag(self, tag: str) -> str:

@@ -5,7 +5,7 @@ import logging
 import os
 from typing import Optional
 
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 
 from utils import (
     Repo,
@@ -32,6 +32,7 @@ def main(dataset_name: str, token: Optional[str] = None):
         token = os.environ.get("GITHUB_TOKEN")
 
     dataset = load_dataset(dataset_name, split="test")
+    out = []
     for idx, one in enumerate(dataset):
         owner, repo = one["repo"].split("/")
         repo = Repo(
@@ -43,8 +44,9 @@ def main(dataset_name: str, token: Optional[str] = None):
             token=token
         )
         results = run_pytest(repo, "run")
-        for test in results:
-            print(test)
+        out.append({"name": one["repo"], "report": results})
+    out = Dataset.from_list(out)
+    out.to_json("report.json")
 
 
 if __name__ == "__main__":
