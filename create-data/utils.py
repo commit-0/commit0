@@ -100,14 +100,12 @@ class Repo:
         try:
             repo = git.Repo.clone_from(clone_url, self.clone_dir)
         except git.exc.GitCommandError as e:
-            logger.info(f"Failed to clone repository: {e}")
-            sys.exit(1)
+            raise RuntimeError(f"Failed to clone repository: {e}")
         logger.info(f"checking out {self.commit}")
         try:
             repo.git.checkout(self.commit)
         except git.exc.GitCommandError as e:
-            logger.info(f"Failed to check out {self.commit}: {e}")
-            sys.exit(1)
+            raise RuntimeError(f"Failed to check out {self.commit}: {e}")
         env_dir = os.path.join(self.clone_dir, 'venv')
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")

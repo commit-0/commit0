@@ -339,7 +339,11 @@
   commit: null
   tag: "3.4.1"
   setup:
-    - "pip install -r dev-requirements.txt"
+    - "pip install -e ."
+    - "pip install pytest"
+    - "pip install invoke"
+    - "pip install icecream"
+    - "pip install pytest_relaxed"
   specification: "https://www.paramiko.org/"
 
 32:
