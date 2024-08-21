@@ -166,6 +166,7 @@
   commit: null
   tag: "v6.20.2"
   setup:
+    - "git submodule update --init"
     - "pip install -e .[dev]"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.2/pdf/"
 

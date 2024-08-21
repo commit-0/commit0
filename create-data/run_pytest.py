@@ -27,7 +27,7 @@ class TestResults:
 
 def list_pytest_functions(path):
     plugin = Plugin()
-    pytest.main(["--collect-only", '-n', '4', path], plugins=[plugin])
+    pytest.main(["--collect-only", '-n', '2', path], plugins=[plugin])
     for one in plugin.collected_tests:
         print(f"[HERE]{one}")
 
@@ -36,7 +36,7 @@ def run_unit_tests(path):
     test_results = TestResults()
 
     # Run the tests and pass the TestResults instance as a plugin
-    pytest.main(['-q', '--tb=short', '-n', '4', path], plugins=[test_results])
+    pytest.main(['-q', '--tb=short', '-n', '2', path], plugins=[test_results])
 
     # Print the collected results
     for result in test_results.results:
