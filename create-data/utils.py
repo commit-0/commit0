@@ -115,7 +115,10 @@ class Repo:
         for one in setup:
             # anything in the quotation marks cannot be split
             one = pattern.findall(one)
-            cmd = os.path.join(env_dir, 'bin', one[0])
+            if one[0] == "git":
+                cmd = one[0]
+            else:
+                cmd = os.path.join(env_dir, 'bin', one[0])
             cmd = [cmd] + one[1:]
             try:
                 logger.info(f"Executing {' '.join(cmd)}")
