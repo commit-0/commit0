@@ -45,8 +45,8 @@ def main(dataset_name: str, token: Optional[str] = None):
         )
         results = run_pytest(repo, "run")
         out.append({"name": one["repo"], "report": results})
-    out = Dataset.from_list(out)
-    out.to_json("report.json")
+        new_ds = Dataset.from_list(out)
+        new_ds.to_json("report.json")
 
 
 if __name__ == "__main__":
