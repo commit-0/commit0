@@ -1,7 +1,8 @@
 import sys
 import pytest
-import multiprocessing
 
+SOS = "[HERE]"
+SEP = "[SEPSEPSEP]"
 
 class Plugin:
     def __init__(self):
@@ -29,7 +30,7 @@ def list_pytest_functions(path):
     plugin = Plugin()
     pytest.main(["--collect-only", '-n', '2', path], plugins=[plugin])
     for one in plugin.collected_tests:
-        print(f"[HERE]{one}")
+        print(f"{SOS}{one}")
 
 
 def run_unit_tests(path):
@@ -43,7 +44,7 @@ def run_unit_tests(path):
         nodeid = result['nodeid']
         outcome = result['outcome']
         duration = result['duration']
-        print(f"[HERE]{nodeid}[SEPSEPSEP]{outcome}[SEPSEPSEP]{duration}")
+        print(f"{SOS}{nodeid}{SEP}{outcome}{SEP}{duration}")
     return test_results.results
 
 if __name__ == '__main__':

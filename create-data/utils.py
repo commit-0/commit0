@@ -17,6 +17,8 @@ import git
 from ghapi.core import GhApi
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
 
+from run_pytest import SOS, SEP
+
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
@@ -331,12 +333,12 @@ def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
 
 def _analyze_pytest(text, option):
     text = [one.strip() for one in text.split('\n') if one.strip() != ""]
-    text = [one.replace("[HERE]", "") for one in text if one.startswith("[HERE]")]
+    text = [one.replace(SOS, "") for one in text if one.startswith(SOS)]
     if option == "run":
         out = []
         for one in text:
             # my unique seperator
-            one = one.split("[SEPSEPSEP]")
+            one = one.split(SEP)
             if len(one) != 3:
                 raise ValueError(f"{one} is not of the correct format of the pytest report. It should have exactly three elements: test name, status of the test, and the runtime of the test.")
             out.append(one)
