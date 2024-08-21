@@ -50,6 +50,7 @@ class Repo:
             self.commit = self.get_commit_by_tag(head)
         else:
             self.commit = head
+        self.clone_dir = os.path.abspath(os.path.join('tmp', self.name))
         self.local_repo = self.clone_repo(setup=setup)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
@@ -80,7 +81,7 @@ class Repo:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
 
-    def clone_repo(self, setup: list[str], tmp_dir: str = './tmp/') -> None:
+    def clone_repo(self, setup: list[str]) -> None:
         """
         Clone repo into a temporary directory
 
@@ -91,9 +92,8 @@ class Repo:
             None
         """
         clone_url = self.repo.clone_url
-        self.clone_dir = os.path.abspath(os.path.join(tmp_dir, self.name))
-        if os.path.exists(self.clone_dir):
-            self.remove_local_repo(self.clone_dir)
+        # cleanup if the repo already exists
+        self.remove_local_repo()
         logger.info(f"cloning {clone_url} into {self.clone_dir}")
         try:
             repo = git.Repo.clone_from(clone_url, self.clone_dir)
@@ -128,18 +128,13 @@ class Repo:
         os.chdir(self.cwd)
         return repo
 
-    def remove_local_repo(self, path_to_repo: str) -> None:
+    def remove_local_repo(self) -> None:
         """
         Remove the cloned repository directory from the local filesystem.
-
-        Args:
-            path_to_dir (str): directory to the repo to remove
-        Return:
-            None
         """
-        if os.path.exists(path_to_repo):
-            shutil.rmtree(path_to_repo)
-            logger.info(f"Cleaned up the cloned repository at {path_to_repo}")
+        if os.path.exists(self.clone_dir):
+            shutil.rmtree(self.clone_dir)
+            logger.info(f"Cleaned up the cloned repository at {self.clone_dir}")
 
     def get_commit_by_tag(self, tag: str) -> str:
         """
@@ -331,8 +326,8 @@ def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
 def _analyze_pytest(text, option):
     text = [one.strip() for one in text.split('\n') if one.strip() != ""]
     text = [one.replace("[HERE]", "") for one in text if one.startswith("[HERE]")]
-    out = []
     if option == "run":
+        out = []
         for one in text:
             # my unique seperator
             one = one.split("[SEPSEPSEP]")
@@ -340,7 +335,11 @@ def _analyze_pytest(text, option):
                 raise ValueError(f"{one} is not of the correct format of the pytest report. It should have exactly three elements: test name, status of the test, and the runtime of the test.")
             out.append(one)
         out = [{"test":one[0],"status":one[1],"time":one[2]} for one in out]
-    return out
+        return out
+    elif option == "list":
+        return text
+    else:
+        raise ValueError(f"Currently we only support 'list' and 'run' for pytest, but you provided {option}.")
 
 
 def run_pytest(repo: Repo, option: str) -> list[str]:

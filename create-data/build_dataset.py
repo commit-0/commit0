@@ -92,7 +92,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         # Create task instance
         instance = create_instance(repo, base_branch_name, removal, info['setup'])
         examples.append(instance)
-        repo.remove_local_repo(repo.clone_dir)
+        repo.remove_local_repo()
     ds = Dataset.from_list(examples)
     ds = DatasetDict({"test": ds})
     hf_name = f"{hf_name}_{removal}"

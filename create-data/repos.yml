@@ -3,10 +3,10 @@
   commit: "7d35d597ad226e73289e6920fbc1e83ea6148c8b"
   tag: null
   setup:
-    - "pip install numba==0.60"
     - "pip install -r requirements.txt"
     - "pip install -r requirements.extra.txt"
     - "pip install -e ."
+    - "pip install numba==0.60"
   specification: "https://minitorch.github.io/"
 
 1:
