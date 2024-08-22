@@ -34,7 +34,7 @@ def main(dataset_name: str, token: Optional[str] = None):
     dataset = load_dataset(dataset_name, split="test")
     out = []
     for idx, one in enumerate(dataset):
-        if idx == 20 or idx == 30: continue
+        if idx == 30: continue
         owner, repo = one["repo"].split("/")
         repo = Repo(
             owner,
