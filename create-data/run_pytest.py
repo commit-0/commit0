@@ -28,7 +28,6 @@ class TestResults:
 
 def list_pytest_functions(path):
     plugin = Plugin()
-    num_workers = decide_num_workers(path)
     pytest.main(["--collect-only", path], plugins=[plugin])
     for one in plugin.collected_tests:
         print(f"{SOS}{one}")
@@ -37,7 +36,6 @@ def list_pytest_functions(path):
 def run_unit_tests(path):
     test_results = TestResults()
 
-    num_workers = decide_num_workers(path)
     # Run the tests and pass the TestResults instance as a plugin
     pytest.main(['-q', '--tb=short', path], plugins=[test_results])
 
