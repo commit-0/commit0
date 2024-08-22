@@ -35,9 +35,10 @@ def list_pytest_functions(path):
 
 def run_unit_tests(path):
     test_results = TestResults()
-
-    # Run the tests and pass the TestResults instance as a plugin
-    pytest.main(['-q', '--tb=short', path], plugins=[test_results])
+    cmd = ['-q', '--tb=short', path]
+    if 'pyro' in path:
+        cmd = ['-n', 'auto'] + cmd
+    pytest.main(cmd, plugins=[test_results])
 
     # Print the collected results
     for result in test_results.results:
