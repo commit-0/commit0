@@ -110,7 +110,6 @@ class Repo:
         venv.create(env_dir, with_pip=True)
         logger.info(f"Virtual environment created at {env_dir}")
         os.chdir(self.clone_dir)
-        setup = setup + ['pip install pytest-xdist']
         pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
         for one in setup:
             # anything in the quotation marks cannot be split
