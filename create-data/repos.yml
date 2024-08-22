@@ -54,13 +54,13 @@
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
 
 5:
-  name: "alecthomas/voluptuous"
+  name: "prompt-toolkit/python-prompt-toolkit"
   commit: null
-  tag: "0.15.2"
+  tag: "3.0.43"
   setup:
     - "pip install -e ."
-    - "pip install pytest pytest-cov coverage>=3.0"
-  specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
+    - "pip install pytest pytest-cov"
+  specification: "https://python-prompt-toolkit.readthedocs.io/_/downloads/en/3.0.43/pdf/"
 
 6:
   name: "scrapy/parsel"
@@ -105,13 +105,13 @@
   specification: "https://tlslite-ng.readthedocs.io/en/latest/"
 
 11:
-  name: "Python-Markdown/markdown"
+  name: "jquast/wcwidth"
   commit: null
-  tag: "3.7"
+  tag: "0.2.13"
   setup:
+    - "pip install -e ."
     - "pip install pytest pytest-cov"
-    - "pip install -e .[testing]"
-  specification: "https://python-markdown.github.io/"
+  specification: "https://wcwidth.readthedocs.io/en/stable/"
 
 12:
   name: "chardet/chardet"
