@@ -335,16 +335,14 @@
   specification: "https://www.statsmodels.org/stable/"
 
 31:
-  name: "paramiko/paramiko"
+  name: "more-itertools/more-itertools"
   commit: null
-  tag: "3.4.1"
+  tag: "v10.4.0"
   setup:
+    - "pip install -r requirements/development.txt"
     - "pip install -e ."
     - "pip install pytest"
-    - "pip install invoke"
-    - "pip install icecream"
-    - "pip install pytest_relaxed"
-  specification: "https://www.paramiko.org/"
+  specification: "https://more-itertools.readthedocs.io/en/v10.4.0/"
 
 32:
   name: "Zulko/moviepy"
@@ -365,12 +363,12 @@
   specification: "https://zulko.github.io/moviepy/"
 
 33:
-  name: "fabric/fabric"
+  name: "tantale/deprecated"
   commit: null
-  tag: "3.2.2"
+  tag: "v1.2.14"
   setup:
-    - "pip install -r dev-requirements.txt"
-  specification: "https://www.fabfile.org/"
+    - "pip install -e .[dev]"
+  specification: "https://deprecated.readthedocs.io/en/latest/"
 
 34:
   name: "pydantic/pydantic"
