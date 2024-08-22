@@ -457,21 +457,13 @@
   specification: "https://cookiecutter.readthedocs.io/_/downloads/en/2.6.0/pdf/"
 
 40:
-  name: "rq/rq"
+  name: "tornadoweb/tornado"
   commit: null
-  tag: "v1.16.2"
+  tag: "v6.4.1"
   setup:
-    - "pip install -e .[test]"
-    - "pip install black"
-    - "pip install coverage"
-    - "pip install packaging"
-    - "pip install psutil"
-    - "pip install pytest"
-    - "pip install pytest-cov"
-    - "pip install ruff"
-    - "pip install sentry-sdk<2"
-    - "pip install tox"
-  specification: "https://python-rq.org/"
+    - "pip install -r requirements.txt"
+    - "pip install -e ."
+  specification: "https://www.tornadoweb.org/_/downloads/en/stable/pdf/"
 
 41:
   name: "scikit-learn-contrib/imbalanced-learn"
