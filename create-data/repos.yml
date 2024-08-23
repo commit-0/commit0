@@ -418,6 +418,7 @@
     - "pip install faker>=18.13.0"
     - "pip install pytest-benchmark>=4.0.0"
     - "pip install pytest-codspeed~=2.2.0"
+    - "pip install pytz"
     - "pip install packaging>=23.2"
     - "pip install ansi2html"
     - "pip install devtools"
@@ -426,6 +427,8 @@
     - "pip install mypy"
     - "pip install pydantic-settings>=2.0.0"
     - "pip install pytest-memray"
+    - "pip install jsonschema>=4.23.0"
+    - "pip install email-validator>=2.0.0"
   specification: "https://docs.pydantic.dev/2.8/"
   test_path: "tests"
 
