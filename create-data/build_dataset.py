@@ -22,7 +22,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_commands: list[str]) -> dict:
+def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_commands: list[str], test_path: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -35,7 +35,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_comma
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    test_names = run_pytest(repo, "list")
+    test_names = run_pytest(repo, "list", test_path)
     base_commit = generate_base_commit(repo, base_branch_name, removal)
     patch, test_patch = extract_patches(repo, base_commit)
     created_at = retrieve_commit_time(repo, base_commit)
@@ -54,7 +54,8 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_comma
         "created_at": created_at,
         "PASS_TO_PASS": [],
         "FAIL_TO_PASS": test_names,
-        "version": "1.0"
+        "version": "1.0",
+        "test_path": test_path
     }
 
 
@@ -90,7 +91,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         owner, repo = info['name'].split("/")
         repo = Repo(owner, repo, organization=organization, head=head, setup=info['setup'], token=token)
         # Create task instance
-        instance = create_instance(repo, base_branch_name, removal, info['setup'])
+        instance = create_instance(repo, base_branch_name, removal, info['setup'], info["test_path"])
         examples.append(instance)
         repo.remove_local_repo()
     ds = Dataset.from_list(examples)

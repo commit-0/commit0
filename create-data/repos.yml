@@ -8,6 +8,7 @@
     - "pip install -e ."
     - "pip install numba==0.60"
   specification: "https://minitorch.github.io/"
+  test_path: "tests"
 
 1:
   name: "wenting-zhao/simpy"
@@ -18,6 +19,7 @@
     - "pip install py"
     - "pip install -e ."
   specification: "https://simpy.readthedocs.io/en/4.1.1/"
+  test_path: "tests"
 
 2:
   name: "scott-griffiths/bitstring"
@@ -27,6 +29,7 @@
     - "pip install -e ."
     - "pip install -r tests/requirements.txt"
   specification: "https://bitstring.readthedocs.io/en/stable/"
+  test_path: "tests"
 
 3:
   name: "msiemens/tinydb"
@@ -44,6 +47,7 @@
     - "pip install types-PyYAML>=6.0.0,<7.0.0"
     - "pip install typing-extensions>=4.4.0,<5.0.0"
   specification: "https://tinydb.readthedocs.io/_/downloads/en/v4.8.0/pdf/"
+  test_path: "tests"
 
 4:
   name: "marshmallow-code/marshmallow"
@@ -52,6 +56,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
+  test_path: "tests"
 
 5:
   name: "prompt-toolkit/python-prompt-toolkit"
@@ -61,6 +66,7 @@
     - "pip install -e ."
     - "pip install pytest pytest-cov"
   specification: "https://python-prompt-toolkit.readthedocs.io/_/downloads/en/3.0.43/pdf/"
+  test_path: "tests"
 
 6:
   name: "scrapy/parsel"
@@ -70,6 +76,7 @@
     - "pip install -e ."
     - "pip install -r tests/requirements.txt"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
+  test_path: "tests"
 
 7:
   name: "jpadilla/pyjwt"
@@ -78,14 +85,16 @@
   setup:
     - "pip install -e .[crypto,tests,dev]"
   specification: "https://pyjwt.readthedocs.io/_/downloads/en/2.8.0/pdf/"
+  test_path: "tests"
 
 8:
   name: "networkx/networkx"
   commit: null
   tag: "networkx-3.3"
   setup:
-    - "pip install -e .[default,developer,test]"
+    - "pip install -e .[default,developer,test,extra]"
   specification: "https://networkx.org/documentation/networkx-3.3/"
+  test_path: "networkx"
 
 9:
   name: "graphql-python/graphene"
@@ -94,6 +103,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://docs.graphene-python.org/en/stable/"
+  test_path: "graphene"
 
 10:
   name: "tlsfuzzer/tlslite-ng"
@@ -103,6 +113,7 @@
     - "pip install -r build-requirements.txt"
     - "pip install -e ."
   specification: "https://tlslite-ng.readthedocs.io/en/latest/"
+  test_path: "tests"
 
 11:
   name: "jquast/wcwidth"
@@ -112,6 +123,7 @@
     - "pip install -e ."
     - "pip install pytest pytest-cov"
   specification: "https://wcwidth.readthedocs.io/en/stable/"
+  test_path: "tests"
 
 12:
   name: "chardet/chardet"
@@ -125,6 +137,7 @@
     - "pip install ruff>=0.5.5,<0.6.0"
     - "pip install sphinx_rtd_theme>=1.0.0,<2.0.0"
   specification: "https://chardet.readthedocs.io/_/downloads/en/stable/pdf/"
+  test_path: "tests"
 
 13:
   name: "rthalley/dnspython"
@@ -133,6 +146,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://dnspython.readthedocs.io/en/stable/"
+  test_path: "tests"
 
 14:
   name: "mjs/imapclient"
@@ -143,6 +157,7 @@
     - "pip install pytest pytest-cov"
     - "pip install -e ."
   specification: "https://imapclient.readthedocs.io/en/3.0.1/"
+  test_path: "tests"
 
 15:
   name: "pypa/virtualenv"
@@ -151,6 +166,7 @@
   setup:
     - "pip install -e .[test]"
   specification: "https://virtualenv.pypa.io/en/20.26.3/"
+  test_path: "tests"
 
 16:
   name: "pexpect/pexpect"
@@ -160,6 +176,7 @@
     - "pip install -r requirements-testing.txt"
     - "pip install -e ."
   specification: "https://pexpect.readthedocs.io/_/downloads/en/stable/pdf/"
+  test_path: "tests"
 
 17:
   name: "ethereum/web3.py"
@@ -169,6 +186,7 @@
     - "git submodule update --init"
     - "pip install -e .[dev]"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.2/pdf/"
+  test_path: "tests"
 
 18:
   name: "python-babel/babel"
@@ -178,6 +196,7 @@
     - "pip install -e .[dev]"
     - "python scripts/download_import_cldr.py"
   specification: "https://babel.pocoo.org/_/downloads/en/stable/pdf/"
+  test_path: "tests"
 
 19:
   name: "geopandas/geopandas"
@@ -186,6 +205,7 @@
   setup:
     - "pip install -e .[all,dev]"
   specification: "https://geopandas.org/en/stable/"
+  test_path: "geopandas/tests"
 
 20:
   name: "pyro-ppl/pyro"
@@ -194,6 +214,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://docs.pyro.ai/en/1.9.1/"
+  test_path: "tests"
 
 21:
   name: "pallets/flask"
@@ -204,6 +225,7 @@
     - "pip install -r requirements/tests.txt"
     - "pip install -e ."
   specification: "https://flask.palletsprojects.com/en/3.0.x/"
+  test_path: "tests"
 
 22:
   name: "pytube/pytube"
@@ -245,6 +267,7 @@
     - "pip install sphinx_rtd_theme"
     - "pip install pipenv-to-requirements"
   specification: "https://pytube.io/_/downloads/en/latest/pdf/"
+  test_path: "tests"
 
 23:
   name: "pallets/jinja"
@@ -255,6 +278,7 @@
     - "pip install -r requirements/tests.txt"
     - "pip install -e ."
   specification: "https://jinja.palletsprojects.com/en/3.1.x/"
+  test_path: "tests"
 
 24:
   name: "mwaskom/seaborn"
@@ -263,6 +287,7 @@
   setup:
     - "pip install -e .[dev,stats]"
   specification: "https://seaborn.pydata.org/"
+  test_path: "tests"
 
 25:
   name: "psf/requests"
@@ -272,6 +297,7 @@
     - "pip install -r requirements-dev.txt"
     - "pip install -e ."
   specification: "https://requests.readthedocs.io/_/downloads/en/latest/pdf/"
+  test_path: "tests"
 
 26:
   name: "scrapy/scrapy"
@@ -289,6 +315,7 @@
     - "pip install sybil>=1.3.0"
     - "pip install testfixtures"
   specification: "https://docs.scrapy.org/_/downloads/en/2.11/pdf/"
+  test_path: "tests"
 
 27:
   name: "fastapi/fastapi"
@@ -297,6 +324,7 @@
   setup:
     - "pip install -r requirements.txt"
   specification: "https://fastapi.tiangolo.com/"
+  test_path: "tests"
 
 28:
   name: "pallets/click"
@@ -307,6 +335,7 @@
     - "pip install -r requirements/tests.txt"
     - "pip install -e ."
   specification: "https://click.palletsprojects.com/en/8.1.x/"
+  test_path: "tests"
 
 29:
   name: "sybrenstuvel/python-rsa"
@@ -322,6 +351,7 @@
     - "pip install mypy>=1.2,<2.0"
     - "pip install flake8>=3.8.4,<4.0.0"
   specification: "https://stuvel.eu/python-rsa-doc/"
+  test_path: "tests"
 
 30:
   name: "statsmodels/statsmodels"
@@ -330,6 +360,7 @@
   setup:
     - "pip install -e .[develop]"
   specification: "https://www.statsmodels.org/stable/"
+  test_path: "statsmodels"
 
 31:
   name: "more-itertools/more-itertools"
@@ -340,6 +371,7 @@
     - "pip install -e ."
     - "pip install pytest"
   specification: "https://more-itertools.readthedocs.io/en/v10.4.0/"
+  test_path: "tests"
 
 32:
   name: "Zulko/moviepy"
@@ -358,6 +390,7 @@
     - "pip install requests"
     - "pip install -e ."
   specification: "https://zulko.github.io/moviepy/"
+  test_path: "tests"
 
 33:
   name: "tantale/deprecated"
@@ -366,6 +399,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://deprecated.readthedocs.io/en/latest/"
+  test_path: "tests"
 
 34:
   name: "pydantic/pydantic"
@@ -393,6 +427,7 @@
     - "pip install pydantic-settings>=2.0.0"
     - "pip install pytest-memray"
   specification: "https://docs.pydantic.dev/2.8/"
+  test_path: "tests"
 
 35:
   name: "Delgan/loguru"
@@ -401,6 +436,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://loguru.readthedocs.io/_/downloads/en/0.7.2/pdf/"
+  test_path: "tests"
 
 36:
   name: "py-pdf/pypdf"
@@ -409,6 +445,7 @@
   setup:
     - "pip install -e .[dev,image]"
   specification: "https://pypdf.readthedocs.io/_/downloads/en/4.3.1/pdf/"
+  test_path: "tests"
 
 37:
   name: "python-attrs/attrs"
@@ -417,6 +454,7 @@
   setup:
     - "pip install -e .[dev,tests-mypy,benchmark,cov]"
   specification: "https://www.attrs.org/en/24.2.0/"
+  test_path: "tests"
 
 38:
   name: "lk-geimfari/mimesis"
@@ -446,6 +484,7 @@
     - "pip install sphinx-autodoc-typehints>=1.19.2,<2.0"
     - "pip install pytest-factoryboy>=2.6.0,<3.0"
   specification: "https://mimesis.name/en/v17.0.0/"
+  test_path: "tests"
 
 39:
   name: "cookiecutter/cookiecutter"
@@ -455,6 +494,7 @@
     - "pip install -e ."
     - "pip install -r test_requirements.txt"
   specification: "https://cookiecutter.readthedocs.io/_/downloads/en/2.6.0/pdf/"
+  test_path: "tests"
 
 40:
   name: "tornadoweb/tornado"
@@ -464,6 +504,7 @@
     - "pip install -r requirements.txt"
     - "pip install -e ."
   specification: "https://www.tornadoweb.org/_/downloads/en/stable/pdf/"
+  test_path: "tornado/test"
 
 41:
   name: "scikit-learn-contrib/imbalanced-learn"
@@ -472,6 +513,7 @@
   setup:
     - "pip install -e .[install,optional,tests]"
   specification: "https://imbalanced-learn.org/stable/"
+  test_path: "imblearn"
 
 42:
   name: "pymc-devs/pymc"
@@ -482,6 +524,7 @@
     - "pip install -r requirements.txt"
     - "pip install -r requirements-dev.txt"
   specification: "https://www.pymc.io/projects/docs/en/v5.16.2/learn.html"
+  test_path: "tests"
 
 43:
   name: "Baekalfen/PyBoy"
@@ -492,6 +535,7 @@
     - "pip install -r requirements_tests.txt"
     - "pip install -e .[all]"
   specification: "https://docs.pyboy.dk/"
+  test_path: "tests"
 
 44:
   name: "pytest-dev/pytest"
@@ -500,6 +544,7 @@
   setup:
     - "pip install -e .[dev]"
   specification: "https://docs.pytest.org/_/downloads/en/8.3.x/pdf/"
+  test_path: "testing"
 
 45:
   name: "pylint-dev/pylint"
@@ -508,6 +553,7 @@
   setup:
     - "pip install -r requirements_test.txt"
   specification: "https://pylint.readthedocs.io/en/v3.2.6/"
+  test_path: "tests"
 
 46:
   name: "sphinx-doc/sphinx"
@@ -516,6 +562,7 @@
   setup:
     - "pip install -e .[test]"
   specification: "https://www.sphinx-doc.org/en/master/"
+  test_path: "tests"
 
 47:
   name: "fsspec/filesystem_spec"
@@ -524,6 +571,7 @@
   setup:
     - "pip install -e .[full,test]"
   specification: "https://filesystem-spec.readthedocs.io/en/stable/"
+  test_path: "fsspec/tests"
 
 48:
   name: "pydata/xarray"
@@ -532,6 +580,7 @@
   setup:
     - "pip install -e .[complete]"
   specification: "https://docs.xarray.dev/en/v2024.07.0/"
+  test_path: "xarray/tests"
 
 49:
   name: "tkem/cachetools"
@@ -542,3 +591,42 @@
     - "pip install pytest"
     - "pip install pytest-cov"
   specification: "https://cachetools.readthedocs.io/en/v5.5.0/"
+  test_path: "tests"
+
+50:
+  name: "alecthomas/voluptuous"
+  commit: null
+  tag: "0.15.2"
+  setup:
+    - "pip install -e ."
+    - "pip install pytest pytest-cov coverage>=3.0"
+  specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
+  test_path: "voluptuous/tests"
+
+51:
+  name: "ethereum/py-evm"
+  commit: null
+  tag: "v0.10.1-beta.1"
+  setup:
+    - "pip install web3==6.20.2"
+    - "pip install -e .[benchmark,dev,eth,test]"
+  specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
+  test_path: "tests"
+
+52:
+  name: "paramiko/paramiko"
+  commit: null
+  tag: "3.4.1"
+  setup:
+    - "pip install -r dev-requirements.txt"
+  specification: "https://www.paramiko.org/"
+  test_path: "tests"
+
+53:
+  name: "fabric/fabric"
+  commit: null
+  tag: "3.2.2"
+  setup:
+    - "pip install -r dev-requirements.txt"
+  specification: "https://www.fabfile.org/"
+  test_path: "tests"

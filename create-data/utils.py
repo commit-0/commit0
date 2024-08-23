@@ -347,13 +347,14 @@ def _analyze_pytest(text, option):
         raise ValueError(f"Currently we only support 'list' and 'run' for pytest, but you provided {option}.")
 
 
-def run_pytest(repo: Repo, option: str) -> list[str]:
+def run_pytest(repo: Repo, option: str, test_path: str) -> list[str]:
     """
     Extract all test function names
 
     Args:
         repo (Repo): test names from which repo
         option (str): whether to actually run the unit tests or just to collect the test names. Choose from ["list", "run"].
+        test_path (str): the path to collect and run tests.
     Return:
         collected_tests (list[str]): a list of test function names
     """
@@ -362,11 +363,12 @@ def run_pytest(repo: Repo, option: str) -> list[str]:
     # make sure we are collecting tests in environment setup commit
     repo.local_repo.git.checkout(repo.commit)
     os.chdir(repo.clone_dir)
+    test_path = os.path.join(repo.clone_dir, test_path)
 
     venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
     cmd = venv_dir + os.sep + 'python'
     cmd = cmd.split()
-    cmd = cmd + [os.path.join(repo.cwd, 'run_pytest.py'), option, repo.clone_dir]
+    cmd = cmd + [os.path.join(repo.cwd, 'run_pytest.py'), option, test_path]
     try:
         logger.info(f"Executing {' '.join(cmd)}")
         result = subprocess.run(cmd, check=True, text=True, capture_output=True)
