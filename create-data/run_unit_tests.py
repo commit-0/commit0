@@ -44,7 +44,7 @@ def main(dataset_name: str, token: Optional[str] = None):
             setup=one["environment_setup_commands"],
             token=token
         )
-        results = run_pytest(repo, "run")
+        results = run_pytest(repo, "run", one["test_path"])
         out.append({"name": one["repo"], "report": results})
         new_ds = Dataset.from_list(out)
         new_ds.to_json("report.json")
