@@ -92,7 +92,7 @@
   commit: null
   tag: "networkx-3.3"
   setup:
-    - "pip install -e .[default,developer,test,extra]"
+    - "pip install -e .[default,developer,test]"
   specification: "https://networkx.org/documentation/networkx-3.3/"
   test_path: "networkx"
 
