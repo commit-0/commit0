@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class Repo:
-    def __init__(self, owner: str, name: str, organization: str, head: str, setup: list[str], token: Optional[str] = None):
+    def __init__(self, owner: str, name: str, organization: str, head: str, setup: list[str], pip_freeze: Optional[str] = None, token: Optional[str] = None):
         """
         Init to retrieve target repository and create ghapi tool
 
@@ -52,7 +52,17 @@ class Repo:
             self.commit = self.get_commit_by_tag(head)
         else:
             self.commit = head
+        logger.info("Setting up a local copy of the repository.")
         self.clone_dir = os.path.abspath(os.path.join('tmp', self.name))
+        if pip_freeze is not None:
+            if not isinstance(pip_freeze, str):
+                raise ValueError(f"pip requirements were provided but they are not in a str but instead {type(pip_requirements)}")
+            setup = pip_freeze
+            logger.info("Repository will be set up with pip freezed requirements.txt.")
+        else:
+            logger.warning("Environment setup commands were provided instead of pip freezed requirements")
+            logger.warning("Therefore, the Repo constructor should only be called from build_dataset.py")
+            logger.warning("In all other cases, you should pass requirements freezed from pip to set up the repo")
         self.local_repo = self.clone_repo(setup=setup)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
@@ -111,6 +121,11 @@ class Repo:
         logger.info(f"Virtual environment created at {env_dir}")
         os.chdir(self.clone_dir)
         pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
+        # assume all setup that is str is a requirement.txt
+        if isinstance(setup, str):
+            with open("pip_freezed_requirements.txt", 'w') as fout:
+                fout.write(setup)
+            setup = ["pip install -r pip_freezed_requirements.txt"]
         for one in setup:
             # anything in the quotation marks cannot be split
             one = pattern.findall(one)
@@ -402,12 +417,4 @@ def get_requirements(repo: Repo) -> list[str]:
         logger.info(f"STDOUT: {e.stdout}")
         logger.info(f"STDERR: {e.stderr}")
         raise RuntimeError(f"unable to execute {' '.join(cmd)}")
-    requirements = [one.strip() for one in result.stdout.split('\n')]
-    requirements = [one for one in requirements if one != ""]
-    if len(requirements) == 0:
-        raise ValueError("Something is wrong because only 0 requirements are found.")
-    logger.info(f"Found {len(requirements)} requirements.")
-    for one in requirements:
-        if "==" not in one:
-            raise ValueError(f"{one} is not a requirement.")
-    return requirements
+    return result.stdout

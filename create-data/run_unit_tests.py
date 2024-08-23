@@ -41,6 +41,7 @@ def main(dataset_name: str, token: Optional[str] = None):
             organization=owner,
             head=one["environment_setup_commit"],
             setup=one["environment_setup_commands"],
+            pip_freeze=one["pip_freeze"],
             token=token
         )
         results = run_pytest(repo, "run", one["test_path"])
