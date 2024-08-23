@@ -10,6 +10,7 @@ from datasets import Dataset, DatasetDict
 
 from utils import (
     generate_base_commit,
+    get_requirements,
     extract_patches,
     run_pytest,
     retrieve_commit_time,
@@ -39,6 +40,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_comma
     base_commit = generate_base_commit(repo, base_branch_name, removal)
     patch, test_patch = extract_patches(repo, base_commit)
     created_at = retrieve_commit_time(repo, base_commit)
+    requirements = get_requirements(repo)
     return {
         "repo": repo.repo.full_name,
         "instance_id": (repo.repo.full_name + "-01").replace(
@@ -55,7 +57,8 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_comma
         "PASS_TO_PASS": [],
         "FAIL_TO_PASS": test_names,
         "version": "1.0",
-        "test_path": test_path
+        "test_path": test_path,
+        "pip_freeze": requirements
     }
 
 

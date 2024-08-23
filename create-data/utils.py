@@ -382,3 +382,32 @@ def run_pytest(repo: Repo, option: str, test_path: str) -> list[str]:
     logger.info(f"Found/Ran {len(test_names)} unit tests.")
     os.chdir(repo.cwd)
     return test_names
+
+
+def get_requirements(repo: Repo) -> list[str]:
+    """
+    Extract all pip requirements
+
+    Args:
+        repo (Repo): pip requirements from which repo
+    Return:
+        pip requirements (list[str]): a list of test function names
+    """
+    pip_path = os.path.join(repo.clone_dir, 'venv', 'bin', 'pip')
+    cmd = [pip_path, 'freeze']
+    try:
+        logger.info(f"Executing {' '.join(cmd)}")
+        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
+    except subprocess.CalledProcessError as e:
+        logger.info(f"STDOUT: {e.stdout}")
+        logger.info(f"STDERR: {e.stderr}")
+        raise RuntimeError(f"unable to execute {' '.join(cmd)}")
+    requirements = [one.strip() for one in result.stdout.split('\n')]
+    requirements = [one for one in requirements if one != ""]
+    if len(requirements) == 0:
+        raise ValueError("Something is wrong because only 0 requirements are found.")
+    logger.info(f"Found {len(requirements)} requirements.")
+    for one in requirements:
+        if "==" not in one:
+            raise ValueError(f"{one} is not a requirement.")
+    return requirements
