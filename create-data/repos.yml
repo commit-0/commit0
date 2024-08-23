@@ -113,7 +113,7 @@
     - "pip install -r build-requirements.txt"
     - "pip install -e ."
   specification: "https://tlslite-ng.readthedocs.io/en/latest/"
-  test_path: "tests"
+  test_path: "unit_tests"
 
 11:
   name: "jquast/wcwidth"
@@ -503,6 +503,7 @@
   setup:
     - "pip install -r requirements.txt"
     - "pip install -e ."
+    - "pip install pytest"
   specification: "https://www.tornadoweb.org/_/downloads/en/stable/pdf/"
   test_path: "tornado/test"
 
