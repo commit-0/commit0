@@ -137,7 +137,7 @@
     - "pip install ruff>=0.5.5,<0.6.0"
     - "pip install sphinx_rtd_theme>=1.0.0,<2.0.0"
   specification: "https://chardet.readthedocs.io/_/downloads/en/stable/pdf/"
-  test_path: "tests"
+  test_path: ""
 
 13:
   name: "rthalley/dnspython"
