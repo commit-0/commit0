@@ -517,15 +517,12 @@
   test_path: "imblearn"
 
 42:
-  name: "pymc-devs/pymc"
+  name: "wolph/python-progressbar"
   commit: null
-  tag: "v5.16.2"
+  tag: "v4.4.2"
   setup:
-    - "pip install -e ."
-    - "pip install -r requirements.txt"
-    - "pip install -r requirements-dev.txt"
-    - "pip install numpyro blackjax"
-  specification: "https://www.pymc.io/projects/docs/en/v5.16.2/learn.html"
+    - "pip install -e .[tests]"
+  specification: "https://progressbar-2.readthedocs.io/_/downloads/en/stable/pdf/"
   test_path: "tests"
 
 43:
