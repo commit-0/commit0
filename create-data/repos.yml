@@ -524,6 +524,7 @@
     - "pip install -e ."
     - "pip install -r requirements.txt"
     - "pip install -r requirements-dev.txt"
+    - "pip install numpyro blackjax"
   specification: "https://www.pymc.io/projects/docs/en/v5.16.2/learn.html"
   test_path: "tests"
 
