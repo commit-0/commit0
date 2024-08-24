@@ -57,13 +57,13 @@ class Repo:
         if pip_freeze is not None:
             if not isinstance(pip_freeze, str):
                 raise ValueError(f"pip requirements were provided but they are not in a str but instead {type(pip_requirements)}")
-            setup = pip_freeze
+            setup = [one for one in setup if not one.startswith("pip")]
             logger.info("Repository will be set up with pip freezed requirements.txt.")
         else:
             logger.warning("Environment setup commands were provided instead of pip freezed requirements")
             logger.warning("Therefore, the Repo constructor should only be called from build_dataset.py")
             logger.warning("In all other cases, you should pass requirements freezed from pip to set up the repo")
-        self.local_repo = self.clone_repo(setup=setup)
+        self.local_repo = self.clone_repo(setup=setup, pip_freeze=pip_freeze)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
         """
@@ -93,7 +93,7 @@ class Repo:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
 
-    def clone_repo(self, setup: list[str]) -> None:
+    def clone_repo(self, setup: list[str], pip_freeze: Optional[str]) -> None:
         """
         Clone repo into a temporary directory
 
@@ -122,10 +122,10 @@ class Repo:
         os.chdir(self.clone_dir)
         pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
         # assume all setup that is str is a requirement.txt
-        if isinstance(setup, str):
+        if pip_freeze is not None:
             with open("pip_freezed_requirements.txt", 'w') as fout:
-                fout.write(setup)
-            setup = ["pip install -r pip_freezed_requirements.txt"]
+                fout.write(pip_freeze)
+            setup += ["pip install -r pip_freezed_requirements.txt"]
         for one in setup:
             # anything in the quotation marks cannot be split
             one = pattern.findall(one)
