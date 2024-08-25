@@ -208,12 +208,13 @@
   test_path: "geopandas/tests"
 
 20:
-  name: "pyro-ppl/pyro"
+  name: "ethereum/py-evm"
   commit: null
-  tag: "1.9.1"
+  tag: "v0.10.1-beta.1"
   setup:
-    - "pip install -e .[dev]"
-  specification: "https://docs.pyro.ai/en/1.9.1/"
+    - "pip install web3==6.20.2"
+    - "pip install -e .[benchmark,dev,eth,test]"
+  specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
   test_path: "tests"
 
 21:
@@ -228,46 +229,14 @@
   test_path: "tests"
 
 22:
-  name: "pytube/pytube"
+  name: "alecthomas/voluptuous"
   commit: null
-  tag: "v15.0.0"
+  tag: "0.15.2"
   setup:
     - "pip install -e ."
-    - "pip install bumpversion"
-    - "pip install twine"
-    - "pip install black==19.10b0"
-    - "pip install coveralls"
-    - "pip install coverage"
-    - "pip install flake8"
-    - "pip install flake8-breakpoint"
-    - "pip install flake8-broken-line"
-    - "pip install flake8-bugbear"
-    - "pip install flake8-builtins"
-    - "pip install flake8-comprehensions"
-    - "pip install flake8-eradicate"
-    - "pip install flake8-executable"
-    - "pip install flake8-if-expr"
-    - "pip install flake8-logging-format"
-    - "pip install flake8-mock"
-    - "pip install flake8-mutable"
-    - "pip install flake8-print"
-    - "pip install flake8-pytest"
-    - "pip install flake8-pytest-style"
-    - "pip install flake8-quotes"
-    - "pip install flake8-return"
-    - "pip install flake8-strict"
-    - "pip install flake8-string-format"
-    - "pip install mypy"
-    - "pip install pep8-naming"
-    - "pip install pre-commit"
-    - "pip install pytest"
-    - "pip install pytest-cov"
-    - "pip install pytest-mock"
-    - "pip install pytest-profiling"
-    - "pip install sphinx_rtd_theme"
-    - "pip install pipenv-to-requirements"
-  specification: "https://pytube.io/_/downloads/en/latest/pdf/"
-  test_path: "tests"
+    - "pip install pytest pytest-cov coverage>=3.0"
+  specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
+  test_path: "voluptuous/tests"
 
 23:
   name: "pallets/jinja"
@@ -596,26 +565,6 @@
   test_path: "tests"
 
 50:
-  name: "alecthomas/voluptuous"
-  commit: null
-  tag: "0.15.2"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest pytest-cov coverage>=3.0"
-  specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
-  test_path: "voluptuous/tests"
-
-51:
-  name: "ethereum/py-evm"
-  commit: null
-  tag: "v0.10.1-beta.1"
-  setup:
-    - "pip install web3==6.20.2"
-    - "pip install -e .[benchmark,dev,eth,test]"
-  specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
-  test_path: "tests"
-
-52:
   name: "paramiko/paramiko"
   commit: null
   tag: "3.4.1"
@@ -624,11 +573,20 @@
   specification: "https://www.paramiko.org/"
   test_path: "tests"
 
-53:
+51:
   name: "fabric/fabric"
   commit: null
   tag: "3.2.2"
   setup:
     - "pip install -r dev-requirements.txt"
   specification: "https://www.fabfile.org/"
+  test_path: "tests"
+ 
+52:
+  name: "pyro-ppl/pyro"
+  commit: null
+  tag: "1.9.1"
+  setup:
+    - "pip install -e .[dev]"
+  specification: "https://docs.pyro.ai/en/1.9.1/"
   test_path: "tests"
