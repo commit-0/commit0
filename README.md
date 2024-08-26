@@ -114,3 +114,45 @@ python run.py \
     --run_id validate-gold \
     --spec_config configs/specs.yml
 ```
+
+## Baseline
+### Baseline Input & Output
+
+A simple baseline evaluation can be described like this
+```python
+def run_baseline(base_model, agent, prompt, context, target, error_history) -> test_results, error_message:
+    pass
+```
+
+**Input**
+
+`base_model`: base LLM, e.g. `gpt-4o`, `claude-3-5-sonnet-20240620`
+
+`agent`: agent, e.g. `aider`, `opendevin`, `None`
+
+`prompt`: the prompt/instruction given to `agent`/`base_model`
+
+`context`: there are 3 types of context
+- `context-type-1`: reference doc/pdf/website
+- `context-type-2`: unit_tests that target will be tested with
+- `context-type-3`: Repo info
+  - skeleton of the repo(filenames under each dir)
+  - function stubs
+  - function name in each file(granularity need to be specified)
+
+`target`: target function or file for agent or base_model to complete
+`edit_history`: entire edit histories, each contains previous implementation, updated implementation and corresponding error message
+
+**Output**
+
+`test_results`: WIP
+`error_message`: WIP
+
+## Baseline Evaluation & Ablation
+
+There are mainly 3 axes.
+- different `base_model`
+- different `agent`
+- different `context`
+
+Current priority is to run `gpt-4o` + `aider` with certain `context` to get first baseline result.
