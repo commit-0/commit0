@@ -270,6 +270,8 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
             except git.exc.GitCommandError as e:
                 if "paths are ignored by one of your .gitignore files" in e.stderr:
                     logger.warning(f"File {f} is ignored due to .gitignore rules and won't be added.")
+                elif "is in submodule" in e.stderr:
+                    logger.warning(f"File {f} is in a submodule and won't be added.")
                 else:
                     raise
         dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")
@@ -417,4 +419,6 @@ def get_requirements(repo: Repo) -> list[str]:
         logger.info(f"STDOUT: {e.stdout}")
         logger.info(f"STDERR: {e.stderr}")
         raise RuntimeError(f"unable to execute {' '.join(cmd)}")
-    return result.stdout
+    out = [x if f"git+https://github.com/{repo.owner}/{repo.name}" not in x else "-e ." for x in result.stdout.split('\n')]
+    out = '\n'.join(out)
+    return out

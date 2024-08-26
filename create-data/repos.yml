@@ -536,13 +536,17 @@
   test_path: "tests"
 
 47:
-  name: "fsspec/filesystem_spec"
+  name: "joblib/joblib"
   commit: null
-  tag: "2024.6.1"
+  tag: "1.4.2"
   setup:
-    - "pip install -e .[full,test]"
-  specification: "https://filesystem-spec.readthedocs.io/en/stable/"
-  test_path: "fsspec/tests"
+    - "pip install pytest"
+    - "pip install pytest-timeout pytest-asyncio==0.21.1 threadpoolctl"
+    - "pip install coverage pytest-cov"
+    - "pip install pillow numpy scipy scikit-learn"
+    - "pip install -e ."
+  specification: "https://joblib.readthedocs.io/en/stable/"
+  test_path: "joblib/test/"
 
 48:
   name: "pydata/xarray"
@@ -581,12 +585,41 @@
     - "pip install -r dev-requirements.txt"
   specification: "https://www.fabfile.org/"
   test_path: "tests"
- 
+
 52:
-  name: "pyro-ppl/pyro"
+  name: "fsspec/filesystem_spec"
   commit: null
-  tag: "1.9.1"
+  tag: "2024.6.1"
+  setup:
+    - "pip install -e .[full,test]"
+  specification: "https://filesystem-spec.readthedocs.io/en/stable/"
+  test_path: "fsspec/tests"
+
+53:
+  name: "davidhalter/jedi"
+  commit: null
+  tag: "v0.19.1"
+  setup:
+    - "git submodule update --init"
+    - "pip install -e .[testing]"
+  specification: "https://jedi.readthedocs.io/en/stable/"
+  test_path: "test"
+
+54:
+  name: "andialbrecht/sqlparse"
+  commit: null
+  tag: "0.5.1"
   setup:
     - "pip install -e .[dev]"
-  specification: "https://docs.pyro.ai/en/1.9.1/"
+    - "pip install coverage[toml]>=6.5 pytest flake8"
+  specification: "https://sqlparse.readthedocs.io/en/stable/"
   test_path: "tests"
+
+55:
+  name: "wolph/portalocker"
+  commit: null
+  tag: "v2.10.1"
+  setup:
+    - "pip install -e .[tests]"
+  specification: "https://portalocker.readthedocs.io/en/stable/"
+  test_path: "portalocker_tests"

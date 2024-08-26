@@ -38,6 +38,8 @@ def run_unit_tests(path):
     cmd = ['-q', '--tb=short', path]
     if 'pyro' in path:
         cmd = ['-n', 'auto'] + cmd
+    elif 'PyBoy' in path:
+        cmd = ['-n', '32'] + cmd
     pytest.main(cmd, plugins=[test_results])
 
     # Print the collected results
