@@ -208,13 +208,14 @@
   test_path: "geopandas/tests"
 
 20:
-  name: "ethereum/py-evm"
-  commit: null
-  tag: "v0.10.1-beta.1"
+  name: "jelmer/dulwich"
+  commit: "21e1ba8a61149fa966640e81019c33bce93b37f2"
+  tag: null
   setup:
-    - "pip install web3==6.20.2"
-    - "pip install -e .[benchmark,dev,eth,test]"
-  specification: "https://py-evm.readthedocs.io/_/downloads/en/latest/pdf/"
+    - "pip install gevent geventhttpclient setuptools>=17.1"
+    - "pip install pytest pytest-cov coverage"
+    - "pip install .[dev]"
+  specification: "https://dulwich.readthedocs.io/_/downloads/en/latest/pdf/"
   test_path: "tests"
 
 21:
