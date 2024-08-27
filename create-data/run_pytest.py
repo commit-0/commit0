@@ -36,8 +36,8 @@ def list_pytest_functions(path):
 def run_unit_tests(path):
     test_results = TestResults()
     cmd = ['-q', '--tb=short', path]
-    if 'pyro' in path:
-        cmd = ['-n', 'auto'] + cmd
+    if 'xarray' in path:
+        cmd = ['-n', '4', '--timeout', '180', '--cov=xarray'] + cmd
     elif 'PyBoy' in path:
         cmd = ['-n', '32'] + cmd
     pytest.main(cmd, plugins=[test_results])
