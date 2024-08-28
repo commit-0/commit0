@@ -214,7 +214,7 @@
   setup:
     - "pip install gevent geventhttpclient setuptools>=17.1"
     - "pip install pytest pytest-cov coverage"
-    - "pip install .[dev]"
+    - "pip install -e .[dev]"
   specification: "https://dulwich.readthedocs.io/_/downloads/en/latest/pdf/"
   test_path: "tests"
 
