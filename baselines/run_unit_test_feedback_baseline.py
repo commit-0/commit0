@@ -43,7 +43,9 @@ def main():
             cmd = pattern.findall(cmd)
             subprocess.run(cmd, check=True, text=True, capture_output=True)
             aider_path = os.path.join(venv_dir, 'aider')
-            for test_name in example["FAIL_TO_PASS"]:
+            tests = set([x.split("::")[0] for x in example["FAIL_TO_PASS"]])
+            print(tests)
+            for test_name in tests:
                 pytest_path = venv_dir + os.sep + 'pytest'
                 test_name = os.path.join(path, test_name)
                 logger.info(f"working on {test_name}")
