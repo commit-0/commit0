@@ -3,11 +3,12 @@
   commit: "7d35d597ad226e73289e6920fbc1e83ea6148c8b"
   tag: null
   python: "3.10"
-  setup:
-    - "pip install -r requirements.txt"
-    - "pip install -r requirements.extra.txt"
-    - "pip install -e ."
-    - "pip install numba==0.60"
+  setup: "pip install -e ."
+  packages:
+    - "requirements.txt"
+    - "requirements.extra.txt"
+  pip_packages:
+    - "numba==0.60"
   specification: "https://minitorch.github.io/"
   test_cmd: "pytest tests/"
 
@@ -16,10 +17,11 @@
   commit: null
   tag: "4.1.1"
   python: "3.10"
-  setup:
-    - "pip install -r requirements-dev.txt"
-    - "pip install py"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements-dev.txt"
+  pip_packages:
+    - "py"
   specification: "https://simpy.readthedocs.io/en/4.1.1/"
   test_cmd: "pytest tests/"
 
@@ -28,9 +30,9 @@
   commit: null
   tag: "bitstring-4.2.3"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install -r tests/requirements.txt"
+  setup: "pip install -e ."
+  packages:
+    - "tests/requirements.txt"
   specification: "https://bitstring.readthedocs.io/en/stable/"
   test_cmd: "pytest tests/ --benchmark-disable"
 
@@ -39,17 +41,17 @@
   commit: null
   tag: "v4.8.0"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest>=7.2.0,<8.0.0"
-    - "pip install pytest-pycodestyle>=2.3.1,<3.0.0"
-    - "pip install pytest-cov>=4.0.0,<5.0.0"
-    - "pip install pycodestyle>=2.10.0,<3.0.0"
-    - "pip install sphinx>=7.0.0,<8.0.0"
-    - "pip install coveralls>=3.3.1,<4.0.0"
-    - "pip install pyyaml>=6.0,<7.0"
-    - "pip install types-PyYAML>=6.0.0,<7.0.0"
-    - "pip install typing-extensions>=4.4.0,<5.0.0"
+  setup: "pip install -e ."
+  pip_packages:
+    - "pytest>=7.2.0,<8.0.0"
+    - "pytest-pycodestyle>=2.3.1,<3.0.0"
+    - "pytest-cov>=4.0.0,<5.0.0"
+    - "pycodestyle>=2.10.0,<3.0.0"
+    - "sphinx>=7.0.0,<8.0.0"
+    - "coveralls>=3.3.1,<4.0.0"
+    - "pyyaml>=6.0,<7.0"
+    - "types-PyYAML>=6.0.0,<7.0.0"
+    - "typing-extensions>=4.4.0,<5.0.0"
   specification: "https://tinydb.readthedocs.io/_/downloads/en/v4.8.0/pdf/"
   test_cmd: "pytest tests/"
 
@@ -58,8 +60,7 @@
   commit: null
   tag: "3.21.3"
   python: "3.10"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://marshmallow.readthedocs.io/_/downloads/en/stable/pdf/"
   test_cmd: "pytest tests/"
 
@@ -68,9 +69,11 @@
   commit: null
   tag: "3.0.43"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest pytest-cov"
+  setup: "pip install -e ."
+  pip_packages:
+    - "pytest"
+    - "pytest-cov"
+    - "coverage"
   specification: "https://python-prompt-toolkit.readthedocs.io/_/downloads/en/3.0.43/pdf/"
   test_cmd: "pytest tests/"
 
@@ -79,9 +82,9 @@
   commit: null
   tag: "v1.9.1"
   python: "3.12"
-  setup:
-    - "pip install -e ."
-    - "pip install -r tests/requirements.txt"
+  setup: "pip install -e ."
+  packages:
+    - "tests/requirements.txt"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
   test_cmd: "pytest --assert=plain --ignore=setup.py" 
 
@@ -90,8 +93,7 @@
   commit: null
   tag: "2.8.0"
   python: "3.12"
-  setup:
-    - "pip install -e .[crypto,tests,dev]"
+  setup: "pip install -e .[crypto,tests,dev]"
   specification: "https://pyjwt.readthedocs.io/_/downloads/en/2.8.0/pdf/"
   test_cmd: "pytest -ra tests --disable-warnings --filterwarnings=once::Warning --filterwarnings=ignore:::pympler[.*]"
 
@@ -100,8 +102,7 @@
   commit: null
   tag: "networkx-3.3"
   python: "3.12"
-  setup:
-    - "pip install -e .[default,developer,test]"
+  setup: "pip install -e .[default,developer,test]"
   specification: "https://networkx.org/documentation/networkx-3.3/"
   test_cmd: "pytest --durations=10 --pyargs networkx"
 
@@ -110,8 +111,7 @@
   commit: null
   tag: "v3.3.0"
   python: "3.11"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://docs.graphene-python.org/en/stable/"
   test_cmd: "pytest graphene"
 
@@ -120,9 +120,9 @@
   commit: "2020609db2b435437ccb22cca5129dfcad3caa76"
   tag: null
   python: "3.12"
-  setup:
-    - "pip install -r build-requirements.txt"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "build-requirements.txt"
   specification: "https://tlslite-ng.readthedocs.io/en/latest/"
   test_cmd: "pytest unit_tests/"
 
@@ -131,9 +131,11 @@
   commit: null
   tag: "0.2.13"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest pytest-cov"
+  setup: "pip install -e ."
+  pip_packages:
+    - "pytest"
+    - "pytest-cov"
+    - "coverage"
   specification: "https://wcwidth.readthedocs.io/en/stable/"
   test_cmd: "pytest tests/"
 
@@ -142,13 +144,13 @@
   commit: null
   tag: "5.0.0"
   python: "3.12"
-  setup:
-    - "pip install -e ."
-    - "pip install hypothesis>=6.0.0,<7.0.0"
-    - "pip install pre-commit>=3.5,<4.0"
-    - "pip install pytest>=8.3.2,<9.0.0"
-    - "pip install ruff>=0.5.5,<0.6.0"
-    - "pip install sphinx_rtd_theme>=1.0.0,<2.0.0"
+  setup: "pip install -e ."
+  pip_packages:
+    - "hypothesis>=6.0.0,<7.0.0"
+    - "pre-commit>=3.5,<4.0"
+    - "pytest>=8.3.2,<9.0.0"
+    - "ruff>=0.5.5,<0.6.0"
+    - "sphinx_rtd_theme>=1.0.0,<2.0.0"
   specification: "https://chardet.readthedocs.io/_/downloads/en/stable/pdf/"
   test_cmd: "pytest"
 
@@ -157,8 +159,7 @@
   commit: null
   tag: "v2.6.1"
   python: "3.12"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://dnspython.readthedocs.io/en/stable/"
   test_cmd: "pytest"
 
@@ -167,10 +168,13 @@
   commit: null
   tag: "3.0.1"
   python: "3.10"
-  setup:
-    - "pip install -r requirements-dev.txt"
-    - "pip install pytest pytest-cov"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements-dev.txt"
+  pip_packages:
+    - "pytest"
+    - "pytest-cov"
+    - "coverage"
   specification: "https://imapclient.readthedocs.io/en/3.0.1/"
   test_cmd: "pytest tests/"
 
@@ -179,8 +183,7 @@
   commit: null
   tag: "20.26.3"
   python: "3.12"
-  setup:
-    - "pip install -e .[test]"
+  setup: "pip install -e .[test]"
   specification: "https://virtualenv.pypa.io/en/20.26.3/"
   test_cmd: "pytest tests/"
 
@@ -189,9 +192,9 @@
   commit: null
   tag: "4.9"
   python: "3.10"
-  setup:
-    - "pip install -r requirements-testing.txt"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements-testing.txt"
   specification: "https://pexpect.readthedocs.io/_/downloads/en/stable/pdf/"
   test_cmd: "pytest tests/"
 
@@ -200,9 +203,9 @@
   commit: null
   tag: "v6.20.2"
   python: "3.12"
-  setup:
+  pre_install:
     - "git submodule update --init"
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.2/pdf/"
   test_cmd: "pytest tests/core tests/ens tests/integration"
 
@@ -211,9 +214,9 @@
   commit: null
   tag: "v2.14.0"
   python: "3.10"
-  setup:
-    - "pip install -e .[dev]"
+  pre_install:
     - "python scripts/download_import_cldr.py"
+  setup: "pip install -e .[dev]"
   specification: "https://babel.pocoo.org/_/downloads/en/stable/pdf/"
   test_cmd: "pytest tests/"
 
@@ -222,8 +225,7 @@
   commit: null
   tag: "v1.0.1"
   python: "3.10"
-  setup:
-    - "pip install -e .[all,dev]"
+  setup: "pip install -e .[all,dev]"
   specification: "https://geopandas.org/en/stable/"
   test_cmd: "pytest -v -r a -n auto geopandas/"
 
@@ -232,10 +234,14 @@
   commit: "21e1ba8a61149fa966640e81019c33bce93b37f2"
   tag: null
   python: "3.10"
-  setup:
-    - "pip install gevent geventhttpclient setuptools>=17.1"
-    - "pip install pytest pytest-cov coverage"
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
+  pip_packages:
+    - "gevent"
+    - "geventhttpclient"
+    - "setuptools>=17.1"
+    - "pytest"
+    - "pytest-cov"
+    - "coverage"
   specification: "https://dulwich.readthedocs.io/_/downloads/en/latest/pdf/"
   test_cmd: "pytest tests/"
 
@@ -244,10 +250,10 @@
   commit: null
   tag: "3.0.3"
   python: "3.12"
-  setup:
-    - "pip install -r requirements/dev.txt"
-    - "pip install -r requirements/tests.txt"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements/dev.txt"
+    - "requirements/tests.txt"
   specification: "https://flask.palletsprojects.com/en/3.0.x/"
   test_cmd: "pytest tests/"
 
@@ -256,9 +262,11 @@
   commit: null
   tag: "0.15.2"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest pytest-cov coverage>=3.0"
+  setup: "pip install -e ."
+  pip_packages:
+    - "pytest"
+    - "pytest-cov"
+    - "coverage>=3.0"
   specification: "https://alecthomas.github.io/voluptuous/docs/_build/html/"
   test_cmd: "pytest voluptuous/tests"
 
@@ -268,9 +276,10 @@
   tag: "3.1.4"
   python: "3.10"
   setup:
-    - "pip install -r requirements/dev.txt"
-    - "pip install -r requirements/tests.txt"
     - "pip install -e ."
+  packages:
+    - "requirements/dev.txt"
+    - "requirements/tests.txt"
   specification: "https://jinja.palletsprojects.com/en/3.1.x/"
   test_cmd: "pytest tests/"
 
@@ -279,8 +288,7 @@
   commit: null
   tag: "v0.13.2"
   python: "3.12"
-  setup:
-    - "pip install -e .[dev,stats]"
+  setup: "pip install -e .[dev,stats]"
   specification: "https://seaborn.pydata.org/"
   test_cmd: "pytest -n auto tests/"
 
@@ -289,9 +297,9 @@
   commit: null
   tag: "v2.32.3"
   python: "3.12"
-  setup:
-    - "pip install -r requirements-dev.txt"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements-dev.txt"
   specification: "https://requests.readthedocs.io/_/downloads/en/latest/pdf/"
   test_cmd: "pytest tests/"
 
@@ -303,17 +311,17 @@
   pre_install:
     - "apt-get update"
     - "apt-get install libxml2-dev libxslt-dev"
-  setup:
-    - "pip install -e ."
-    - "pip install attrs"
-    - "pip install pexpect>=4.8.0"
-    - "pip install pyftpdlib>=1.5.8"
-    - "pip install pygments"
-    - "pip install pytest"
-    - "pip install pytest-cov==4.0.0"
-    - "pip install pytest-xdist"
-    - "pip install sybil>=1.3.0"
-    - "pip install testfixtures"
+  setup: "pip install -e ."
+  pip_packages:
+    - "attrs"
+    - "pexpect>=4.8.0"
+    - "pyftpdlib>=1.5.8"
+    - "pygments"
+    - "pytest"
+    - "pytest-cov==4.0.0"
+    - "pytest-xdist"
+    - "sybil>=1.3.0"
+    - "testfixtures"
   specification: "https://docs.scrapy.org/_/downloads/en/2.11/pdf/"
   test_cmd: "pytest tests"
 
@@ -322,8 +330,9 @@
   commit: null
   tag: "0.112.1"
   python: "3.10"
-  setup:
-    - "pip install -r requirements.txt"
+  setup: "pip install -e .[all]"
+  packages:
+    - "requirements-tests.txt"
   specification: "https://fastapi.tiangolo.com/"
   test_cmd: "pytest tests"
 
@@ -332,10 +341,10 @@
   commit: null
   tag: "8.1.7"
   python: "3.12"
-  setup:
-    - "pip install -r requirements/dev.txt"
-    - "pip install -r requirements/tests.txt"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements/dev.txt"
+    - "requirements/tests.txt"
   specification: "https://click.palletsprojects.com/en/8.1.x/"
   test_cmd: "pytest"
 
@@ -344,15 +353,15 @@
   commit: null
   tag: "version-4.9"
   python: "3.12"
-  setup:
-    - "pip install -e ."
-    - "pip install coveralls>=3.0.0,<4.0.0"
-    - "pip install Sphinx>=5.0.0,<6.0.0"
-    - "pip install pytest>=7.2,<8.0"
-    - "pip install pytest-cov>=4.0,<5.0"
-    - "pip install tox>=3.22.0,<4.0.0"
-    - "pip install mypy>=1.2,<2.0"
-    - "pip install flake8>=3.8.4,<4.0.0"
+  setup: "pip install -e ."
+  pip_packages:
+    - "coveralls>=3.0.0,<4.0.0"
+    - "Sphinx>=5.0.0,<6.0.0"
+    - "pytest>=7.2,<8.0"
+    - "pytest-cov>=4.0,<5.0"
+    - "tox>=3.22.0,<4.0.0"
+    - "mypy>=1.2,<2.0"
+    - "flake8>=3.8.4,<4.0.0"
   specification: "https://stuvel.eu/python-rsa-doc/"
   test_cmd: "pytest"
 
@@ -361,8 +370,7 @@
   commit: null
   tag: "v0.14.1"
   python: "3.10"
-  setup:
-    - "pip install -e .[develop]"
+  setup: "pip install -e .[develop]"
   specification: "https://www.statsmodels.org/stable/"
   test_cmd: "pytest -n auto -r s statsmodels --dist loadscope --skip-examples"
 
@@ -372,9 +380,13 @@
   tag: "v10.4.0"
   python: "3.12"
   setup:
-    - "pip install -r requirements/development.txt"
     - "pip install -e ."
-    - "pip install pytest pytest-cov coverage"
+  packages:
+    - "requirements/development.txt"
+  pip_packages:
+    - "pytest"
+    - "pytest-cov"
+    - "coverage"
   specification: "https://more-itertools.readthedocs.io/en/v10.4.0/"
   test_cmd: "pytest tests/"
 
@@ -392,9 +404,11 @@
     - "apt-get install pkg-config"
     - "apt-get update"
     - "apt-get install uuid-dev"
-  setup:
-    - "pip install --upgrade wheel setuptools coveralls"
-    - "pip install -e .[test, optional]"
+  setup: "pip install -e .[test, optional]"
+  pip_packages:
+    - "wheel"
+    - "setuptools"
+    - "coveralls"
   specification: "https://zulko.github.io/moviepy/"
   test_cmd: "pytest"
 
@@ -403,8 +417,7 @@
   commit: null
   tag: "v1.2.14"
   python: "3.10"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://deprecated.readthedocs.io/en/latest/"
   test_cmd: "pytest tests"
 
@@ -413,30 +426,30 @@
   commit: null
   tag: "v2.8.2"
   python: "3.12"
-  setup:
-    - "pip install -e ."
-    - "pip install cloudpickle"
-    - "pip install coverage[toml]"
-    - "pip install dirty-equals"
-    - "pip install eval-type-backport"
-    - "pip install pytest>=8.2.2"
-    - "pip install pytest-mock"
-    - "pip install pytest-pretty"
-    - "pip install pytest-examples"
-    - "pip install faker>=18.13.0"
-    - "pip install pytest-benchmark>=4.0.0"
-    - "pip install pytest-codspeed~=2.2.0"
-    - "pip install pytz"
-    - "pip install packaging>=23.2"
-    - "pip install ansi2html"
-    - "pip install devtools"
-    - "pip install sqlalchemy>=2.0,<3.0"
-    - "pip install greenlet>=3.0.0rc3"
-    - "pip install mypy"
-    - "pip install pydantic-settings>=2.0.0"
-    - "pip install pytest-memray"
-    - "pip install jsonschema>=4.23.0"
-    - "pip install email-validator>=2.0.0"
+  setup: "pip install -e ."
+  pip_packages:
+    - "cloudpickle"
+    - "coverage[toml]"
+    - "dirty-equals"
+    - "eval-type-backport"
+    - "pytest>=8.2.2"
+    - "pytest-mock"
+    - "pytest-pretty"
+    - "pytest-examples"
+    - "faker>=18.13.0"
+    - "pytest-benchmark>=4.0.0"
+    - "pytest-codspeed~=2.2.0"
+    - "pytz"
+    - "packaging>=23.2"
+    - "ansi2html"
+    - "devtools"
+    - "sqlalchemy>=2.0,<3.0"
+    - "greenlet>=3.0.0rc3"
+    - "mypy"
+    - "pydantic-settings>=2.0.0"
+    - "pytest-memray"
+    - "jsonschema>=4.23.0"
+    - "email-validator>=2.0.0"
   specification: "https://docs.pydantic.dev/2.8/"
   test_cmd: "pytest --ignore=tests/mypy/ --ignore=tests/test_docs.py --memray"
 
@@ -445,8 +458,7 @@
   commit: null
   tag: "0.7.2"
   python: "3.10"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://loguru.readthedocs.io/_/downloads/en/0.7.2/pdf/"
   test_cmd: "pytest tests/"
 
@@ -458,11 +470,13 @@
   pre_install:
     - "apt-get update"
     - "apt-get install ghostscript"
-  setup:
     - "git submodule update --init"
-    - "pip install -r requirements/ci-3.11.txt"
-    - "pip install cryptography"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  packages:
+    - "requirements/ci-3.11.txt"
+  pip_packages:
+    - "cryptography"
+  eval_commands:
     - "python -c 'from tests import download_test_pdfs; download_test_pdfs()'"
   specification: "https://pypdf.readthedocs.io/_/downloads/en/4.3.1/pdf/"
   test_cmd: "pytest tests -n auto"
@@ -472,8 +486,7 @@
   commit: null
   tag: "24.2.0"
   python: "3.12"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://www.attrs.org/en/24.2.0/"
   test_cmd: "pytest -n auto"
 
@@ -482,29 +495,29 @@
   commit: null
   tag: "v17.0.0"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest>=7.2,<8.0"
-    - "pip install pytest-mock>=3.10,<4.0"
-    - "pip install requests>=2.28,<3.0"
-    - "pip install mypy>=1.1,<2.0"
-    - "pip install colorama>=0.4.6,<0.5.0"
-    - "pip install pygments>=2.13,<3.0"
-    - "pip install pytest-randomly>=3.12,<4.0"
-    - "pip install pytz>=2023.3,<2024.0"
-    - "pip install black>=22.10,<24.0"
-    - "pip install autoflake>=2.0,<3.0"
-    - "pip install types-pytz>=2023.3,<2024.0"
-    - "pip install taskipy>=1.10.1,<2.0"
-    - "pip install validators>=0.20.0,<0.21.0"
-    - "pip install pytest-repeat>=0.9.1,<0.10.0"
-    - "pip install isort>=5.12,<6.0"
-    - "pip install coverage>=7.2.3,<8.0"
-    - "pip install pytest-cov>=4.0.0,<5.0"
-    - "pip install Sphinx>=5.1.1,<8.0.0"
-    - "pip install sphinx-copybutton>=0.5.0,<0.6.0"
-    - "pip install sphinx-autodoc-typehints>=1.19.2,<2.0"
-    - "pip install pytest-factoryboy>=2.6.0,<3.0"
+  setup: "pip install -e ."
+  pip_packages:
+    - "pytest>=7.2,<8.0"
+    - "pytest-mock>=3.10,<4.0"
+    - "requests>=2.28,<3.0"
+    - "mypy>=1.1,<2.0"
+    - "colorama>=0.4.6,<0.5.0"
+    - "pygments>=2.13,<3.0"
+    - "pytest-randomly>=3.12,<4.0"
+    - "pytz>=2023.3,<2024.0"
+    - "black>=22.10,<24.0"
+    - "autoflake>=2.0,<3.0"
+    - "types-pytz>=2023.3,<2024.0"
+    - "taskipy>=1.10.1,<2.0"
+    - "validators>=0.20.0,<0.21.0"
+    - "pytest-repeat>=0.9.1,<0.10.0"
+    - "isort>=5.12,<6.0"
+    - "coverage>=7.2.3,<8.0"
+    - "pytest-cov>=4.0.0,<5.0"
+    - "Sphinx>=5.1.1,<8.0.0"
+    - "sphinx-copybutton>=0.5.0,<0.6.0"
+    - "sphinx-autodoc-typehints>=1.19.2,<2.0"
+    - "pytest-factoryboy>=2.6.0,<3.0"
   specification: "https://mimesis.name/en/v17.0.0/"
   test_cmd: "pytest tests"
 
@@ -513,9 +526,9 @@
   commit: null
   tag: "2.6.0"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install -r test_requirements.txt"
+  setup: "pip install -e ."
+  packages:
+    - "test_requirements.txt"
   specification: "https://cookiecutter.readthedocs.io/_/downloads/en/2.6.0/pdf/"
   test_cmd: "pytest tests"
 
@@ -524,11 +537,15 @@
   commit: null
   tag: "v6.4.1"
   python: "3.10"
-  pre_install: "apt-get update && apt-get install libcurl4-openssl-dev"
-  setup:
-    - "pip install -r requirements.txt"
-    - "pip install -e ."
-    - "pip install pytest pytest-cov coverage"
+  pre_install:
+    - "apt-get update && apt-get install libcurl4-openssl-dev"
+  setup: "pip install -e ."
+  packages:
+    - "requirements.txt"
+  pip_packages:
+    - "pytest"
+    - "pytest-cov"
+    - "coverage"
   specification: "https://www.tornadoweb.org/_/downloads/en/stable/pdf/"
   test_cmd: "pytest tornado/test"
 
@@ -537,8 +554,7 @@
   commit: null
   tag: "0.12.3"
   python: "3.10"
-  setup:
-    - "pip install -e .[install,optional,tests]"
+  setup: "pip install -e .[install,optional,tests]"
   specification: "https://imbalanced-learn.org/stable/"
   test_cmd: "pytest -n auto imblearn"
 
@@ -547,8 +563,7 @@
   commit: null
   tag: "v4.4.2"
   python: "3.10"
-  setup:
-    - "pip install -e .[tests]"
+  setup: "pip install -e .[tests]"
   specification: "https://progressbar-2.readthedocs.io/_/downloads/en/stable/pdf/"
   test_cmd: "pytest tests"
 
@@ -560,10 +575,10 @@
   pre_install:
     - "apt update"
     - "apt install libopengl0 freeglut3-dev"
-  setup:
-    - "pip install -r requirements.txt"
-    - "pip install -r requirements_tests.txt"
-    - "pip install -e .[all]"
+  setup: "pip install -e .[all]"
+  packages:
+    - "requirements.txt"
+    - "requirements_tests.txt"
   specification: "https://docs.pyboy.dk/"
   test_cmd: "pytest tests -n auto -v"
 
@@ -572,8 +587,7 @@
   commit: null
   tag: "8.3.2"
   python: "3.10"
-  setup:
-    - "pip install -e .[dev]"
+  setup: "pip install -e .[dev]"
   specification: "https://docs.pytest.org/_/downloads/en/8.3.x/pdf/"
   test_cmd: "pytest"
 
@@ -582,8 +596,9 @@
   commit: null
   tag: "v3.2.6"
   python: "3.10"
-  setup:
-    - "pip install -r requirements_test.txt"
+  setup: "pip install -e ."
+  packages:
+    - "requirements_test.txt"
   specification: "https://pylint.readthedocs.io/en/v3.2.6/"
   test_cmd: "pytest --benchmark-disable tests/"
 
@@ -595,8 +610,7 @@
   pre_install:
     - "apt-get update"
     - "apt-get install graphviz"
-  setup:
-    - "pip install -e .[test]"
+  setup: "pip install -e .[test]"
   specification: "https://www.sphinx-doc.org/en/master/"
   test_cmd: "pytest"
 
@@ -611,12 +625,18 @@
     - "apt-get install -yq software-properties-common"
     - "add-apt-repository --yes ppa:deadsnakes/nightly"
     - "apt-get update -yq"
-  setup:
-    - "pip install pytest"
-    - "pip install pytest-timeout pytest-asyncio==0.21.1 threadpoolctl"
-    - "pip install coverage pytest-cov"
-    - "pip install pillow numpy scipy scikit-learn"
-    - "pip install -e ."
+  setup: "pip install -e ."
+  pip_packages:
+    - "pytest"
+    - "pytest-timeout"
+    - "pytest-asyncio==0.21.1"
+    - "threadpoolctl"
+    - "coverage"
+    - "pytest-cov"
+    - "pillow"
+    - "numpy"
+    - "scipy"
+    - "scikit-learn"
   specification: "https://joblib.readthedocs.io/en/stable/"
   test_cmd: "pytest joblib"
 
@@ -625,8 +645,7 @@
   commit: null
   tag: "v2024.07.0"
   python: "3.12"
-  setup:
-    - "pip install -e .[complete]"
+  setup: "pip install -e .[complete]"
   specification: "https://docs.xarray.dev/en/v2024.07.0/"
   test_cmd: "pytest xarray/tests -n auto"
 
@@ -635,10 +654,11 @@
   commit: null
   tag: "v5.5.0"
   python: "3.10"
-  setup:
-    - "pip install -e ."
-    - "pip install pytest"
-    - "pip install pytest-cov"
+  setup: "pip install -e ."
+  pip_packages:
+    - "coverage"
+    - "pytest"
+    - "pytest-cov"
   specification: "https://cachetools.readthedocs.io/en/v5.5.0/"
   test_cmd: "pytest tests"
 
@@ -650,8 +670,9 @@
   pre_install:
     - "apt-get update"
     - "apt-get install openssl-dev libffi-dev make cargo bash"
-  setup:
-    - "pip install -r dev-requirements.txt"
+  setup: "pip install -e .[invoke]"
+  packages:
+    - "dev-requirements.txt"
   specification: "https://www.paramiko.org/"
   test_cmd: "pytest tests"
 
@@ -664,8 +685,9 @@
     - "apt update"
     - "apt install -y openssh-server wamerican-large"
     - "/etc/init.d/ssh start"
-  setup:
-    - "pip install -r dev-requirements.txt"
+  setup: "pip install -e ."
+  packages:
+    - "dev-requirements.txt"
   specification: "https://www.fabfile.org/"
   test_cmd: "pytest tests"
 
@@ -674,9 +696,9 @@
   commit: null
   tag: "2024.6.1"
   python: "3.10"
-  setup:
+  pre_install:
     - "bash install_s3fs.sh"
-    - "pip install -e .[full,test]"
+  setup: "pip install -e .[full,test]"
   specification: "https://filesystem-spec.readthedocs.io/en/stable/"
   test_cmd: "pytest fsspec/tests"
 
@@ -685,9 +707,9 @@
   commit: null
   tag: "v0.19.1"
   python: "3.10"
-  setup:
+  pre_install:
     - "git submodule update --init"
-    - "pip install -e .[testing]"
+  setup: "pip install -e .[testing]"
   specification: "https://jedi.readthedocs.io/en/stable/"
   test_cmd: "pytest"
 
@@ -696,9 +718,12 @@
   commit: null
   tag: "0.5.1"
   python: "3.10"
-  setup:
-    - "pip install -e .[dev]"
-    - "pip install coverage[toml]>=6.5 pytest flake8"
+  setup: "pip install -e .[dev]"
+  pip_packages:
+    - "coverage[toml]>=6.5"
+    - "pytest"
+    - "pytest-cov"
+    - "flake8"
   specification: "https://sqlparse.readthedocs.io/en/stable/"
   test_cmd: "pytest tests"
 
@@ -707,7 +732,6 @@
   commit: null
   tag: "v2.10.1"
   python: "3.10"
-  setup:
-    - "pip install -e .[tests]"
+  setup: "pip install -e .[tests]"
   specification: "https://portalocker.readthedocs.io/en/stable/"
   test_cmd: "pytest portalocker_tests"
