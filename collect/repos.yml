@@ -471,13 +471,12 @@
     - "apt-get update"
     - "apt-get install ghostscript"
     - "git submodule update --init"
-  setup: "pip install -e ."
+  setup: "pip install -e .; python -c 'from tests import download_test_pdfs; download_test_pdfs()'"
   packages:
     - "requirements/ci-3.11.txt"
   pip_packages:
     - "cryptography"
   eval_commands:
-    - "python -c 'from tests import download_test_pdfs; download_test_pdfs()'"
   specification: "https://pypdf.readthedocs.io/_/downloads/en/4.3.1/pdf/"
   test_cmd: "pytest tests -n auto"
 
