@@ -10,10 +10,7 @@ from datasets import Dataset, DatasetDict
 
 from utils import (
     generate_base_commit,
-    get_requirements,
-    extract_patches,
-    run_pytest,
-    retrieve_commit_time,
+    extract_patch,
     Repo,
 )
 
@@ -23,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_commands: list[str], test_path: str) -> dict:
+def create_instance(repo: Repo, base_branch_name: str, removal: str) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -32,33 +29,16 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, setup_comma
         base_commit (str): SHA of the base commit for starter repo,
         environment_setup_commit(str): SHA of the commit for setting up environment,
         patch (str): reference solution as .patch (apply to base commit),
-        test_patch (str): test suite as .patch (apply to base commit),
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    test_names = run_pytest(repo, "list", test_path)
     base_commit = generate_base_commit(repo, base_branch_name, removal)
-    patch, test_patch = extract_patches(repo, base_commit)
-    created_at = retrieve_commit_time(repo, base_commit)
-    requirements = get_requirements(repo)
+    patch = extract_patch(repo, base_commit)
     return {
         "repo": repo.repo.full_name,
-        "instance_id": (repo.repo.full_name + "-01").replace(
-            "/", "__"
-        ),
         "base_commit": base_commit,
         "environment_setup_commit": repo.commit,
-        "environment_setup_commands": setup_commands,
         "patch": patch,
-        "test_patch": test_patch,
-        "problem_statement": "",
-        "hints_text": "",
-        "created_at": created_at,
-        "PASS_TO_PASS": [],
-        "FAIL_TO_PASS": test_names,
-        "version": "1.0",
-        "test_path": test_path,
-        "pip_freeze": requirements
     }
 
 
@@ -92,9 +72,9 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         else:
             head = info['commit']
         owner, repo = info['name'].split("/")
-        repo = Repo(owner, repo, organization=organization, head=head, setup=info['setup'], token=token)
+        repo = Repo(owner, repo, organization=organization, head=head, token=token)
         # Create task instance
-        instance = create_instance(repo, base_branch_name, removal, info['setup'], info["test_path"])
+        instance = create_instance(repo, base_branch_name, removal)
         examples.append(instance)
     ds = Dataset.from_list(examples)
     ds = DatasetDict({"test": ds})

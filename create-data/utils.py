@@ -1,23 +1,16 @@
-import contextlib
 import difflib
 import logging
 import os
-import re
 import shutil
-import subprocess
-import sys
 import time
-import venv
 from glob import glob
-from typing import Callable, Iterator, Optional
+from typing import Callable, Optional
 
 import ast
 import astor
 import git
 from ghapi.core import GhApi
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
-
-from run_pytest import SOS, SEP
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -26,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class Repo:
-    def __init__(self, owner: str, name: str, organization: str, head: str, setup: list[str], pip_freeze: Optional[str] = None, token: Optional[str] = None):
+    def __init__(self, owner: str, name: str, organization: str, head: str, token: Optional[str] = None):
         """
         Init to retrieve target repository and create ghapi tool
 
@@ -46,7 +39,7 @@ class Repo:
         if self.repo is None:
             self.repo = self.call_api(self.api.repos.create_fork, owner=owner, repo=name, organization=organization)
             # The API call returns immediately when the fork isn't complete. Needed to wait for a few seconds to finish.
-            time.sleep(5)
+            time.sleep(2)
         self.cwd = os.getcwd()
         if head.startswith("tags/"):
             self.commit = self.get_commit_by_tag(head)
@@ -54,16 +47,7 @@ class Repo:
             self.commit = head
         logger.info("Setting up a local copy of the repository.")
         self.clone_dir = os.path.abspath(os.path.join('tmp', self.name))
-        if pip_freeze is not None:
-            if not isinstance(pip_freeze, str):
-                raise ValueError(f"pip requirements were provided but they are not in a str but instead {type(pip_requirements)}")
-            setup = [one for one in setup if not one.startswith("pip")]
-            logger.info("Repository will be set up with pip freezed requirements.txt.")
-        else:
-            logger.warning("Environment setup commands were provided instead of pip freezed requirements")
-            logger.warning("Therefore, the Repo constructor should only be called from build_dataset.py")
-            logger.warning("In all other cases, you should pass requirements freezed from pip to set up the repo")
-        self.local_repo = self.clone_repo(setup=setup, pip_freeze=pip_freeze)
+        self.local_repo = self.clone_repo()
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
         """
@@ -93,13 +77,10 @@ class Repo:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
 
-    def clone_repo(self, setup: list[str], pip_freeze: Optional[str]) -> None:
+    def clone_repo(self) -> None:
         """
         Clone repo into a temporary directory
 
-        Args:
-            tmp_dir (str): which temporary directory to clone the repo to
-            setup (list[str]): a list of setup steps
         Return:
             None
         """
@@ -116,33 +97,6 @@ class Repo:
             repo.git.checkout(self.commit)
         except git.exc.GitCommandError as e:
             raise RuntimeError(f"Failed to check out {self.commit}: {e}")
-        env_dir = os.path.join(self.clone_dir, 'venv')
-        venv.create(env_dir, with_pip=True)
-        logger.info(f"Virtual environment created at {env_dir}")
-        os.chdir(self.clone_dir)
-        pattern = re.compile(r"""(?:[^\s']+|'(?:\\.|[^'\\])*')""")
-        # assume all setup that is str is a requirement.txt
-        if pip_freeze is not None:
-            with open("pip_freezed_requirements.txt", 'w') as fout:
-                fout.write(pip_freeze)
-            setup += ["pip install -r pip_freezed_requirements.txt"]
-        for one in setup:
-            # anything in the quotation marks cannot be split
-            one = pattern.findall(one)
-            if one[0] == "git":
-                cmd = one[0]
-            else:
-                cmd = os.path.join(env_dir, 'bin', one[0])
-            cmd = [cmd] + one[1:]
-            try:
-                logger.info(f"Executing {' '.join(cmd)}")
-                subprocess.run(cmd, check=True, text=True, capture_output=True)
-            except subprocess.CalledProcessError as e:
-                logger.info(f"Command failed with exit code {e.returncode}")
-                logger.info(f"STDOUT: {e.stdout}")
-                logger.info(f"STDERR: {e.stderr}")
-                raise RuntimeError(f"unable to execute {' '.join(cmd)}")
-        os.chdir(self.cwd)
         return repo
 
     def remove_local_repo(self) -> None:
@@ -274,10 +228,6 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
                     logger.warning(f"File {f} is in a submodule and won't be added.")
                 else:
                     raise
-        dummy_test_file = os.path.join(repo.clone_dir, "dummy.txt")
-        with open(dummy_test_file, 'w'):
-            pass
-        repo.local_repo.git.add(dummy_test_file)
         base_commit = repo.local_repo.index.commit("Generated base commit.")
         origin = repo.local_repo.remote(name='origin')
         origin.push(branch_name)
@@ -286,30 +236,16 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
         return base_commit.hexsha
 
 
-def retrieve_commit_time(repo: Repo, commit: str) -> str:
+def extract_patch(repo: Repo, base_commit: str) -> tuple[str, str]:
     """
-    Generate a base commit by removing all function contents
-
-    Args:
-        repo (Repo): repository of the commit
-        commit (str): which commit to retrieve creation time
-    Return:
-        commit_time (str): time at which the commit was created
-    """
-    commit_info = repo.call_api(repo.api.repos.get_commit, owner=repo.owner, repo=repo.name, ref=commit)
-    commit_time = commit_info.commit.author.date
-    return commit_time
-
-def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
-    """
-    Generate both the gold patch and a dummy test patch (required by SWE-bench)
+    Generate both the gold patch
 
     Args:
         repo: which repo to generate patches
         base_commit: commit before changes
 
     Return:
-        patches (tuple[str, str]): the gold patch and a dummy test patch
+        patch (str): the gold patch
     """
     files = _find_files_to_edit(repo.clone_dir)
     befores = []
@@ -335,90 +271,5 @@ def extract_patches(repo: Repo, base_commit: str) -> tuple[str, str]:
         )
         diffs.append(''.join(diff))
     patch = '\n'.join(diffs)
-    dummy_f = "dummy.txt"
-    test_patch = difflib.unified_diff(
-        [],
-        ['Dummy TestPatch'],
-        fromfile='a/'+dummy_f,
-        tofile='b/'+dummy_f,
-    )
-    test_patch = ''.join(test_patch)+'\n' # patch file needs a new line at the end
-    return patch, test_patch
+    return patch
 
-def _analyze_pytest(text, option):
-    text = [one.strip() for one in text.split('\n') if one.strip() != ""]
-    text = [one.replace(SOS, "") for one in text if one.startswith(SOS)]
-    if option == "run":
-        out = []
-        for one in text:
-            # my unique seperator
-            one = one.split(SEP)
-            if len(one) != 3:
-                raise ValueError(f"{one} is not of the correct format of the pytest report. It should have exactly three elements: test name, status of the test, and the runtime of the test.")
-            out.append(one)
-        out = [{"test":one[0],"status":one[1],"time":one[2]} for one in out]
-        return out
-    elif option == "list":
-        return text
-    else:
-        raise ValueError(f"Currently we only support 'list' and 'run' for pytest, but you provided {option}.")
-
-
-def run_pytest(repo: Repo, option: str, test_path: str) -> list[str]:
-    """
-    Extract all test function names
-
-    Args:
-        repo (Repo): test names from which repo
-        option (str): whether to actually run the unit tests or just to collect the test names. Choose from ["list", "run"].
-        test_path (str): the path to collect and run tests.
-    Return:
-        collected_tests (list[str]): a list of test function names
-    """
-    if option not in ["list", "run"]:
-        raise ValueError(f"Currently we only support 'list' and 'run' for pytest, but you provided {option}.")
-    # make sure we are collecting tests in environment setup commit
-    repo.local_repo.git.checkout(repo.commit)
-    os.chdir(repo.clone_dir)
-    test_path = os.path.join(repo.clone_dir, test_path)
-
-    venv_dir = os.path.join(repo.clone_dir, 'venv', 'bin')
-    cmd = venv_dir + os.sep + 'python'
-    cmd = cmd.split()
-    cmd = cmd + [os.path.join(repo.cwd, 'run_pytest.py'), option, test_path]
-    try:
-        logger.info(f"Executing {' '.join(cmd)}")
-        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        logger.info(f"STDOUT: {e.stdout}")
-        logger.info(f"STDERR: {e.stderr}")
-        raise RuntimeError(f"unable to execute {' '.join(cmd)}")
-    test_names = _analyze_pytest(result.stdout, option)
-    if len(test_names) == 0:
-        raise ValueError("Something is wrong because only 0 unit cases are found/ran.")
-    logger.info(f"Found/Ran {len(test_names)} unit tests.")
-    os.chdir(repo.cwd)
-    return test_names
-
-
-def get_requirements(repo: Repo) -> list[str]:
-    """
-    Extract all pip requirements
-
-    Args:
-        repo (Repo): pip requirements from which repo
-    Return:
-        pip requirements (list[str]): a list of test function names
-    """
-    pip_path = os.path.join(repo.clone_dir, 'venv', 'bin', 'pip')
-    cmd = [pip_path, 'freeze']
-    try:
-        logger.info(f"Executing {' '.join(cmd)}")
-        result = subprocess.run(cmd, check=True, text=True, capture_output=True)
-    except subprocess.CalledProcessError as e:
-        logger.info(f"STDOUT: {e.stdout}")
-        logger.info(f"STDERR: {e.stderr}")
-        raise RuntimeError(f"unable to execute {' '.join(cmd)}")
-    out = [x if f"git+https://github.com/{repo.owner}/{repo.name}" not in x else "-e ." for x in result.stdout.split('\n')]
-    out = '\n'.join(out)
-    return out
