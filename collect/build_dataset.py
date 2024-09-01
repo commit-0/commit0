@@ -20,7 +20,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def create_instance(repo: Repo, base_branch_name: str, removal: str) -> dict:
+def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: dict) -> dict:
     """
     Create a single task instance from a commit, where task instance is:
 
@@ -34,11 +34,23 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str) -> dict:
     # extract_test_names needs to be called on the environment set up commit
     base_commit = generate_base_commit(repo, base_branch_name, removal)
     patch = extract_patch(repo, base_commit)
+    docker_setup = dict()
+    docker_setup["python"] = raw_info["python"]
+    docker_setup["install"] = raw_info["install"]
+    docker_setup["specification"] = raw_info["specification"]
+    docker_setup["test_cmd"] = raw_info["test_cmd"]
+    if "pre_install" in raw_info:
+        docker_setup["pre_install"] = raw_info["pre_install"]
+    if "packages" in raw_info:
+        docker_setup["packages"] = raw_info["packages"]
+    if "pip_packages" in raw_info:
+        docker_setup["pip_packages"] = raw_info["pip_packages"]
     return {
         "repo": repo.repo.full_name,
         "base_commit": base_commit,
         "environment_setup_commit": repo.commit,
         "patch": patch,
+        "docker_setup": docker_setup
     }
 
 
@@ -74,7 +86,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         owner, repo = info['name'].split("/")
         repo = Repo(owner, repo, organization=organization, head=head, token=token)
         # Create task instance
-        instance = create_instance(repo, base_branch_name, removal)
+        instance = create_instance(repo, base_branch_name, removal, info)
         examples.append(instance)
     ds = Dataset.from_list(examples)
     ds = DatasetDict({"test": ds})
