@@ -1,0 +1,14 @@
+site_name: spec2repo
+nav:
+  - Home: index.md
+  - Setup: setup.md
+  - Extending: repos.md
+  - About: about.md
+theme:
+  name: material
+
+markdown_extensions:
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight
