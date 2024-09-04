@@ -1,7 +1,7 @@
 from ghapi.all import GhApi
 import os
 
-organization = "spec2repo"
+organization = "commit-0"
 gh_token = os.getenv('GITHUB_TOKEN')
 api = GhApi(token=gh_token)
 
@@ -21,8 +21,11 @@ def main():
     repos = list_repos(organization)
 
     for repo in repos:
-        repo_name = repo['name']
-        delete_repo(organization, repo_name)
+        if '.github.io' in repo['name']:
+            continue
+        else:
+            repo_name = repo['name']
+            delete_repo(organization, repo_name)
 
 if __name__ == "__main__":
     main()

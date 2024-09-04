@@ -206,13 +206,13 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
             break
     if exists:
         branch = repo.local_repo.refs[branch_name]
-        if branch.commit.message == "Generated base commit.":
-            logger.info(f"Base commit has already been created.")
+        if branch.commit.message == "Commit 0":
+            logger.info(f"Commit 0 has already been created.")
             return branch.commit.hexsha
         else:
             raise ValueError(f"{branch_name} exists but it's not the base commit")
     else:
-        logger.info(f"Creating the base commit {repo.owner}/{repo.name}")
+        logger.info(f"Creating commit 0 {repo.owner}/{repo.name}")
         repo.local_repo.git.checkout('-b', branch_name)
         files = _find_files_to_edit(repo.clone_dir)
         for f in files:
@@ -228,7 +228,7 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
                     logger.warning(f"File {f} is in a submodule and won't be added.")
                 else:
                     raise
-        base_commit = repo.local_repo.index.commit("Generated base commit.")
+        base_commit = repo.local_repo.index.commit("Commit 0")
         origin = repo.local_repo.remote(name='origin')
         origin.push(branch_name)
         # go back to the starting commit
