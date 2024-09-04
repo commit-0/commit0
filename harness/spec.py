@@ -115,8 +115,9 @@ def make_repo_script_list(specs, repo, repo_directory, base_commit, env_name):
 
     # Install additional packages if specified
     if "pip_packages" in specs and specs["pip_packages"] is not None:
-        pip_packages = " ".join(specs["pip_packages"])
-        cmd = f"uv pip install \"{pip_packages}\""
+        pip_packages = [f"\"{one}\"" for one in specs["pip_packages"]]
+        pip_packages = " ".join(pip_packages)
+        cmd = f"uv pip install {pip_packages}"
         setup_commands.append(cmd)
 
     if "install" in specs and specs["install"] is not None:
