@@ -35,7 +35,7 @@ RUN sh /uv-installer.sh && rm /uv-installer.sh
 ENV PATH="/root/.cargo/bin/:$PATH"
 """
 
-_DOCKERFILE_REPO = r"""FROM --platform={platform} spec2repo.base:latest
+_DOCKERFILE_REPO = r"""FROM --platform={platform} commit0.base:latest
 
 COPY ./setup.sh /root/
 RUN chmod +x /root/setup.sh

@@ -36,7 +36,7 @@ class Spec:
 
     @property
     def base_image_key(self):
-        return f"spec2repo.base:latest"
+        return f"commit0.base:latest"
 
     @property
     def repo_image_key(self):
@@ -51,13 +51,13 @@ class Spec:
         hash_value = hash_object.hexdigest()
         val = hash_value[:22]  # 22 characters is still very likely to be unique
         repo = self.repo.split('/')[-1]
-        return f"spec2repo.repo.{repo}.{val}:latest"
+        return f"commit0.repo.{repo}.{val}:latest".lower()
 
     def get_container_name(self, run_id=None):
         repo = self.repo.split('/')[-1]
         if not run_id:
-            return f"spec2repo.eval.{repo}"
-        return f"spec2repo.eval.{repo}.{run_id}"
+            return f"commit0.eval.{repo}"
+        return f"commit0.eval.{repo}.{run_id}".lower()
 
     @property
     def base_dockerfile(self):
@@ -101,6 +101,10 @@ def make_repo_script_list(specs, repo, repo_directory, base_commit, env_name):
     # Run pre-install set up if provided
     if "pre_install" in specs and specs["pre_install"] is not None:
         for pre_install in specs["pre_install"]:
+            if "apt-get install" in pre_install and "-y" not in pre_install:
+                pre_install = pre_install.replace("apt-get install", "apt-get install -y --no-install-recommends")
+            elif "apt install" in pre_install and "-y" not in pre_install:
+                pre_install = pre_install.replace("apt install", "apt install -y --no-install-recommends")
             setup_commands.append(pre_install)
 
     # Install dependencies
@@ -112,7 +116,7 @@ def make_repo_script_list(specs, repo, repo_directory, base_commit, env_name):
     # Install additional packages if specified
     if "pip_packages" in specs and specs["pip_packages"] is not None:
         pip_packages = " ".join(specs["pip_packages"])
-        cmd = f"uv pip install {pip_packages}"
+        cmd = f"uv pip install \"{pip_packages}\""
         setup_commands.append(cmd)
 
     if "install" in specs and specs["install"] is not None:

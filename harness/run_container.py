@@ -42,6 +42,7 @@ class EvaluationError(Exception):
 def main(hf_name: str, run_id: str, timeout: int):
     dataset = load_dataset(hf_name, split="test")
     for example in dataset:
+        if "sphinx" not in example["repo"]: continue
         spec = make_spec(example)
         client = docker.from_env()
 
