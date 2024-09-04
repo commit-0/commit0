@@ -5,24 +5,24 @@ import docker
 import traceback
 from datasets import load_dataset
 
-from constants import (
+from commit0.harness.constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
     REPO_IMAGE_BUILD_DIR,
     RUN_EVALUATION_LOG_DIR,
 )
-from docker_utils import (
+from commit0.harness.docker_utils import (
     copy_to_container,
     exec_run_with_timeout,
     cleanup_container,
 )
-from docker_build import (
+from commit0.harness.docker_build import (
     BuildImageError,
     build_container,
     close_logger,
     setup_logger,
 )
-from spec import make_spec
+from commit0.harness.spec import make_spec
 
 
 class EvaluationError(Exception):

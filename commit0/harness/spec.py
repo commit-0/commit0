@@ -6,10 +6,10 @@ import re
 from dataclasses import dataclass
 from typing import Any, Union, cast
 
-from constants import (
+from commit0.harness.constants import (
     RepoInstance,
 )
-from dockerfiles import (
+from commit0.harness.dockerfiles import (
     get_dockerfile_base,
     get_dockerfile_repo,
 )
