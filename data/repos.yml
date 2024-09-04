@@ -83,6 +83,9 @@
   tag: "v1.9.1"
   python: "3.12"
   install: "pip install -e ."
+  pre_install:
+    - "apt-get update"
+    - "apt-get install clang"
   packages:
     - "tests/requirements.txt"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
@@ -205,6 +208,8 @@
   python: "3.12"
   pre_install:
     - "git submodule update --init"
+    - "apt-get update"
+    - "apt-get install clang"
   install: "pip install -e .[dev]"
   specification: "https://web3py.readthedocs.io/_/downloads/en/v6.20.2/pdf/"
   test_cmd: "pytest tests/core tests/ens tests/integration"
@@ -411,7 +416,7 @@
   test_cmd: "pytest"
 
 33:
-  name: "tantale/deprecated"
+  name: "laurent-laporte-pro/deprecated"
   commit: null
   tag: "v1.2.14"
   python: "3.10"
@@ -572,6 +577,7 @@
   pre_install:
     - "apt update"
     - "apt install libopengl0 freeglut3-dev"
+    - "apt-get install clang"
   install: "pip install -e .[all]"
   packages:
     - "requirements.txt"

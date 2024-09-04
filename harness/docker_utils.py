@@ -195,7 +195,7 @@ def exec_run_with_timeout(container, cmd, timeout: int|None=60):
             exec_id = container.client.api.exec_create(container.id, cmd)["Id"]
             exec_stream = container.client.api.exec_start(exec_id, stream=True)
             for chunk in exec_stream:
-                exec_result += chunk.decode()
+                exec_result += chunk.decode('utf-8', errors='replace')
         except Exception as e:
             exception = e
 
@@ -306,10 +306,10 @@ def should_remove(
     Determine if an image should be removed based on cache level and clean flag.
     """
     existed_before = image_name in prior_images
-    if image_name.startswith("spec2repo.base"):
+    if image_name.startswith("commit0.base"):
         if cache_level in {"none"} and (clean or not existed_before):
             return True
-    elif image_name.startswith("spec2repo.repo"):
+    elif image_name.startswith("commit0.repo"):
         if cache_level in {"none", "base"} and (clean or not existed_before):
             return True
     return False
