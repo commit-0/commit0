@@ -210,9 +210,9 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
             logger.info(f"Commit 0 has already been created.")
             return branch.commit.hexsha
         else:
-            raise ValueError(f"{branch_name} exists but it's not the base commit")
+            raise ValueError(f"{branch_name} exists but it's not commit 0")
     else:
-        logger.info(f"Creating commit 0 {repo.owner}/{repo.name}")
+        logger.info(f"Creating commit 0")
         repo.local_repo.git.checkout('-b', branch_name)
         files = _find_files_to_edit(repo.clone_dir)
         for f in files:
