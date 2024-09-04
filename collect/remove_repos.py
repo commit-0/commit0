@@ -21,7 +21,7 @@ def main():
     repos = list_repos(organization)
 
     for repo in repos:
-        if '.github.io' in repo['name']:
+        if '.github.io' in repo['name'] or "commit0" in repo['name']:
             continue
         else:
             repo_name = repo['name']
