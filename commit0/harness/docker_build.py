@@ -6,16 +6,16 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-from constants import (
+from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
     REPO_IMAGE_BUILD_DIR,
 )
-from spec import (
+from commit0.harness.spec import (
     get_specs_from_dataset,
     make_spec,
     Spec
 )
-from docker_utils import (
+from commit0.harness.docker_utils import (
     cleanup_container,
     remove_image,
     find_dependent_images
