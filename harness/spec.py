@@ -23,7 +23,6 @@ class Spec:
     repo: str
     repo_script_list: list[str]
     eval_script_list: list[str]
-    env_script_list: list[str]
 
     @property
     def setup_script(self):
@@ -81,7 +80,7 @@ def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> li
     return list(map(make_test_spec, cast(list[RepoInstance], dataset)))
 
 
-def make_repo_script_list(specs, repo, repo_directory, base_commit, env_name):
+def make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_name, base_commit):
     """
     Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
@@ -90,7 +89,7 @@ def make_repo_script_list(specs, repo, repo_directory, base_commit, env_name):
         f"git clone -o origin https://github.com/{repo} {repo_directory}",
         f"chmod -R 777 {repo_directory}",  # So nonroot user can run tests
         f"cd {repo_directory}",
-        f"git reset --hard {base_commit}",
+        f"git reset --hard {env_setup_commit}",
         # Remove the remote so the agent won't see newer commits.
         f"git remote remove origin",
         f"uv venv --python {specs['python']}",
@@ -126,20 +125,8 @@ def make_repo_script_list(specs, repo, repo_directory, base_commit, env_name):
         else:
             raise ValueError(f"install command should always start with pip, but you have {specs['install']}")
         setup_commands.append(install)
+    setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
-
-
-def make_env_script_list(instance, env_name):
-    """
-    Creates the list of commands to set up the uv environment for testing.
-    This is the setup script for the environment image.
-    """
-    specs = instance["docker_setup"]
-    HEREDOC_DELIMITER = "EOF_59812759871"
-    reqs_commands = [
-    ]
-
-    return reqs_commands
 
 
 def make_eval_script_list(instance, env_name, repo_directory, base_commit):
@@ -147,8 +134,6 @@ def make_eval_script_list(instance, env_name, repo_directory, base_commit):
     Run the tests.
     """
     specs = instance["docker_setup"]
-    HEREDOC_DELIMITER = "EOF_114329324912"
-    reset_tests_command = f"git checkout {base_commit}"
     test_command = specs["test_cmd"]
     eval_commands = [
         f"git config --global --add safe.directory {repo_directory}",  # for nonroot user
@@ -160,9 +145,8 @@ def make_eval_script_list(instance, env_name, repo_directory, base_commit):
         "source .venv/bin/activate",
     ]
     eval_commands += [
-        reset_tests_command,
         test_command,
-        reset_tests_command,  # Revert tests after done, leave the repo in the same state as before
+        f"git reset --hard {base_commit}"
     ]
     return eval_commands
 
@@ -171,21 +155,20 @@ def make_spec(instance: RepoInstance) -> Spec:
     if isinstance(instance, Spec):
         return instance
     repo = instance["repo"]
+    env_setup_commit = instance["environment_setup_commit"]
     base_commit = instance["base_commit"]
 
     env_name = "testbed"
     repo_directory = f"/{env_name}"
     specs = instance['docker_setup']
 
-    repo_script_list = make_repo_script_list(specs, repo, repo_directory, base_commit, env_name)
-    env_script_list = make_env_script_list(instance, env_name)
+    repo_script_list = make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_name, base_commit)
     eval_script_list = make_eval_script_list(
         instance, env_name, repo_directory, base_commit
     )
 
     return Spec(
         repo=repo,
-        env_script_list=env_script_list,
         repo_script_list=repo_script_list,
         eval_script_list=eval_script_list,
     )
