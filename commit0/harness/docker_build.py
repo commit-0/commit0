@@ -357,7 +357,7 @@ def build_container(
     try:
         # Get configurations for how container should be created
         user = "root"
-        nano_cpus = 1
+        nano_cpus = 4
 
         # Create the container
         logger.info(f"Creating container for {test_spec.repo}...")
