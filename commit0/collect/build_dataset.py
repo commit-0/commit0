@@ -8,7 +8,7 @@ from typing import Optional
 
 from datasets import Dataset, DatasetDict
 
-from utils import (
+from commit0.collect.utils import (
     generate_base_commit,
     extract_patch,
     Repo,
@@ -38,7 +38,9 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: d
     docker_setup["python"] = raw_info["python"]
     docker_setup["install"] = raw_info["install"]
     docker_setup["specification"] = raw_info["specification"]
-    docker_setup["test_cmd"] = raw_info["test_cmd"]
+    docker_setup["test"] = dict()
+    docker_setup["test"]["test_cmd"] = raw_info["test_cmd"]
+    docker_setup["test"]["test_dir"] = raw_info["test_dir"]
     if "pre_install" in raw_info:
         docker_setup["pre_install"] = raw_info["pre_install"]
     if "packages" in raw_info:

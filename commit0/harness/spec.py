@@ -125,6 +125,7 @@ def make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_nam
         else:
             raise ValueError(f"install command should always start with pip, but you have {specs['install']}")
         setup_commands.append(install)
+    setup_commands.append(f"uv pip install pytest pytest-cov coverage pytest-json-report")
     setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
 
@@ -134,7 +135,7 @@ def make_eval_script_list(instance, env_name, repo_directory, base_commit):
     Run the tests.
     """
     specs = instance["docker_setup"]
-    test_command = specs["test_cmd"]
+    test_command = f"{specs['test']['test_cmd']} {specs['test']['test_dir']}"
     eval_commands = [
         f"git config --global --add safe.directory {repo_directory}",  # for nonroot user
         f"cd {repo_directory}",
