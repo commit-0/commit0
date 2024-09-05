@@ -8,6 +8,7 @@ import threading
 import time
 import traceback
 from pathlib import Path
+from io import BytesIO
 
 from docker.models.containers import Container
 
@@ -48,6 +49,82 @@ def copy_to_container(container: Container, src: Path, dst: Path):
     # clean up in locally and in container
     tar_path.unlink()
     container.exec_run(f"rm {dst}.tar")
+
+
+def copy_from_container(container: Container, src: Path, dst: Path):
+    """
+    Copy a file from a docker container to local
+
+    Args:
+        container (Container): Docker container to copy from
+        src (Path): Source file path in the container
+        dst (Path): Destination file path locally
+    """
+    if not isinstance(src, Path):
+        src = Path(src)
+
+    if not isinstance(dst, Path):
+        dst = Path(dst)
+
+    # Ensure destination directory exists
+    if not dst.parent.exists():
+        os.makedirs(dst.parent)
+
+    # Copy the file out of the container
+    stream, stat = container.get_archive(str(src))
+
+    # Create a temporary tar file
+    tar_stream = BytesIO()
+    for chunk in stream:
+        tar_stream.write(chunk)
+    tar_stream.seek(0)
+
+    with tarfile.open(fileobj=tar_stream, mode='r') as tar:
+        # Extract file from tar stream
+        def is_within_directory(directory, target):
+            abs_directory = os.path.abspath(directory)
+            abs_target = os.path.abspath(target)
+
+            prefix = os.path.commonprefix([abs_directory, abs_target])
+
+            return prefix == abs_directory
+
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+            for member in tar.getmembers():
+                member_path = os.path.join(path, member.name)
+                if not is_within_directory(path, member_path):
+                    raise Exception("Attempted Path Traversal in Tar File")
+
+            tar.extractall(path, members, numeric_owner=numeric_owner)
+
+        safe_extract(tar, path=dst.parent)
+
+    # Move the extracted file to desired dst path if tar extraction gives src.name
+    extracted_file_path = dst.parent / src.name
+    if extracted_file_path != dst:
+        extracted_file_path.rename(dst)
+
+
+def delete_file_from_container(container: Container, file_path: str):
+    """
+    Delete a file from a docker container.
+
+    Args:
+        container (Container): Docker container to delete the file from
+        file_path (str): Path to the file in the container to be deleted
+
+    Raises:
+        docker.errors.APIError: If there is an error calling the Docker API.
+        Exception: If the file deletion command fails with a non-zero exit code.
+    """
+    try:
+        exit_code, output = container.exec_run(f"rm -f {file_path}")
+        if exit_code != 0:
+            raise Exception(f"Error deleting file: {output.decode('utf-8').strip()}")
+    except docker.errors.APIError as e:
+        raise docker.errors.APIError(f"Docker API Error: {str(e)}")
+    except Exception as e:
+        raise Exception(f"General Error: {str(e)}")
 
 
 def write_to_container(container: Container, data: str, dst: Path):
