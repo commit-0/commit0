@@ -13,6 +13,8 @@ from commit0.harness.constants import (
 )
 from commit0.harness.docker_utils import (
     copy_to_container,
+    copy_from_container,
+    delete_file_from_container,
     exec_run_with_timeout,
     cleanup_container,
 )
@@ -113,7 +115,7 @@ def main(hf_name: str, run_id: str, timeout: int):
             logger.info(f"Git diff before:\n{git_diff_output_before}")
 
             eval_file = Path(log_dir / "eval.sh")
-            eval_file.write_text(spec.eval_script)
+            eval_file.write_text(spec.eval_script.format(test_cmd=example['test']['test_cmd'], tests=example['test']['test_dir']))
             logger.info(
                 f"Eval script for {repo} written to {eval_file}; copying to container..."
             )
@@ -123,6 +125,8 @@ def main(hf_name: str, run_id: str, timeout: int):
             test_output, timed_out, total_runtime = exec_run_with_timeout(container, "/bin/bash /eval.sh", timeout)
             test_output_path = log_dir / "test_output.txt"
             logger.info(f'Test runtime: {total_runtime:_.2f} seconds')
+            copy_from_container(container, "/testbed/report.json", Path(log_dir / "report.json"))
+            delete_file_from_container(container, "/testbed/report.json")
             with open(test_output_path, "w") as f:
                 f.write(test_output)
                 logger.info(f"Test output for {repo} written to {test_output_path}")

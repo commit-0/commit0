@@ -135,7 +135,7 @@ def make_eval_script_list(instance, env_name, repo_directory, base_commit):
     Run the tests.
     """
     specs = instance["docker_setup"]
-    test_command = f"{specs['test']['test_cmd']} {specs['test']['test_dir']}"
+    test_command = "{test_cmd} --json-report --json-report-file=report.json {tests}"
     eval_commands = [
         f"git config --global --add safe.directory {repo_directory}",  # for nonroot user
         f"cd {repo_directory}",
