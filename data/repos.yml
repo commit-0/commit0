@@ -645,7 +645,7 @@
   name: "joblib/joblib"
   commit: null
   tag: "1.4.2"
-  python: "3.13"
+  python: "3.12"
   pre_install:
     - "apt-get -yq update"
     - "apt-get install -yq ccache"
