@@ -1,0 +1,24 @@
+/* Change the background color to an RGB color */
+.md-header {
+    background-color: #052226; /* Dark gray color */
+}
+
+/* Change the link colors */
+a {
+    color: #e4949e;
+}
+
+.md-nav--primary .md-nav__item--active > a.md-nav__link--active {
+    color: #052226; /* Dark gray color */
+}
+
+.md-nav--primary .md-nav__title[for="__drawer"] {
+    background-color: #052226;
+}
+
+/* Change the primary header color */
+h1,
+h2,
+h3 {
+    color: #e4949e;
+}
