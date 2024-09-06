@@ -1,0 +1,20 @@
+site_name: ""
+
+docs_dir: docs
+nav:
+  - Home: index.md
+  - Setup: setup.md
+  - Extending: repos.md
+  - About: about.md
+theme:
+  name: material
+  logo: "logo2.webp"
+
+extra_css:
+  - extra.css
+
+markdown_extensions:
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.highlight
