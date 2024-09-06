@@ -1,4 +1,4 @@
-site_name: spec2repo
+site_name: commit-0
 nav:
   - Home: index.md
   - Setup: setup.md
