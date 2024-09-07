@@ -3,13 +3,14 @@ from pathlib import Path
 
 import docker
 import traceback
+import yaml
 from datasets import load_dataset
 
 from commit0.harness.constants import (
     APPLY_PATCH_FAIL,
     APPLY_PATCH_PASS,
     REPO_IMAGE_BUILD_DIR,
-    RUN_EVALUATION_LOG_DIR,
+    RUN_SETUP_LOG_DIR
 )
 from commit0.harness.docker_utils import (
     copy_to_container,
@@ -25,31 +26,25 @@ from commit0.harness.docker_build import (
     setup_logger,
 )
 from commit0.harness.spec import make_spec
+from commit0.harness.utils import EvaluationError
 
 
-class EvaluationError(Exception):
-    def __init__(self, repo, message, logger):
-        super().__init__(message)
-        self.super_str = super().__str__()
-        self.repo = repo
-        self.log_file = logger.log_file
-        self.logger = logger
-
-    def __str__(self):
-        return (
-            f"Evaluation error for {self.repo}: {self.super_str}\n"
-            f"Check ({self.log_file}) for more information."
-        )
-
-def main(hf_name: str, run_id: str, timeout: int):
+def main(hf_name: str, timeout: int):
     dataset = load_dataset(hf_name, split="test")
+    out = dict()
     for example in dataset:
+        repo_name = example["repo"].split('/')[-1]
         spec = make_spec(example)
+        out[repo_name] = dict()
+        out[repo_name]['docker_image'] = spec.repo_image_key
+        out[repo_name]['docker_container'] = spec.get_container_name()
+        out[repo_name]['test_cmd'] = example['test']['test_cmd']
+        out[repo_name]['base_commit'] = example['base_commit']
         client = docker.from_env()
 
         # Set up logging directory
         repo = spec.repo.split('/')[-1]
-        log_dir = RUN_EVALUATION_LOG_DIR / run_id / repo
+        log_dir = RUN_SETUP_LOG_DIR / repo
         log_dir.mkdir(parents=True, exist_ok=True)
 
         # Link the image build dir in the log dir
@@ -69,7 +64,7 @@ def main(hf_name: str, run_id: str, timeout: int):
         container = None
         try:
             # Build + start repo container (repo image should already be built)
-            container = build_container(spec, client, run_id, logger, nocache=True, force_rebuild=False)
+            container = build_container(spec, client, logger, nocache=True, force_rebuild=False)
             container.start()
             logger.info(f"Container for {repo} started: {container.id}")
 
@@ -165,11 +160,14 @@ def main(hf_name: str, run_id: str, timeout: int):
             # Remove repo container + image, close logger
             cleanup_container(client, container, logger)
             close_logger(logger)
+    file_path = "config.yml"
+    with open(file_path, 'w') as file:
+        yaml.dump(out, file, default_flow_style=False)
+    logger.info(f"Config file has been written to {file_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--hf_name", type=str, help="HF dataset name")
-    parser.add_argument("--run_id", type=str, help="Run id")
     parser.add_argument(
         "--timeout", type=int, default=1_800, help="Timeout (in seconds) for running tests for each instance"
         )

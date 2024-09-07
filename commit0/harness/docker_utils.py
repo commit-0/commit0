@@ -127,6 +127,43 @@ def delete_file_from_container(container: Container, file_path: str):
         raise Exception(f"General Error: {str(e)}")
 
 
+def copy_ssh_pubkey_from_container(container: Container):
+    """
+    Copy the SSH public key from a Docker container to the local authorized_keys file.
+
+    Args:
+        container (Container): Docker container to copy the key from.
+
+    Raises:
+        docker.errors.APIError: If there is an error calling the Docker API.
+        Exception: If the file reading or writing process fails.
+    """
+    try:
+        exit_code, output = container.exec_run("cat /root/.ssh/id_rsa.pub")
+        if exit_code != 0:
+            raise Exception(f"Error reading file: {output.decode('utf-8').strip()}")
+        public_key = output.decode('utf-8').strip()
+
+        local_authorized_keys_path = os.path.expanduser("~/.ssh/authorized_keys")
+        os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
+
+        with open(local_authorized_keys_path, 'r') as authorized_keys_file:
+            content = authorized_keys_file.read()
+            if public_key not in content:
+                write = True
+            else:
+                write = False
+
+        if write:
+            with open(local_authorized_keys_path, 'a') as authorized_keys_file:
+                authorized_keys_file.write(public_key + '\n')
+
+    except docker.errors.APIError as e:
+        raise docker.errors.APIError(f"Docker API Error: {str(e)}")
+    except Exception as e:
+        raise Exception(f"General Error: {str(e)}")
+
+
 def write_to_container(container: Container, data: str, dst: Path):
     """
     Write a string to a file in a docker container
@@ -248,6 +285,48 @@ def cleanup_container(client, container, logger):
             f"Failed to remove container {container.name}: {e}\n"
             f"{traceback.format_exc()}"
         )
+
+
+def create_container(client: docker.DockerClient, image_name: str, container_name: str = None, command: str = None, ports: dict = None, volumes: dict = None) -> Container:
+    """
+    Start a Docker container using the specified image.
+
+    Args:
+        client (docker.DockerClient): Docker client.
+        image_name (str): The name of the Docker image.
+        container_name (str, optional): Name for the Docker container. Defaults to None.
+        command (str, optional): Command to run in the container. Defaults to None.
+        ports (dict, optional): Port mappings. Defaults to None.
+        volumes (dict, optional): Volume mappings. Defaults to None.
+
+    Returns:
+        docker.models.containers.Container: The started Docker container.
+
+    Raises:
+        docker.errors.APIError: If there's an error interacting with the Docker API.
+        Exception: For other general errors.
+    """
+    #try:
+    #    # Pull the image if it doesn't already exist
+    #    client.images.pull(image_name)
+    #except docker.errors.APIError as e:
+    #    raise docker.errors.APIError(f"Error pulling image: {str(e)}")
+
+    try:
+        container = client.containers.run(
+            image=image_name,
+            name=container_name,
+            command="tail -f /dev/null",
+            ports=ports,
+            volumes=volumes,
+            user="root",
+            detach=True
+        )
+        return container
+    except docker.errors.APIError as e:
+        raise docker.errors.APIError(f"Error starting container: {str(e)}")
+    except Exception as e:
+        raise Exception(f"General Error: {str(e)}")
 
 
 def exec_run_with_timeout(container, cmd, timeout: int|None=60):

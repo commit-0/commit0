@@ -15,7 +15,8 @@ class RepoInstance(TypedDict):
 # Constants - Evaluation Log Directories
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")
 REPO_IMAGE_BUILD_DIR = Path("logs/build_images/repo")
-RUN_EVALUATION_LOG_DIR = Path("logs/run_evaluation")
+RUN_SETUP_LOG_DIR = Path("logs/setup")
+RUN_PYTEST_LOG_DIR = Path("logs/pytest")
 
 # Constants - Test Types, Statuses, Commands
 FAIL_TO_PASS = "FAIL_TO_PASS"
