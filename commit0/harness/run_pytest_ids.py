@@ -21,6 +21,7 @@ from commit0.harness.docker_utils import (
     delete_file_from_container,
     exec_run_with_timeout,
 )
+from commit0.harness.spec import make_spec
 from commit0.harness.utils import (
     EvaluationError,
     extract_test_output,
@@ -28,27 +29,31 @@ from commit0.harness.utils import (
 )
 
 
-def main(repo: str, test_ids: list[str], timeout: int, local_repo_path: str, branch_name: str):
-    config_path = "config.yml"
-    with open(config_path, 'r') as file:
+def main(repo: str, test_ids: list[str], timeout: int, branch_name: str):
+    with open("config.yml", 'r') as file:
         data = yaml.safe_load(file)
+    spec = make_spec(data[repo])
     test_ids = " ".join(test_ids)
     hashed_test_ids = get_hash_string(test_ids)
-    log_dir = RUN_PYTEST_LOG_DIR/ repo / hashed_test_ids
+
+    # set up logging
+    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo, log_file)
-    # read from a yaml file
+
+    # make eval file
+    eval_script = spec.eval_script.format(local_repo=data[repo]['local_path'], branch_name=branch_name, test_ids=test_ids)
+    eval_file = Path(log_dir / "eval.sh")
+    eval_file.write_text(eval_script)
+
     client = docker.from_env()
     container = None
     try:
-        eval_file = Path(log_dir / "eval.sh")
-        eval_file.write_text(eval_script)
-
         container = create_container(
             client=client,
-            image_name=data[repo]['docker_image'],
-            container_name=data[repo]['docker_container'],
+            image_name=spec.repo_image_key,
+            container_name=spec.get_container_name(),
             logger=logger
         )
         container.start()
@@ -76,7 +81,7 @@ def main(repo: str, test_ids: list[str], timeout: int, local_repo_path: str, bra
                 )
 
         # copy back report.json if there is any
-        report_file = "/testbed/report.json"
+        report_file = Path(spec.repo_directory) / "report.json"
         # Run the test command inside the container to check if the file exists
         exit_code, output = container.exec_run(f'test -e {report_file}', demux=True)
         # Check the exit code of the command
@@ -107,15 +112,9 @@ if __name__ == "__main__":
         nargs='+',
         help="which test ids / files / directories"
     )
-    parser.add_argument("--local_repo_path", type=str, default=None, help="path to the local repo")
     parser.add_argument("--branch_name", type=str, help="which git branch to run unit tests")
     parser.add_argument(
         "--timeout", type=int, default=1_800, help="Timeout (in seconds) for running tests for each instance"
         )
     args = parser.parse_args()
-    if args.local_repo_path is None:
-        if not os.path.exists(f"tmp/{args.repo}"):
-            raise ValueError(f"Please specify --local_repo_path, or put the repo under tmp/{repo}")
-        else:
-            args.local_repo_path = f"tmp/{args.repo}"
     main(**vars(args))

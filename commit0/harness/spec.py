@@ -155,7 +155,7 @@ def make_eval_script_list(instance, repo_directory):
         "source .venv/bin/activate",
         f"git remote add {origin_name} ssh://{user}@{ip}:{{local_repo}}",
         f"git fetch {origin_name}",
-        "git checkout -b {{branch_name}} {origin_name}/{{branch_name}}",
+        f"git checkout -b {{branch_name}} {origin_name}/{{branch_name}}",
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
         f"git checkout {instance['base_commit']}",
