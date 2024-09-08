@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import docker
+import logging
 import os
 import signal
 import tarfile
@@ -287,7 +288,7 @@ def cleanup_container(client, container, logger):
         )
 
 
-def create_container(client: docker.DockerClient, image_name: str, container_name: str = None, command: str = None, ports: dict = None, volumes: dict = None) -> Container:
+def create_container(client: docker.DockerClient, image_name: str, container_name: str = None, user: str = None, command: str = None, nano_cpus: int = None, logger: logging.Logger = None) -> Container:
     """
     Start a Docker container using the specified image.
 
@@ -295,9 +296,10 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
         client (docker.DockerClient): Docker client.
         image_name (str): The name of the Docker image.
         container_name (str, optional): Name for the Docker container. Defaults to None.
+        user (str, option): Log in as which user. Defaults to None.
         command (str, optional): Command to run in the container. Defaults to None.
-        ports (dict, optional): Port mappings. Defaults to None.
-        volumes (dict, optional): Volume mappings. Defaults to None.
+        nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
+        logger (logging.Logger, optional): Port mappings. Defaults to None.
 
     Returns:
         docker.models.containers.Container: The started Docker container.
@@ -312,21 +314,38 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
     #except docker.errors.APIError as e:
     #    raise docker.errors.APIError(f"Error pulling image: {str(e)}")
 
+    if not logger:
+        # if logger is None, print to stdout
+        log_error = print
+        log_info = print
+    elif logger == "quiet":
+        # if logger is "quiet", don't print anything
+        log_info = lambda x: None
+        log_error = lambda x: None
+    else:
+        # if logger is a logger object, use it
+        log_error = logger.info
+        log_info = logger.info
+
+    container = None
     try:
+        logger.info(f"Creating container for {image_name}...")
         container = client.containers.run(
             image=image_name,
             name=container_name,
+            user=user,
             command="tail -f /dev/null",
-            ports=ports,
-            volumes=volumes,
-            user="root",
+            nano_cpus=nano_cpus,
             detach=True
         )
+        logger.info(f"Container for {image_name} created: {container.id}")
         return container
-    except docker.errors.APIError as e:
-        raise docker.errors.APIError(f"Error starting container: {str(e)}")
     except Exception as e:
-        raise Exception(f"General Error: {str(e)}")
+        # If an error occurs, clean up the container and raise an exception
+        logger.error(f"Error creating container for {image_name}: {e}")
+        logger.info(traceback.format_exc())
+        cleanup_container(client, container, logger)
+        raise
 
 
 def exec_run_with_timeout(container, cmd, timeout: int|None=60):

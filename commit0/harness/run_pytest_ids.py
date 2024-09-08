@@ -67,7 +67,8 @@ def main(repo: str, test_ids: list[str], timeout: int, local_repo_path: str, bra
         container = create_container(
             client=client,
             image_name=data[repo]['docker_image'],
-            container_name=data[repo]['docker_container']
+            container_name=data[repo]['docker_container'],
+            logger=logger
         )
         container.start()
         copy_ssh_pubkey_from_container(container)

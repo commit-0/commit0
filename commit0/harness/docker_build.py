@@ -16,7 +16,6 @@ from commit0.harness.spec import (
     Spec
 )
 from commit0.harness.docker_utils import (
-    cleanup_container,
     remove_image,
     find_dependent_images
 )
@@ -327,52 +326,3 @@ def build_repo_images(
 
     # Return the list of (un)successfuly built images
     return successful, failed
-
-
-def build_container(
-        test_spec: Spec,
-        client: docker.DockerClient,
-        logger: logging.Logger,
-        nocache: bool,
-        force_rebuild: bool = False
-    ):
-    """
-    Builds the repo image for the given test spec and creates a container from the image.
-
-    Args:
-        test_spec (Spec): Test spec to build the repo image and container for
-        client (docker.DockerClient): Docker client for building image + creating the container
-        logger (logging.Logger): Logger to use for logging the build process
-        nocache (bool): Whether to use the cache when building
-        force_rebuild (bool): Whether to force rebuild the image even if it already exists
-    """
-    # Build corresponding repo image
-    if force_rebuild:
-        remove_image(client, test_spec.repo_image_key, "quiet")
-    build_repo_images(client, [test_spec])
-
-    container = None
-    try:
-        # Get configurations for how container should be created
-        user = "root"
-        nano_cpus = 4
-
-        # Create the container
-        logger.info(f"Creating container for {test_spec.repo}...")
-        container = client.containers.create(
-            image=test_spec.repo_image_key,
-            name=test_spec.get_container_name(),
-            user=user,
-            detach=True,
-            command="tail -f /dev/null",
-            nano_cpus=nano_cpus,
-            platform=test_spec.platform,
-        )
-        logger.info(f"Container for {test_spec.repo} created: {container.id}")
-        return container
-    except Exception as e:
-        # If an error occurs, clean up the container and raise an exception
-        logger.error(f"Error creating container for {test_spec.repo}: {e}")
-        logger.info(traceback.format_exc())
-        cleanup_container(client, container, logger)
-        raise BuildImageError(test_spec.repo, str(e), logger) from e
