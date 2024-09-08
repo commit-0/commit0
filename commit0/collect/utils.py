@@ -47,7 +47,7 @@ class Repo:
             self.commit = head
         logger.info("Setting up a local copy of the repository.")
         self.clone_dir = os.path.abspath(os.path.join('tmp', self.name))
-        self.local_repo = self.clone_repo()
+        self.local_repo = clone_repo(self.repo.clone_url, self.clone_dir, self.commit)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
         """
@@ -76,39 +76,6 @@ class Repo:
             except HTTP404NotFoundError as e:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
-
-    def clone_repo(self) -> None:
-        """
-        Clone repo into a temporary directory
-
-        Return:
-            None
-        """
-        clone_url = self.repo.clone_url
-        # cleanup if the repo already exists
-        self.remove_local_repo()
-        logger.info(f"cloning {clone_url} into {self.clone_dir}")
-        try:
-            repo = git.Repo.clone_from(clone_url, self.clone_dir)
-        except git.exc.GitCommandError as e:
-            raise RuntimeError(f"Failed to clone repository: {e}")
-        logger.info(f"checking out {self.commit}")
-        try:
-            repo.git.checkout(self.commit)
-        except git.exc.GitCommandError as e:
-            raise RuntimeError(f"Failed to check out {self.commit}: {e}")
-        return repo
-
-    def remove_local_repo(self) -> None:
-        """
-        Remove the cloned repository directory from the local filesystem.
-        """
-        if os.path.exists(self.clone_dir):
-            try:
-                shutil.rmtree(self.clone_dir)
-            except OSError:
-                os.system(f"rm -rf {self.clone_dir}")
-            logger.info(f"Cleaned up the cloned repository at {self.clone_dir}")
 
     def get_commit_by_tag(self, tag: str) -> str:
         """
@@ -159,6 +126,39 @@ class RemoveMethod(ast.NodeTransformer):
         return ast.copy_location(transform, node)
 
 
+def clone_repo(clone_url, clone_dir, commit) -> None:
+    """
+    Clone repo into a temporary directory
+
+    Return:
+        None
+    """
+    # cleanup if the repo already exists
+    remove_local_repo(clone_dir)
+    logger.info(f"cloning {clone_url} into {clone_dir}")
+    try:
+        repo = git.Repo.clone_from(clone_url, clone_dir)
+    except git.exc.GitCommandError as e:
+        raise RuntimeError(f"Failed to clone repository: {e}")
+    logger.info(f"checking out {commit}")
+    try:
+        repo.git.checkout(commit)
+    except git.exc.GitCommandError as e:
+        raise RuntimeError(f"Failed to check out {commit}: {e}")
+    return repo
+
+def remove_local_repo(clone_dir) -> None:
+    """
+    Remove the cloned repository directory from the local filesystem.
+    """
+    if os.path.exists(clone_dir):
+        try:
+            shutil.rmtree(clone_dir)
+        except OSError:
+            os.system(f"rm -rf {clone_dir}")
+        logger.info(f"Cleaned up the cloned repository at {clone_dir}")
+
+
 def _find_files_to_edit(base_dir: str) -> list[str]:
     """
     Identify files to remove content by heuristics.
@@ -182,6 +182,10 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     path_test = os.path.join(base_dir, name, "**", "test*", "**", "*.py")
     test_files = glob(path_test, recursive=True)
     files = list(set(files) - set(test_files))
+    # don't edit __init__ files
+    files = [f for f in files if '__init__' not in f]
+    # don't edit confest.py files
+    files = [f for f in files if 'conftest.py' not in f]
     return files
 
 def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", removal: str = "all") -> str:
@@ -234,42 +238,3 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
         # go back to the starting commit
         repo.local_repo.git.checkout(repo.commit)
         return base_commit.hexsha
-
-
-def extract_patch(repo: Repo, base_commit: str) -> tuple[str, str]:
-    """
-    Generate both the gold patch
-
-    Args:
-        repo: which repo to generate patches
-        base_commit: commit before changes
-
-    Return:
-        patch (str): the gold patch
-    """
-    files = _find_files_to_edit(repo.clone_dir)
-    befores = []
-    repo.local_repo.git.checkout(base_commit)
-    for f in files:
-        with open(f, 'r') as fin:
-            befores.append(fin.readlines())
-    afters = []
-    repo.local_repo.git.checkout(repo.commit)
-    for f in files:
-        with open(f, 'r') as fin:
-            afters.append(fin.readlines())
-    diffs = []
-    for before, after, f in zip(befores, afters, files):
-        shortened_f = f.replace(repo.clone_dir, '')
-        if shortened_f.startswith('/'):
-            shortened_f = shortened_f[1:]
-        diff = difflib.unified_diff(
-            before,
-            after,
-            fromfile='a/'+shortened_f,
-            tofile='b/'+shortened_f,
-        )
-        diffs.append(''.join(diff))
-    patch = '\n'.join(diffs)
-    return patch
-
