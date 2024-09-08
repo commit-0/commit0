@@ -6,8 +6,7 @@ from typing import TypedDict
 class RepoInstance(TypedDict):
     repo: str
     base_commit: str
-    patch: str
-    environment_setup_commit: str
+    reference_commit: str
     docker_setup: dict
 
 

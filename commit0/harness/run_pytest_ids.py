@@ -24,8 +24,6 @@ from commit0.harness.docker_utils import (
 from commit0.harness.utils import (
     EvaluationError,
     extract_test_output,
-    get_ip,
-    get_user,
     get_hash_string,
 )
 
@@ -44,23 +42,6 @@ def main(repo: str, test_ids: list[str], timeout: int, local_repo_path: str, bra
     client = docker.from_env()
     container = None
     try:
-        ip = get_ip()
-        user = get_user()
-        origin_name = get_hash_string(f"{ip}:{user}")
-        local_repo_path = os.path.abspath(local_repo_path)
-        eval_script_list = [
-            f"ssh-keyscan {ip} >> ~/.ssh/known_hosts",
-            "cd /testbed",
-            "source .venv/bin/activate",
-            f"git remote add {origin_name} ssh://{user}@{ip}:{local_repo_path}",
-            f"git fetch {origin_name}",
-            f"git checkout -b {branch_name} {origin_name}/{branch_name}",
-            "git status",
-            f"{data[repo]['test_cmd']} --json-report --json-report-file=report.json {test_ids}",
-            f"git checkout {data[repo]['base_commit']}",
-            "git status"
-        ]
-        eval_script = "\n".join(["#!/bin/bash", "set -uxo pipefail"] + eval_script_list) + "\n"
         eval_file = Path(log_dir / "eval.sh")
         eval_file.write_text(eval_script)
 

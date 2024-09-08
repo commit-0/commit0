@@ -13,6 +13,11 @@ from commit0.harness.dockerfiles import (
     get_dockerfile_base,
     get_dockerfile_repo,
 )
+from commit0.harness.utils import (
+    get_ip,
+    get_user,
+    get_hash_string,
+)
 
 
 @dataclass
@@ -80,11 +85,16 @@ def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> li
     return list(map(make_test_spec, cast(list[RepoInstance], dataset)))
 
 
-def make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_name, base_commit):
+def make_repo_script_list(instance, repo_directory):
     """
     Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
     """
+    specs = instance['docker_setup']
+    repo = instance["repo"]
+    env_setup_commit = instance["reference_commit"]
+    base_commit = instance["base_commit"]
+
     setup_commands = [
         f"git clone -o origin https://github.com/{repo} {repo_directory}",
         f"chmod -R 777 {repo_directory}",  # So nonroot user can run tests
@@ -130,43 +140,36 @@ def make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_nam
     return setup_commands
 
 
-def make_eval_script_list(instance, env_name, repo_directory, base_commit):
+def make_eval_script_list(instance, repo_directory):
     """
     Run the tests.
     """
-    specs = instance["docker_setup"]
-    test_command = "{test_cmd} --json-report --json-report-file=report.json {tests}"
-    eval_commands = [
-        f"git config --global --add safe.directory {repo_directory}",  # for nonroot user
+    ip = get_ip()
+    user = get_user()
+    origin_name = get_hash_string(f"{ip}:{user}")
+    eval_script_list = [
+        f"ssh-keyscan {ip} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
-        # This is just informational, so we have a record
-        f"git status",
-        f"git show",
-        f"git diff {base_commit}",
         "source .venv/bin/activate",
+        f"git remote add {origin_name} ssh://{user}@{ip}:"+"{os.path.abspath(local_repo_path)}",
+        f"git fetch {origin_name}",
+        "git checkout -b {branch_name} "+origin_name+"/{branch_name}",
+        "git status",
+        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json "+"{test_ids}",
+        f"git checkout {instance['base_commit']}",
+        "git status"
     ]
-    eval_commands += [
-        test_command,
-        f"git reset --hard {base_commit}"
-    ]
-    return eval_commands
+    return eval_script_list
 
 
 def make_spec(instance: RepoInstance) -> Spec:
     if isinstance(instance, Spec):
         return instance
-    repo = instance["repo"]
-    env_setup_commit = instance["environment_setup_commit"]
-    base_commit = instance["base_commit"]
 
-    env_name = "testbed"
-    repo_directory = f"/{env_name}"
-    specs = instance['docker_setup']
+    repo_directory = f"/testbed"
 
-    repo_script_list = make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_name, base_commit)
-    eval_script_list = make_eval_script_list(
-        instance, env_name, repo_directory, base_commit
-    )
+    repo_script_list = make_repo_script_list(instance, repo_directory)
+    eval_script_list = make_eval_script_list(instance, repo_directory)
 
     return Spec(
         repo=repo,
