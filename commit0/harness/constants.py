@@ -7,7 +7,7 @@ class RepoInstance(TypedDict):
     repo: str
     base_commit: str
     reference_commit: str
-    docker_setup: dict
+    setup: dict
 
 
 

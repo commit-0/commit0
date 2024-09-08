@@ -32,21 +32,21 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: d
     """
     # extract_test_names needs to be called on the environment set up commit
     base_commit = generate_base_commit(repo, base_branch_name, removal)
-    docker_setup = dict()
-    docker_setup["python"] = raw_info["python"]
-    docker_setup["install"] = raw_info["install"]
-    docker_setup["specification"] = raw_info["specification"]
+    setup = dict()
+    setup["python"] = raw_info["python"]
+    setup["install"] = raw_info["install"]
+    setup["specification"] = raw_info["specification"]
     if "pre_install" in raw_info:
-        docker_setup["pre_install"] = raw_info["pre_install"]
+        setup["pre_install"] = raw_info["pre_install"]
     if "packages" in raw_info:
-        docker_setup["packages"] = raw_info["packages"]
+        setup["packages"] = raw_info["packages"]
     if "pip_packages" in raw_info:
-        docker_setup["pip_packages"] = raw_info["pip_packages"]
+        setup["pip_packages"] = raw_info["pip_packages"]
     return {
         "repo": repo.repo.full_name,
         "base_commit": base_commit,
         "reference_commit": repo.commit,
-        "docker_setup": docker_setup,
+        "setup": setup,
         "test": {"test_cmd": raw_info["test_cmd"], "test_dir": raw_info["test_dir"]}
     }
 

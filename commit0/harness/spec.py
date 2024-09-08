@@ -26,6 +26,8 @@ class Spec:
     A dataclass that represents a test specification for a single instance of SWE-bench.
     """
     repo: str
+    # repo dir on docker
+    repo_directory: str
     repo_script_list: list[str]
     eval_script_list: list[str]
 
@@ -90,7 +92,7 @@ def make_repo_script_list(instance, repo_directory):
     Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
     """
-    specs = instance['docker_setup']
+    specs = instance['setup']
     repo = instance["repo"]
     env_setup_commit = instance["reference_commit"]
     base_commit = instance["base_commit"]
@@ -151,11 +153,11 @@ def make_eval_script_list(instance, repo_directory):
         f"ssh-keyscan {ip} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
         "source .venv/bin/activate",
-        f"git remote add {origin_name} ssh://{user}@{ip}:"+"{os.path.abspath(local_repo_path)}",
+        f"git remote add {origin_name} ssh://{user}@{ip}:{{local_repo}}",
         f"git fetch {origin_name}",
-        "git checkout -b {branch_name} "+origin_name+"/{branch_name}",
+        "git checkout -b {{branch_name}} {origin_name}/{{branch_name}}",
         "git status",
-        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json "+"{test_ids}",
+        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
         f"git checkout {instance['base_commit']}",
         "git status"
     ]
@@ -172,7 +174,8 @@ def make_spec(instance: RepoInstance) -> Spec:
     eval_script_list = make_eval_script_list(instance, repo_directory)
 
     return Spec(
-        repo=repo,
+        repo=instance["repo"],
+        repo_directory=repo_directory,
         repo_script_list=repo_script_list,
         eval_script_list=eval_script_list,
     )
