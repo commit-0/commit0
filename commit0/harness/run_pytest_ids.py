@@ -1,6 +1,5 @@
 import argparse
 import docker
-import os
 import traceback
 import yaml
 from pathlib import Path

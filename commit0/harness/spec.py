@@ -1,10 +1,7 @@
 import hashlib
-import json
-import platform
-import re
 
 from dataclasses import dataclass
-from typing import Any, Union, cast
+from typing import Union, cast
 
 from commit0.harness.constants import (
     RepoInstance,
@@ -22,9 +19,9 @@ from commit0.harness.utils import (
 
 @dataclass
 class Spec:
+    """A dataclass that represents a test specification for a single instance of SWE-bench.
     """
-    A dataclass that represents a test specification for a single instance of SWE-bench.
-    """
+
     repo: str
     # repo dir on docker
     repo_directory: str
@@ -42,12 +39,11 @@ class Spec:
 
     @property
     def base_image_key(self):
-        return f"commit0.base:latest"
+        return "commit0.base:latest"
 
     @property
     def repo_image_key(self):
-        """
-        The key for the environment image is based on the hash of the environment script list.
+        """The key for the environment image is based on the hash of the environment script list.
         If the environment script list changes, the image will be rebuilt automatically.
 
         Note that old images are not automatically deleted, so consider cleaning up old images periodically.
@@ -79,8 +75,7 @@ class Spec:
 
 
 def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> list[Spec]:
-    """
-    Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects.
+    """Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects.
     """
     if isinstance(dataset[0], Spec):
         return cast(list[Spec], dataset)
@@ -88,8 +83,7 @@ def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> li
 
 
 def make_repo_script_list(instance, repo_directory):
-    """
-    Create a list of bash commands to set up the repository for testing.
+    """Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
     """
     specs = instance['setup']
@@ -103,10 +97,10 @@ def make_repo_script_list(instance, repo_directory):
         f"cd {repo_directory}",
         f"git reset --hard {env_setup_commit}",
         # Remove the remote so the agent won't see newer commits.
-        f"git remote remove origin",
+        "git remote remove origin",
         f"uv venv --python {specs['python']}",
         "source .venv/bin/activate",
-        f'which python',
+        'which python',
     ]
 
     # Run pre-install set up if provided
@@ -137,14 +131,13 @@ def make_repo_script_list(instance, repo_directory):
         else:
             raise ValueError(f"install command should always start with pip, but you have {specs['install']}")
         setup_commands.append(install)
-    setup_commands.append(f"uv pip install pytest pytest-cov coverage pytest-json-report")
+    setup_commands.append("uv pip install pytest pytest-cov coverage pytest-json-report")
     setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
 
 
 def make_eval_script_list(instance, repo_directory):
-    """
-    Run the tests.
+    """Run the tests.
     """
     ip = get_ip()
     user = get_user()
@@ -168,7 +161,7 @@ def make_spec(instance: RepoInstance) -> Spec:
     if isinstance(instance, Spec):
         return instance
 
-    repo_directory = f"/testbed"
+    repo_directory = "/testbed"
 
     repo_script_list = make_repo_script_list(instance, repo_directory)
     eval_script_list = make_eval_script_list(instance, repo_directory)

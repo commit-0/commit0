@@ -20,8 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: dict) -> dict:
-    """
-    Create a single task instance from a commit, where task instance is:
+    """Create a single task instance from a commit, where task instance is:
 
     {
         repo (str): owner/repo this task instance is from,
@@ -52,8 +51,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: d
 
 
 def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str, removal: str, token: Optional[str] = None):
-    """
-    Main thread for creating task instances from existing repositories
+    """Main thread for creating task instances from existing repositories
 
     Args:
         repo_file (str): path to repository YAML file
@@ -62,6 +60,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         base_branch_name (str): base of the branch name under which the base commit will be sent to
         removal (str): strategy to remove code body
         token (str): GitHub token
+
     """
     if token is None:
         # Get GitHub token from environment variable if not provided

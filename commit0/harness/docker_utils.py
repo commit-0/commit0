@@ -17,13 +17,13 @@ HEREDOC_DELIMITER = "EOF_1399519320"  # different from dataset HEREDOC_DELIMITER
 
 
 def copy_to_container(container: Container, src: Path, dst: Path):
-    """
-    Copy a file from local to a docker container
+    """Copy a file from local to a docker container
 
     Args:
         container (Container): Docker container to copy to
         src (Path): Source file path
         dst (Path): Destination file path in the container
+
     """
     # Check if destination path is valid
     if os.path.dirname(dst) == "":
@@ -53,13 +53,13 @@ def copy_to_container(container: Container, src: Path, dst: Path):
 
 
 def copy_from_container(container: Container, src: Path, dst: Path):
-    """
-    Copy a file from a docker container to local
+    """Copy a file from a docker container to local
 
     Args:
         container (Container): Docker container to copy from
         src (Path): Source file path in the container
         dst (Path): Destination file path locally
+
     """
     if not isinstance(src, Path):
         src = Path(src)
@@ -107,8 +107,7 @@ def copy_from_container(container: Container, src: Path, dst: Path):
 
 
 def delete_file_from_container(container: Container, file_path: str):
-    """
-    Delete a file from a docker container.
+    """Delete a file from a docker container.
 
     Args:
         container (Container): Docker container to delete the file from
@@ -117,6 +116,7 @@ def delete_file_from_container(container: Container, file_path: str):
     Raises:
         docker.errors.APIError: If there is an error calling the Docker API.
         Exception: If the file deletion command fails with a non-zero exit code.
+
     """
     try:
         exit_code, output = container.exec_run(f"rm -f {file_path}")
@@ -129,16 +129,16 @@ def delete_file_from_container(container: Container, file_path: str):
 
 
 def copy_ssh_pubkey_from_container(container: Container):
-    """
-    Copy the SSH public key from a Docker container to the local authorized_keys file.
+    """Copy the SSH public key from a Docker container to the local authorized_keys file.
 
-    Args:
+    Args:
         container (Container): Docker container to copy the key from.
 
-    Raises:
+    Raises:
         docker.errors.APIError: If there is an error calling the Docker API.
         Exception: If the file reading or writing process fails.
-    """
+
+    """
     try:
         exit_code, output = container.exec_run("cat /root/.ssh/id_rsa.pub")
         if exit_code != 0:
@@ -166,8 +166,7 @@ def copy_ssh_pubkey_from_container(container: Container):
 
 
 def write_to_container(container: Container, data: str, dst: Path):
-    """
-    Write a string to a file in a docker container
+    """Write a string to a file in a docker container
     """
     # echo with heredoc to file
     command = f"cat <<'{HEREDOC_DELIMITER}' > {dst}\n{data}\n{HEREDOC_DELIMITER}"
@@ -175,14 +174,14 @@ def write_to_container(container: Container, data: str, dst: Path):
 
 
 def remove_image(client, image_id, logger=None):
-    """
-    Remove a Docker image by ID.
+    """Remove a Docker image by ID.
 
     Args:
         client (docker.DockerClient): Docker client.
         image_id (str): Image ID.
         rm_image (bool): Whether to remove the image.
         logger (logging.Logger): Logger to use for output. If None, print to stdout.
+
     """
     if not logger:
         # if logger is None, print to stdout
@@ -214,14 +213,14 @@ def remove_image(client, image_id, logger=None):
 
 
 def cleanup_container(client, container, logger):
-    """
-    Stop and remove a Docker container.
+    """Stop and remove a Docker container.
     Performs this forcefully if the container cannot be stopped with the python API.
 
     Args:
         client (docker.DockerClient): Docker client.
         container (docker.models.containers.Container): Container to remove.
         logger (logging.Logger): Logger to use for output. If None, print to stdout
+
     """
     if not container:
         return
@@ -289,10 +288,9 @@ def cleanup_container(client, container, logger):
 
 
 def create_container(client: docker.DockerClient, image_name: str, container_name: str = None, user: str = None, command: str = None, nano_cpus: int = None, logger: logging.Logger = None) -> Container:
-    """
-    Start a Docker container using the specified image.
+    """Start a Docker container using the specified image.
 
-    Args:
+    Args:
         client (docker.DockerClient): Docker client.
         image_name (str): The name of the Docker image.
         container_name (str, optional): Name for the Docker container. Defaults to None.
@@ -301,13 +299,14 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
         nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
         logger (logging.Logger, optional): Port mappings. Defaults to None.
 
-    Returns:
+    Returns:
         docker.models.containers.Container: The started Docker container.
 
-    Raises:
+    Raises:
         docker.errors.APIError: If there's an error interacting with the Docker API.
         Exception: For other general errors.
-    """
+
+    """
     #try:
     #    # Pull the image if it doesn't already exist
     #    client.images.pull(image_name)
@@ -349,13 +348,13 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
 
 
 def exec_run_with_timeout(container, cmd, timeout: int|None=60):
-    """
-    Run a command in a container with a timeout.
+    """Run a command in a container with a timeout.
 
     Args:
         container (docker.Container): Container to run the command in.
         cmd (str): Command to run.
         timeout (int): Timeout in seconds.
+
     """
     # Local variables to store the result of executing the command
     exec_result = ''
@@ -394,12 +393,12 @@ def exec_run_with_timeout(container, cmd, timeout: int|None=60):
 
 
 def find_dependent_images(client: docker.DockerClient, image_name: str):
-    """
-    Find all images that are built upon `image_name` image
+    """Find all images that are built upon `image_name` image
 
     Args:
         client (docker.DockerClient): Docker client.
         image_name (str): Name of the base image.
+
     """
     dependent_images = []
 
@@ -432,8 +431,7 @@ def find_dependent_images(client: docker.DockerClient, image_name: str):
 
 
 def list_images(client: docker.DockerClient):
-    """
-    List all images from the Docker client.
+    """List all images from the Docker client.
     """
     # don't use this in multi-threaded context
     return {tag for i in client.images.list(all=True) for tag in i.tags}
@@ -445,8 +443,7 @@ def clean_images(
         cache_level: str,
         clean: bool
     ):
-    """
-    Clean Docker images based on cache level and clean flag.
+    """Clean Docker images based on cache level and clean flag.
 
     Args:
         client (docker.DockerClient): Docker client.
@@ -456,10 +453,11 @@ def clean_images(
             cache level. E.g. if cache_level is set to env, remove all previously built instances images. if
             clean is false, previously built instances images will not be removed, but instance images built
             in the current run will be removed.
+
     """
     images = list_images(client)
     removed = 0
-    print(f"Cleaning cached images...")
+    print("Cleaning cached images...")
     for image_name in images:
         if should_remove(image_name, cache_level, clean, prior_images):
             try:
@@ -477,8 +475,7 @@ def should_remove(
         clean: bool,
         prior_images: set
     ):
-    """
-    Determine if an image should be removed based on cache level and clean flag.
+    """Determine if an image should be removed based on cache level and clean flag.
     """
     existed_before = image_name in prior_images
     if image_name.startswith("commit0.base"):

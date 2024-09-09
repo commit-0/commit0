@@ -1,4 +1,3 @@
-import difflib
 import logging
 import os
 import shutil
@@ -20,8 +19,7 @@ logger = logging.getLogger(__name__)
 
 class Repo:
     def __init__(self, owner: str, name: str, organization: str, head: str, token: Optional[str] = None):
-        """
-        Init to retrieve target repository and create ghapi tool
+        """Init to retrieve target repository and create ghapi tool
 
         Args:
             owner (str): owner of target repository
@@ -30,6 +28,7 @@ class Repo:
             head (str): which head to set the repo to
             setup (list[str]): a list of setup steps
             token (str): github token
+
         """
         self.name = name
         self.owner = organization
@@ -50,20 +49,20 @@ class Repo:
         self.local_repo = clone_repo(self.repo.clone_url, self.clone_dir, self.commit)
 
     def call_api(self, func: Callable, **kwargs) -> dict|None:
-        """
-        API call wrapper with rate limit handling (checks every 5 minutes if rate limit is reset)
+        """API call wrapper with rate limit handling (checks every 5 minutes if rate limit is reset)
 
         Args:
             func (callable): API function to call
             **kwargs: keyword arguments to pass to API function
         Return:
             values (dict): response object of `func`
+
         """
         while True:
             try:
                 values = func(**kwargs)
                 return values
-            except HTTP403ForbiddenError as e:
+            except HTTP403ForbiddenError:
                 while True:
                     rl = self.api.rate_limit.get()
                     logger.info(
@@ -73,27 +72,27 @@ class Repo:
                     if rl.resources.core.remaining > 0:
                         break
                     time.sleep(60 * 5)
-            except HTTP404NotFoundError as e:
+            except HTTP404NotFoundError:
                 logger.info(f"[{self.owner}/{self.name}] Resource not found {kwargs}")
                 return None
 
     def get_commit_by_tag(self, tag: str) -> str:
-        """
-        Get commit sha for a tag
+        """Get commit sha for a tag
 
         Args:
             tag (str): to retrieve the commit of which tag
         Return:
             commit (str): sha of the commit
+
         """
         tag_ref = self.call_api(self.api.git.get_ref, owner=self.owner, repo=self.name, ref=tag)
         return tag_ref.object.sha
 
 
 class RemoveMethod(ast.NodeTransformer):
+    """Class to replace method code with NotImplementedError
     """
-    Class to replace method code with NotImplementedError
-    """
+
     def __init__(self, removal_method):
         self.removal_method = removal_method
 
@@ -127,11 +126,11 @@ class RemoveMethod(ast.NodeTransformer):
 
 
 def clone_repo(clone_url, clone_dir, commit) -> None:
-    """
-    Clone repo into a temporary directory
+    """Clone repo into a temporary directory
 
     Return:
         None
+
     """
     # cleanup if the repo already exists
     remove_local_repo(clone_dir)
@@ -148,8 +147,7 @@ def clone_repo(clone_url, clone_dir, commit) -> None:
     return repo
 
 def remove_local_repo(clone_dir) -> None:
-    """
-    Remove the cloned repository directory from the local filesystem.
+    """Remove the cloned repository directory from the local filesystem.
     """
     if os.path.exists(clone_dir):
         try:
@@ -160,8 +158,7 @@ def remove_local_repo(clone_dir) -> None:
 
 
 def _find_files_to_edit(base_dir: str) -> list[str]:
-    """
-    Identify files to remove content by heuristics.
+    """Identify files to remove content by heuristics.
     We assume source code is under [lib]/[lib] or [lib]/src.
     We exclude test code. This function would not work
     if test code doesn't have its own directory.
@@ -171,6 +168,7 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
 
     Return:
         files (list[str]): a list of files to be edited.
+
     """
     name = os.path.basename(base_dir)
     path_src = os.path.join(base_dir, name, "**", "*.py")
@@ -189,14 +187,14 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     return files
 
 def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", removal: str = "all") -> str:
-    """
-    Generate a base commit by removing all function contents
+    """Generate a base commit by removing all function contents
 
     Args:
         repo (Repo): from which repo to generate the base commit
         base_branch_name (str): base of the branch name of the base commit
     Return:
         collected_tests (list[str]): a list of test function names
+
     """
     # check if base commit has already been generated
     remote = repo.local_repo.remote()
@@ -211,12 +209,12 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", remova
     if exists:
         branch = repo.local_repo.refs[branch_name]
         if branch.commit.message == "Commit 0":
-            logger.info(f"Commit 0 has already been created.")
+            logger.info("Commit 0 has already been created.")
             return branch.commit.hexsha
         else:
             raise ValueError(f"{branch_name} exists but it's not commit 0")
     else:
-        logger.info(f"Creating commit 0")
+        logger.info("Creating commit 0")
         repo.local_repo.git.checkout('-b', branch_name)
         files = _find_files_to_edit(repo.clone_dir)
         for f in files:

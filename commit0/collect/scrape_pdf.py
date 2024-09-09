@@ -3,17 +3,13 @@ import os
 import sys
 
 import fitz
-import nbformat
 import requests
-import wget
 import yaml
 
 from pyppeteer import launch
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
 from PyPDF2 import PdfMerger
-from nbconvert import PDFExporter
-from nbconvert.writers import FilesWriter
 
 def convert_to_raw_github_url(github_url):
     base_url = 'https://raw.githubusercontent.com/'

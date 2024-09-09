@@ -1,6 +1,5 @@
 import argparse
 import difflib
-import sys
 import os
 import shutil
 from datasets import load_dataset, Dataset
