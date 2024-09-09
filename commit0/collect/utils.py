@@ -21,10 +21,18 @@ logger = logging.getLogger(__name__)
 
 
 class Repo:
-    def __init__(self, owner: str, name: str, organization: str, head: str, token: Optional[str] = None):
+    def __init__(
+        self,
+        owner: str,
+        name: str,
+        organization: str,
+        head: str,
+        token: Optional[str] = None,
+    ):
         """Init to retrieve target repository and create ghapi tool
 
         Args:
+        ----
             owner (str): owner of target repository
             name (str): name of target repository
             org (str): under which organization to fork repos to
@@ -39,7 +47,12 @@ class Repo:
         self.api = GhApi(token=token)
         self.repo = self.call_api(self.api.repos.get, owner=organization, repo=name)
         if self.repo is None:
-            self.repo = self.call_api(self.api.repos.create_fork, owner=owner, repo=name, organization=organization)
+            self.repo = self.call_api(
+                self.api.repos.create_fork,
+                owner=owner,
+                repo=name,
+                organization=organization,
+            )
             # The API call returns immediately when the fork isn't complete. Needed to wait for a few seconds to finish.
             time.sleep(2)
         self.cwd = os.getcwd()
@@ -48,13 +61,14 @@ class Repo:
         else:
             self.commit = head
         logger.info("Setting up a local copy of the repository.")
-        self.clone_dir = os.path.abspath(os.path.join('tmp', self.name))
+        self.clone_dir = os.path.abspath(os.path.join("tmp", self.name))
         self.local_repo = clone_repo(self.repo.clone_url, self.clone_dir, self.commit)
 
-    def call_api(self, func: Callable, **kwargs) -> dict|None:
+    def call_api(self, func: Callable, **kwargs) -> dict | None:
         """API call wrapper with rate limit handling (checks every 5 minutes if rate limit is reset)
 
         Args:
+        ----
             func (callable): API function to call
             **kwargs: keyword arguments to pass to API function
         Return:
@@ -83,12 +97,15 @@ class Repo:
         """Get commit sha for a tag
 
         Args:
+        ----
             tag (str): to retrieve the commit of which tag
         Return:
             commit (str): sha of the commit
 
         """
-        tag_ref = self.call_api(self.api.git.get_ref, owner=self.owner, repo=self.name, ref=tag)
+        tag_ref = self.call_api(
+            self.api.git.get_ref, owner=self.owner, repo=self.name, ref=tag
+        )
         return tag_ref.object.sha
 
 
@@ -100,18 +117,22 @@ class RemoveMethod(ast.NodeTransformer):
 
     def visit_FunctionDef(self, node):
         transform = node
-        if node.body and isinstance(node.body[0], ast.Expr) and isinstance(node.body[0].value, ast.Constant):
+        if (
+            node.body
+            and isinstance(node.body[0], ast.Expr)
+            and isinstance(node.body[0].value, ast.Constant)
+        ):
             docstring_node = node.body[0]
         else:
             docstring_node = None
 
         not_implemented_error_node = ast.Raise(
             exc=ast.Call(
-                func=ast.Name(id='NotImplementedError', ctx=ast.Load()),
+                func=ast.Name(id="NotImplementedError", ctx=ast.Load()),
                 args=[ast.Constant(value="IMPLEMENT ME HERE")],
-                keywords=[]
+                keywords=[],
             ),
-            cause=None
+            cause=None,
         )
 
         if self.removal_method == "all":
@@ -123,7 +144,9 @@ class RemoveMethod(ast.NodeTransformer):
             if docstring_node:
                 node.body = [docstring_node, not_implemented_error_node]
         else:
-            raise NotImplementedError(f"Removal method {self.removal_method} is not implemented")
+            raise NotImplementedError(
+                f"Removal method {self.removal_method} is not implemented"
+            )
         return ast.copy_location(transform, node)
 
 
@@ -131,6 +154,7 @@ def clone_repo(clone_url, clone_dir, commit) -> None:
     """Clone repo into a temporary directory
 
     Return:
+    ------
         None
 
     """
@@ -147,6 +171,7 @@ def clone_repo(clone_url, clone_dir, commit) -> None:
     except git.exc.GitCommandError as e:
         raise RuntimeError(f"Failed to check out {commit}: {e}")
     return repo
+
 
 def remove_local_repo(clone_dir) -> None:
     """Remove the cloned repository directory from the local filesystem."""
@@ -165,55 +190,67 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     if test code doesn't have its own directory.
 
     Args:
+    ----
         base_dir (str): the path to local library.
 
     Return:
+    ------
         files (list[str]): a list of files to be edited.
 
     """
+
     def find_helper(n):
         path_src = os.path.join(base_dir, n, "**", "*.py")
         files = glob(path_src, recursive=True)
-        path_src = os.path.join(base_dir, 'src', n, "**", "*.py")
+        path_src = os.path.join(base_dir, "src", n, "**", "*.py")
         files += glob(path_src, recursive=True)
-        path_src = os.path.join(base_dir, 'src', "**", "*.py")
+        path_src = os.path.join(base_dir, "src", "**", "*.py")
         files += glob(path_src, recursive=True)
         path_test = os.path.join(base_dir, n, "**", "test*", "**", "*.py")
         test_files = glob(path_test, recursive=True)
         files = list(set(files) - set(test_files))
         return files
+
     name = os.path.basename(base_dir)
     files = find_helper(name)
     if name != name.lower():
         files += find_helper(name.lower())
-    elif name.startswith('pyjwt'):
-        files += find_helper('jwt')
-    elif name == 'tlslite-ng':
-        files += find_helper('tlslite')
-    elif name == 'dnspython':
-        files += find_helper('dns')
-    elif name == 'web3.py':
-        files += find_helper('web3')
-    elif name == 'python-rsa':
-        files += find_helper('rsa')
-    elif name == 'more-itertools':
-        files += find_helper('more_itertools')
-    elif name == 'imbalanced-learn':
-        files += find_helper('imblearn')
-    elif name == 'python-progressbar':
-        files += find_helper('progressbar')
-    elif name == 'filesystem_spec':
-        files += find_helper('fsspec')
+    elif name.startswith("pyjwt"):
+        files += find_helper("jwt")
+    elif name == "tlslite-ng":
+        files += find_helper("tlslite")
+    elif name == "dnspython":
+        files += find_helper("dns")
+    elif name == "web3.py":
+        files += find_helper("web3")
+    elif name == "python-rsa":
+        files += find_helper("rsa")
+    elif name == "more-itertools":
+        files += find_helper("more_itertools")
+    elif name == "imbalanced-learn":
+        files += find_helper("imblearn")
+    elif name == "python-progressbar":
+        files += find_helper("progressbar")
+    elif name == "filesystem_spec":
+        files += find_helper("fsspec")
     # don't edit __init__ files
-    files = [f for f in files if '__init__' not in f]
+    files = [f for f in files if "__init__" not in f]
     # don't edit confest.py files
-    files = [f for f in files if 'conftest.py' not in f]
+    files = [f for f in files if "conftest.py" not in f]
     return files
 
-def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "commit0", removal: str = "all", spec_cache_dir: str = "pdfs") -> str:
+
+def generate_base_commit(
+    repo: Repo,
+    spec_url: str,
+    base_branch_name: str = "commit0",
+    removal: str = "all",
+    spec_cache_dir: str = "pdfs",
+) -> str:
     """Generate a base commit by removing all function contents
 
     Args:
+    ----
         repo (Repo): from which repo to generate the base commit
         base_branch_name (str): base of the branch name of the base commit
         spec_cache_dir (str): where spec is cache to
@@ -240,7 +277,7 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
             raise ValueError(f"{branch_name} exists but it's not commit 0")
     else:
         logger.info("Creating commit 0")
-        repo.local_repo.git.checkout('-b', branch_name)
+        repo.local_repo.git.checkout("-b", branch_name)
         files = _find_files_to_edit(repo.clone_dir)
         for f in files:
             tree = astor.parse_file(f)
@@ -250,24 +287,28 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
                 repo.local_repo.git.add(f)
             except git.exc.GitCommandError as e:
                 if "paths are ignored by one of your .gitignore files" in e.stderr:
-                    logger.warning(f"File {f} is ignored due to .gitignore rules and won't be added.")
+                    logger.warning(
+                        f"File {f} is ignored due to .gitignore rules and won't be added."
+                    )
                 elif "is in submodule" in e.stderr:
                     logger.warning(f"File {f} is in a submodule and won't be added.")
                 else:
                     raise
 
         # check if function body has actually been removed
-        diff = repo.local_repo.index.diff('HEAD', create_patch=True, staged=True)
+        diff = repo.local_repo.index.diff("HEAD", create_patch=True, staged=True)
         additions = 0
         deletions = 0
         for blob in diff:
-            for line in blob.diff.decode('utf-8').splitlines():
-                if line.startswith('+') and not line.startswith('+++'):
+            for line in blob.diff.decode("utf-8").splitlines():
+                if line.startswith("+") and not line.startswith("+++"):
                     additions += 1
-                elif line.startswith('-') and not line.startswith('---'):
+                elif line.startswith("-") and not line.startswith("---"):
                     deletions += 1
         if additions == 0 or deletions == 0:
-            raise Exception(f"Removal is not working! 0 added lines or 0 deleted lines. Files found: {files}")
+            raise Exception(
+                f"Removal is not working! 0 added lines or 0 deleted lines. Files found: {files}"
+            )
         logger.info(f"Lines added: {additions}")
         logger.info(f"Lines removed: {deletions}")
 
@@ -276,7 +317,9 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
             logger.info(f"Found spec PDF at {spec_path}")
         else:
             logger.info(f"Scraping spec PDF at {spec_url}")
-            asyncio.get_event_loop().run_until_complete(scrape_spec(spec_url, "pdfs", repo.name))
+            asyncio.get_event_loop().run_until_complete(
+                scrape_spec(spec_url, "pdfs", repo.name)
+            )
         # github does not allow file > 100 MB
         file_size = os.path.getsize(spec_path)
         if file_size >= 100 * 1_048_576:
@@ -290,7 +333,7 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
         repo.local_repo.git.add(f"{repo.clone_dir}/spec.pdf")
 
         base_commit = repo.local_repo.index.commit("Commit 0")
-        origin = repo.local_repo.remote(name='origin')
+        origin = repo.local_repo.remote(name="origin")
         origin.push(branch_name)
         # go back to the starting commit
         repo.local_repo.git.checkout(repo.commit)

@@ -91,7 +91,7 @@
   packages:
     - "tests/requirements.txt"
   specification: "https://parsel.readthedocs.io/_/downloads/en/latest/pdf/"
-  test_cmd: "pytest --assert=plain --ignore=setup.py" 
+  test_cmd: "pytest --assert=plain --ignore=setup.py"
   test_dir: ""
 
 7:

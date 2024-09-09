@@ -8,29 +8,25 @@ version = "0.0.1"
 description = "A development and evaluation framework for using language models to generate libraries."
 requires-python = ">=3.10"
 dependencies = [
-   "astor",
-   "beautifulsoup4",
-   "datasets",
-   "docker",
-   "fastcore",
-   "ghapi",
-   "gitpython",
-   "nbconvert",
-   "PyMuPDF",
-   "PyPDF2",
-   "pyppeteer",
-   "pytest",
-   "wget",
-   "ruff>=0.6.4",
+    "astor",
+    "beautifulsoup4",
+    "datasets",
+    "docker",
+    "fastcore",
+    "ghapi",
+    "gitpython",
+    "nbconvert",
+    "PyMuPDF",
+    "PyPDF2",
+    "pyppeteer",
+    "pytest",
+    "wget",
+    "ruff>=0.6.4",
 ]
 
 [tool.pyright]
 include = ["**/commit0"]
-exclude = [
-    "**/docs",
-    "**/logs",
-    "**/repos"
-]
+ignore = ["**/docs", "**/logs", "**/repos"]
 venvPath = "."
 venv = ".venv"
 reportUnknownMemberType = "none"
@@ -52,7 +48,7 @@ exclude = [
     "__pycache__",
     "**/docs/**/*",
     "**/repos/**/*",
-    "**/logs/**/*"
+    "**/logs/**/*",
 ]
 
 lint.ignore = [

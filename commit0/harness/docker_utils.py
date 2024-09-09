@@ -20,6 +20,7 @@ def copy_to_container(container: Container, src: Path, dst: Path) -> None:
     """Copy a file from local to a docker container
 
     Args:
+    ----
         container (Container): Docker container to copy to
         src (Path): Source file path
         dst (Path): Destination file path in the container
@@ -56,6 +57,7 @@ def copy_from_container(container: Container, src: Path, dst: Path) -> None:
     """Copy a file from a docker container to local
 
     Args:
+    ----
         container (Container): Docker container to copy from
         src (Path): Source file path in the container
         dst (Path): Destination file path locally
@@ -80,7 +82,7 @@ def copy_from_container(container: Container, src: Path, dst: Path) -> None:
         tar_stream.write(chunk)
     tar_stream.seek(0)
 
-    with tarfile.open(fileobj=tar_stream, mode='r') as tar:
+    with tarfile.open(fileobj=tar_stream, mode="r") as tar:
         # Extract file from tar stream
         def is_within_directory(directory, target):
             abs_directory = os.path.abspath(directory)
@@ -110,10 +112,12 @@ def delete_file_from_container(container: Container, file_path: str) -> None:
     """Delete a file from a docker container.
 
     Args:
+    ----
         container (Container): Docker container to delete the file from
         file_path (str): Path to the file in the container to be deleted
 
     Raises:
+    ------
         docker.errors.APIError: If there is an error calling the Docker API.
         Exception: If the file deletion command fails with a non-zero exit code.
 
@@ -132,23 +136,25 @@ def copy_ssh_pubkey_from_container(container: Container) -> None:
     """Copy the SSH public key from a Docker container to the local authorized_keys file.
 
     Args:
-        container (Container): Docker container to copy the key from.
+    ----
+    container (Container): Docker container to copy the key from.
 
     Raises:
-        docker.errors.APIError: If there is an error calling the Docker API.
-        Exception: If the file reading or writing process fails.
+    ------
+    docker.errors.APIError: If there is an error calling the Docker API.
+    Exception: If the file reading or writing process fails.
 
     """
     try:
         exit_code, output = container.exec_run("cat /root/.ssh/id_rsa.pub")
         if exit_code != 0:
             raise Exception(f"Error reading file: {output.decode('utf-8').strip()}")
-        public_key = output.decode('utf-8').strip()
+        public_key = output.decode("utf-8").strip()
 
         local_authorized_keys_path = os.path.expanduser("~/.ssh/authorized_keys")
         os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
 
-        with open(local_authorized_keys_path, 'r') as authorized_keys_file:
+        with open(local_authorized_keys_path, "r") as authorized_keys_file:
             content = authorized_keys_file.read()
             if public_key not in content:
                 write = True
@@ -156,8 +162,8 @@ def copy_ssh_pubkey_from_container(container: Container) -> None:
                 write = False
 
         if write:
-            with open(local_authorized_keys_path, 'a') as authorized_keys_file:
-                authorized_keys_file.write(public_key + '\n')
+            with open(local_authorized_keys_path, "a") as authorized_keys_file:
+                authorized_keys_file.write(public_key + "\n")
 
     except docker.errors.APIError as e:
         raise docker.errors.APIError(f"Docker API Error: {str(e)}")
@@ -176,6 +182,7 @@ def remove_image(client, image_id, logger=None) -> None:
     """Remove a Docker image by ID.
 
     Args:
+    ----
         client (docker.DockerClient): Docker client.
         image_id (str): Image ID.
         rm_image (bool): Whether to remove the image.
@@ -191,8 +198,10 @@ def remove_image(client, image_id, logger=None) -> None:
         # if logger is "quiet", don't print anything
         def log_info(x) -> None:
             return None
+
         def log_error(x) -> None:
             return None
+
         raise_error = True
     else:
         # if logger is a logger object, use it
@@ -218,6 +227,7 @@ def cleanup_container(client, container, logger) -> None:
     Performs this forcefully if the container cannot be stopped with the python API.
 
     Args:
+    ----
         client (docker.DockerClient): Docker client.
         container (docker.models.containers.Container): Container to remove.
         logger (logging.Logger): Logger to use for output. If None, print to stdout
@@ -237,8 +247,10 @@ def cleanup_container(client, container, logger) -> None:
         # if logger is "quiet", don't print anything
         def log_info(x) -> None:
             return None
+
         def log_error(x) -> None:
             return None
+
         raise_error = True
     else:
         # if logger is a logger object, use it
@@ -290,30 +302,41 @@ def cleanup_container(client, container, logger) -> None:
         )
 
 
-def create_container(client: docker.DockerClient, image_name: str, container_name: str = None, user: str = None, command: str = None, nano_cpus: int = None, logger: logging.Logger = None) -> Container:
+def create_container(
+    client: docker.DockerClient,
+    image_name: str,
+    container_name: str = None,
+    user: str = None,
+    command: str = None,
+    nano_cpus: int = None,
+    logger: logging.Logger = None,
+) -> Container:
     """Start a Docker container using the specified image.
 
     Args:
-        client (docker.DockerClient): Docker client.
-        image_name (str): The name of the Docker image.
-        container_name (str, optional): Name for the Docker container. Defaults to None.
-        user (str, option): Log in as which user. Defaults to None.
-        command (str, optional): Command to run in the container. Defaults to None.
-        nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
-        logger (logging.Logger, optional): Port mappings. Defaults to None.
+    ----
+            client (docker.DockerClient): Docker client.
+    image_name (str): The name of the Docker image.
+    container_name (str, optional): Name for the Docker container. Defaults to None.
+            user (str, option): Log in as which user. Defaults to None.
+    command (str, optional): Command to run in the container. Defaults to None.
+            nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
+    logger (logging.Logger, optional): Port mappings. Defaults to None.
 
     Returns:
-        docker.models.containers.Container: The started Docker container.
+    -------
+    docker.models.containers.Container: The started Docker container.
 
     Raises:
-        docker.errors.APIError: If there's an error interacting with the Docker API.
-        Exception: For other general errors.
+    ------
+    docker.errors.APIError: If there's an error interacting with the Docker API.
+    Exception: For other general errors.
 
     """
-    #try:
+    # try:
     #    # Pull the image if it doesn't already exist
     #    client.images.pull(image_name)
-    #except docker.errors.APIError as e:
+    # except docker.errors.APIError as e:
     #    raise docker.errors.APIError(f"Error pulling image: {str(e)}")
 
     if not logger:
@@ -324,6 +347,7 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
         # if logger is "quiet", don't print anything
         def log_info(x) -> None:
             return None
+
         def log_error(x) -> None:
             return None
     else:
@@ -340,7 +364,7 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
             user=user,
             command="tail -f /dev/null",
             nano_cpus=nano_cpus,
-            detach=True
+            detach=True,
         )
         logger.info(f"Container for {image_name} created: {container.id}")
         return container
@@ -352,17 +376,18 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
         raise
 
 
-def exec_run_with_timeout(container, cmd, timeout: int|None=60):
+def exec_run_with_timeout(container, cmd, timeout: int | None = 60):
     """Run a command in a container with a timeout.
 
     Args:
+    ----
         container (docker.Container): Container to run the command in.
         cmd (str): Command to run.
         timeout (int): Timeout in seconds.
 
     """
     # Local variables to store the result of executing the command
-    exec_result = ''
+    exec_result = ""
     exec_id = None
     exception = None
     timed_out = False
@@ -374,7 +399,7 @@ def exec_run_with_timeout(container, cmd, timeout: int|None=60):
             exec_id = container.client.api.exec_create(container.id, cmd)["Id"]
             exec_stream = container.client.api.exec_start(exec_id, stream=True)
             for chunk in exec_stream:
-                exec_result += chunk.decode('utf-8', errors='replace')
+                exec_result += chunk.decode("utf-8", errors="replace")
         except Exception as e:
             exception = e
 
@@ -401,6 +426,7 @@ def find_dependent_images(client: docker.DockerClient, image_name: str):
     """Find all images that are built upon `image_name` image
 
     Args:
+    ----
         client (docker.DockerClient): Docker client.
         image_name (str): Name of the base image.
 
@@ -426,7 +452,7 @@ def find_dependent_images(client: docker.DockerClient, image_name: str):
         # Check if the base image is in this image's history
         history = image.history()
         for layer in history:
-            if layer['Id'] == base_image_id:
+            if layer["Id"] == base_image_id:
                 # If found, add this image to the dependent images list
                 tags = image.tags
                 dependent_images.append(tags[0] if tags else image.id)
@@ -442,14 +468,12 @@ def list_images(client: docker.DockerClient):
 
 
 def clean_images(
-        client: docker.DockerClient,
-        prior_images: set,
-        cache_level: str,
-        clean: bool
-    ) -> None:
+    client: docker.DockerClient, prior_images: set, cache_level: str, clean: bool
+) -> None:
     """Clean Docker images based on cache level and clean flag.
 
     Args:
+    ----
         client (docker.DockerClient): Docker client.
         prior_images (set): Set of images that existed before the current run.
         cache (str): Cache level to use.
@@ -474,11 +498,8 @@ def clean_images(
 
 
 def should_remove(
-        image_name: str,
-        cache_level: str,
-        clean: bool,
-        prior_images: set
-    ) -> bool:
+    image_name: str, cache_level: str, clean: bool, prior_images: set
+) -> bool:
     """Determine if an image should be removed based on cache level and clean flag."""
     existed_before = image_name in prior_images
     if image_name.startswith("commit0.base"):

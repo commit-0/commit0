@@ -1,10 +1,11 @@
 import fitz
 import sys
 
+
 def extract_text_from_pdf(pdf_path):
     # Open the specified PDF file
     document = fitz.open(pdf_path)
-    text = ''
+    text = ""
 
     # Iterate through the pages
     for page_num in range(len(document)):
@@ -12,6 +13,7 @@ def extract_text_from_pdf(pdf_path):
         text += page.get_text()  # extract text from the page
 
     return text
+
 
 if __name__ == "__main__":
     pdf_path = sys.argv[1]

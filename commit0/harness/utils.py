@@ -1,6 +1,5 @@
 import getpass
 import hashlib
-import requests
 import socket
 
 
@@ -19,7 +18,7 @@ class EvaluationError(Exception):
         )
 
 
-#def get_ip():
+# def get_ip():
 #    try:
 #        response = requests.get('https://api.ipify.org?format=json')
 #        response.raise_for_status()
@@ -32,10 +31,10 @@ def get_ip():
         # Connect to a public DNS server, then get the local socket name
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(0)
-        s.connect(('8.8.8.8', 80))
+        s.connect(("8.8.8.8", 80))
         local_ip = s.getsockname()[0]
-    except Exception as e:
-        local_ip = '127.0.0.1'  # Fallback to localhost IP
+    except Exception:
+        local_ip = "127.0.0.1"  # Fallback to localhost IP
     finally:
         s.close()
     return local_ip
@@ -49,21 +48,21 @@ def get_hash_string(input_string):
     # Create a new SHA-256 hash object
     sha256 = hashlib.sha256()
     # Update the hash object with the bytes of the input string
-    sha256.update(input_string.encode('utf-8'))
+    sha256.update(input_string.encode("utf-8"))
     # Obtain the hexadecimal digest of the hash
     hash_hex = sha256.hexdigest()[:22]
     return hash_hex
 
 
 def extract_test_output(s, pattern):
-    s = s.split('\n')
+    s = s.split("\n")
     out = []
     append = False
     for one in s:
-        if one.startswith('+') and pattern in one:
+        if one.startswith("+") and pattern in one:
             append = True
         # the next command started here, so we finished reading test output
-        elif append and one.startswith('+'):
-            return '\n'.join(out)
+        elif append and one.startswith("+"):
+            return "\n".join(out)
         if append:
             out.append(one)
