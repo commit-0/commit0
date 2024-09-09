@@ -35,11 +35,11 @@ def convert_to_raw_github_url(github_url):
 # Example usage
 
 # Function to clean PDFs
-def is_page_blank(page):
+def is_page_blank(page) -> bool:
     text = page.get_text("text")
     return not text.strip()
 
-def remove_blank_pages(pdf_path):
+def remove_blank_pages(pdf_path) -> None:
     document = fitz.open(pdf_path)
     if document.page_count < 2:
         print(f"No empty page to remove in {pdf_path}")
@@ -56,7 +56,7 @@ def remove_blank_pages(pdf_path):
     document.close()
     print(f"Saved PDF without blank pages: {pdf_path}")
 
-def clean_pdf_directory(docs):
+def clean_pdf_directory(docs) -> None:
     for doc in docs:
         remove_blank_pages(doc)
 
@@ -138,14 +138,14 @@ async def crawl_website(browser, base_url, output_dir):
             print(f"Error crawling {current_url}: {e}")
     return sequence
 
-def merge_pdfs(docs, output_filename):
+def merge_pdfs(docs, output_filename) -> None:
     merger = PdfMerger()
     for pdf in docs:
         merger.append(pdf)
     merger.write(output_filename)
     merger.close()
 
-async def main(base_url, output_dir, name):
+async def main(base_url, output_dir, name) -> None:
     browser = await launch(args=['--no-sandbox'])
     os.makedirs(output_dir, exist_ok=True)
     pdfs = await crawl_website(browser, base_url, output_dir)

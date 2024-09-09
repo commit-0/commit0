@@ -90,8 +90,7 @@ class Repo:
 
 
 class RemoveMethod(ast.NodeTransformer):
-    """Class to replace method code with NotImplementedError
-    """
+    """Class to replace method code with NotImplementedError"""
 
     def __init__(self, removal_method):
         self.removal_method = removal_method
@@ -147,8 +146,7 @@ def clone_repo(clone_url, clone_dir, commit) -> None:
     return repo
 
 def remove_local_repo(clone_dir) -> None:
-    """Remove the cloned repository directory from the local filesystem.
-    """
+    """Remove the cloned repository directory from the local filesystem."""
     if os.path.exists(clone_dir):
         try:
             shutil.rmtree(clone_dir)
@@ -186,7 +184,7 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     files = [f for f in files if 'conftest.py' not in f]
     return files
 
-def generate_base_commit(repo: Repo, base_branch_name: str = "spec2repo", removal: str = "all") -> str:
+def generate_base_commit(repo: Repo, base_branch_name: str = "commit0", removal: str = "all") -> str:
     """Generate a base commit by removing all function contents
 
     Args:

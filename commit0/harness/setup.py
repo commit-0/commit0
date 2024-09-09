@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(hf_name: str, base_dir: str, config_file: str):
+def main(hf_name: str, base_dir: str, config_file: str) -> None:
     dataset = load_dataset(hf_name, split="test")
     out = dict()
     specs = []

@@ -16,7 +16,7 @@ from docker.models.containers import Container
 HEREDOC_DELIMITER = "EOF_1399519320"  # different from dataset HEREDOC_DELIMITERs!
 
 
-def copy_to_container(container: Container, src: Path, dst: Path):
+def copy_to_container(container: Container, src: Path, dst: Path) -> None:
     """Copy a file from local to a docker container
 
     Args:
@@ -52,7 +52,7 @@ def copy_to_container(container: Container, src: Path, dst: Path):
     container.exec_run(f"rm {dst}.tar")
 
 
-def copy_from_container(container: Container, src: Path, dst: Path):
+def copy_from_container(container: Container, src: Path, dst: Path) -> None:
     """Copy a file from a docker container to local
 
     Args:
@@ -90,7 +90,7 @@ def copy_from_container(container: Container, src: Path, dst: Path):
 
             return prefix == abs_directory
 
-        def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+        def safe_extract(tar, path=".", members=None, *, numeric_owner=False) -> None:
             for member in tar.getmembers():
                 member_path = os.path.join(path, member.name)
                 if not is_within_directory(path, member_path):
@@ -106,7 +106,7 @@ def copy_from_container(container: Container, src: Path, dst: Path):
         extracted_file_path.rename(dst)
 
 
-def delete_file_from_container(container: Container, file_path: str):
+def delete_file_from_container(container: Container, file_path: str) -> None:
     """Delete a file from a docker container.
 
     Args:
@@ -128,7 +128,7 @@ def delete_file_from_container(container: Container, file_path: str):
         raise Exception(f"General Error: {str(e)}")
 
 
-def copy_ssh_pubkey_from_container(container: Container):
+def copy_ssh_pubkey_from_container(container: Container) -> None:
     """Copy the SSH public key from a Docker container to the local authorized_keys file.
 
     Args:
@@ -165,15 +165,14 @@ def copy_ssh_pubkey_from_container(container: Container):
         raise Exception(f"General Error: {str(e)}")
 
 
-def write_to_container(container: Container, data: str, dst: Path):
-    """Write a string to a file in a docker container
-    """
+def write_to_container(container: Container, data: str, dst: Path) -> None:
+    """Write a string to a file in a docker container"""
     # echo with heredoc to file
     command = f"cat <<'{HEREDOC_DELIMITER}' > {dst}\n{data}\n{HEREDOC_DELIMITER}"
     container.exec_run(command)
 
 
-def remove_image(client, image_id, logger=None):
+def remove_image(client, image_id, logger=None) -> None:
     """Remove a Docker image by ID.
 
     Args:
@@ -190,8 +189,10 @@ def remove_image(client, image_id, logger=None):
         raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        log_info = lambda x: None
-        log_error = lambda x: None
+        def log_info(x) -> None:
+            return None
+        def log_error(x) -> None:
+            return None
         raise_error = True
     else:
         # if logger is a logger object, use it
@@ -212,7 +213,7 @@ def remove_image(client, image_id, logger=None):
         )
 
 
-def cleanup_container(client, container, logger):
+def cleanup_container(client, container, logger) -> None:
     """Stop and remove a Docker container.
     Performs this forcefully if the container cannot be stopped with the python API.
 
@@ -234,8 +235,10 @@ def cleanup_container(client, container, logger):
         raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        log_info = lambda x: None
-        log_error = lambda x: None
+        def log_info(x) -> None:
+            return None
+        def log_error(x) -> None:
+            return None
         raise_error = True
     else:
         # if logger is a logger object, use it
@@ -319,8 +322,10 @@ def create_container(client: docker.DockerClient, image_name: str, container_nam
         log_info = print
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        log_info = lambda x: None
-        log_error = lambda x: None
+        def log_info(x) -> None:
+            return None
+        def log_error(x) -> None:
+            return None
     else:
         # if logger is a logger object, use it
         log_error = logger.info
@@ -363,7 +368,7 @@ def exec_run_with_timeout(container, cmd, timeout: int|None=60):
     timed_out = False
 
     # Wrapper function to run the command
-    def run_command():
+    def run_command() -> None:
         nonlocal exec_result, exec_id, exception
         try:
             exec_id = container.client.api.exec_create(container.id, cmd)["Id"]
@@ -431,8 +436,7 @@ def find_dependent_images(client: docker.DockerClient, image_name: str):
 
 
 def list_images(client: docker.DockerClient):
-    """List all images from the Docker client.
-    """
+    """List all images from the Docker client."""
     # don't use this in multi-threaded context
     return {tag for i in client.images.list(all=True) for tag in i.tags}
 
@@ -442,7 +446,7 @@ def clean_images(
         prior_images: set,
         cache_level: str,
         clean: bool
-    ):
+    ) -> None:
     """Clean Docker images based on cache level and clean flag.
 
     Args:
@@ -474,9 +478,8 @@ def should_remove(
         cache_level: str,
         clean: bool,
         prior_images: set
-    ):
-    """Determine if an image should be removed based on cache level and clean flag.
-    """
+    ) -> bool:
+    """Determine if an image should be removed based on cache level and clean flag."""
     existed_before = image_name in prior_images
     if image_name.startswith("commit0.base"):
         if cache_level in {"none"} and (clean or not existed_before):

@@ -52,7 +52,7 @@ def setup_logger(repo: str, log_file: Path, mode="w"):
     return logger
 
 
-def close_logger(logger):
+def close_logger(logger) -> None:
     # To avoid too many open files
     for handler in logger.handlers:
         handler.close()
@@ -67,7 +67,7 @@ def build_image(
         client: docker.DockerClient,
         build_dir: Path,
         nocache: bool = False
-    ):
+    ) -> None:
     """Builds a docker image with the given name, setup scripts, dockerfile, and platform.
 
     Args:
@@ -151,7 +151,7 @@ def build_base_images(
         client: docker.DockerClient,
         dataset: list,
         force_rebuild: bool = False
-    ):
+    ) -> None:
     """Builds the base images required for the dataset if they do not already exist.
 
     Args:

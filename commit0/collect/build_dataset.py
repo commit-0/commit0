@@ -50,7 +50,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: d
     }
 
 
-def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str, removal: str, token: Optional[str] = None):
+def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str, removal: str, token: Optional[str] = None) -> None:
     """Main thread for creating task instances from existing repositories
 
     Args:

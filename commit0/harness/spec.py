@@ -19,8 +19,7 @@ from commit0.harness.utils import (
 
 @dataclass
 class Spec:
-    """A dataclass that represents a test specification for a single instance of SWE-bench.
-    """
+    """A dataclass that represents a test specification for a single instance of SWE-bench."""
 
     repo: str
     # repo dir on docker
@@ -38,7 +37,7 @@ class Spec:
         # Don't exit early because we need to revert tests at the end
 
     @property
-    def base_image_key(self):
+    def base_image_key(self) -> str:
         return "commit0.base:latest"
 
     @property
@@ -70,16 +69,15 @@ class Spec:
         return get_dockerfile_repo(self.platform)
     
     @property
-    def platform(self):
+    def platform(self) -> str:
         return "linux/x86_64"
 
 
 def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> list[Spec]:
-    """Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects.
-    """
+    """Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects."""
     if isinstance(dataset[0], Spec):
         return cast(list[Spec], dataset)
-    return list(map(make_test_spec, cast(list[RepoInstance], dataset)))
+    return list(map(make_spec, cast(list[RepoInstance], dataset)))
 
 
 def make_repo_script_list(instance, repo_directory):
@@ -137,8 +135,7 @@ def make_repo_script_list(instance, repo_directory):
 
 
 def make_eval_script_list(instance, repo_directory):
-    """Run the tests.
-    """
+    """Run the tests."""
     ip = get_ip()
     user = get_user()
     origin_name = get_hash_string(f"{ip}:{user}")

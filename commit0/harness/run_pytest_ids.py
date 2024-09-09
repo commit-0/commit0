@@ -28,7 +28,7 @@ from commit0.harness.utils import (
 )
 
 
-def main(repo: str, test_ids: list[str], timeout: int, branch_name: str):
+def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None:
     with open("config.yml", 'r') as file:
         data = yaml.safe_load(file)
     spec = make_spec(data[repo])
