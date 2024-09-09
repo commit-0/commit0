@@ -1,0 +1,131 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "commit0"
+version = "0.0.1"
+description = "A development and evaluation framework for using language models to generate libraries."
+requires-python = ">=3.10"
+dependencies = [
+   "astor",
+   "beautifulsoup4",
+   "datasets",
+   "docker",
+   "fastcore",
+   "ghapi",
+   "gitpython",
+   "nbconvert",
+   "PyMuPDF",
+   "PyPDF2",
+   "pyppeteer",
+   "pytest",
+   "wget",
+]
+
+[tool.pyright]
+include = ["**/commit0"]
+exclude = [
+    "**/docs",
+    "**/logs",
+    "**/repos"
+]
+venvPath = "."
+venv = ".venv"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportMissingTypeArgument = "none"
+reportMissingTypeStubs = "none"
+reportUnusedExpression = "none"
+reportUnknownLambdaType = "none"
+reportIncompatibleMethodOverride = "none"
+reportPrivateUsage = "none"
+reportMissingParameterType = "error"
+
+
+[tool.ruff]
+exclude = [
+    ".git",
+    "__pycache__",
+    "**/docs/**/*",
+    "**/repos/**/*",
+    "**/logs/**/*"
+]
+
+ignore = [
+    "ANN101",
+    "ANN401",
+    "N801",
+    "E203",
+    "E266",
+    "E501",
+    "E741",
+    "N803",
+    "N802",
+    "N806",
+    "D400",
+    "D401",
+    "D105",
+    "D415",
+    "D402",
+    "D205",
+    "D100",
+    "D101",
+    "D107",
+    "D213",
+    "ANN204",
+    "ANN102",
+]
+select = ["D", "E", "F", "N", "ANN"]
+fixable = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "I",
+    "N",
+    "Q",
+    "S",
+    "T",
+    "W",
+    "ANN",
+    "ARG",
+    "BLE",
+    "COM",
+    "DJ",
+    "DTZ",
+    "EM",
+    "ERA",
+    "EXE",
+    "FBT",
+    "ICN",
+    "INP",
+    "ISC",
+    "NPY",
+    "PD",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "PYI",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "SLF",
+    "TCH",
+    "TID",
+    "TRY",
+    "UP",
+    "YTT",
+]
+unfixable = []
+
+[tool.ruff.extend-per-file-ignores]
+"tests/**/*.py" = ["D"]
