@@ -277,6 +277,10 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
         else:
             logger.info(f"Scraping spec PDF at {spec_url}")
             asyncio.get_event_loop().run_until_complete(scrape_spec(spec_url, "pdfs", repo.name))
+        # github does not allow file > 100 MB
+        file_size = os.path.getsize(spec_path)
+        if file_size >= 100 * 1_048_576:
+            raise ValueError(f"{spec_path} is too large to be pushed to github")
         try:
             shutil.copy(spec_path, f"{repo.clone_dir}/spec.pdf")
         except IOError as e:
