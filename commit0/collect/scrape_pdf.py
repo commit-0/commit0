@@ -111,6 +111,8 @@ async def crawl_website(browser, base_url, output_dir):
             if len(splitted) > 1 and splitted[1] in ["az","bn","de","es","fa","fr","he","hu","id","it","ja","ko","pl","pt","ru","tr","uk","ur","vi","yo","zh","zh-hant","em","?q="]:
                 print(f"Skip URL: {current_url}")
                 continue
+        elif 'seaborn' in current_url and '.png.' in current_url:
+            continue
         if current_url in visited:
             continue
         

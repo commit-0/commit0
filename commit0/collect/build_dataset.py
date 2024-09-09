@@ -87,7 +87,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
     ds = Dataset.from_list(examples)
     ds = DatasetDict({"test": ds})
     hf_name = f"{hf_name}_{removal}"
-    #ds.push_to_hub(hf_name, private=True)
+    ds.push_to_hub(hf_name, private=True)
 
 
 if __name__ == "__main__":

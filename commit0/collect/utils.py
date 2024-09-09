@@ -186,6 +186,24 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
     files = find_helper(name)
     if name != name.lower():
         files += find_helper(name.lower())
+    elif name.startswith('pyjwt'):
+        files += find_helper('jwt')
+    elif name == 'tlslite-ng':
+        files += find_helper('tlslite')
+    elif name == 'dnspython':
+        files += find_helper('dns')
+    elif name == 'web3.py':
+        files += find_helper('web3')
+    elif name == 'python-rsa':
+        files += find_helper('rsa')
+    elif name == 'more-itertools':
+        files += find_helper('more_itertools')
+    elif name == 'imbalanced-learn':
+        files += find_helper('imblearn')
+    elif name == 'python-progressbar':
+        files += find_helper('progressbar')
+    elif name == 'filesystem_spec':
+        files += find_helper('fsspec')
     # don't edit __init__ files
     files = [f for f in files if '__init__' not in f]
     # don't edit confest.py files
@@ -238,6 +256,21 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
                 else:
                     raise
 
+        # check if function body has actually been removed
+        diff = repo.local_repo.index.diff('HEAD', create_patch=True, staged=True)
+        additions = 0
+        deletions = 0
+        for blob in diff:
+            for line in blob.diff.decode('utf-8').splitlines():
+                if line.startswith('+') and not line.startswith('+++'):
+                    additions += 1
+                elif line.startswith('-') and not line.startswith('---'):
+                    deletions += 1
+        if additions == 0 or deletions == 0:
+            raise Exception(f"Removal is not working! 0 added lines or 0 deleted lines. Files found: {files}")
+        logger.info(f"Lines added: {additions}")
+        logger.info(f"Lines removed: {deletions}")
+
         spec_path = os.path.join(spec_cache_dir, f"{repo.name}.pdf")
         if os.path.exists(spec_path):
             logger.info(f"Found spec PDF at {spec_path}")
@@ -250,25 +283,9 @@ def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "com
             raise IOError(f"Unable to copy file. {e}")
         except Exception as e:
             raise Exception(f"Unexpected error: {e}")
-        #repo.local_repo.git.add(f"{repo.clone_dir}/spec.pdf")
+        repo.local_repo.git.add(f"{repo.clone_dir}/spec.pdf")
 
         base_commit = repo.local_repo.index.commit("Commit 0")
-        # check if function body has actually been removed
-        parent_commit = base_commit.parents[0]
-        diff = base_commit.diff(parent_commit, create_patch=True)
-
-        additions = 0
-        deletions = 0
-
-        for blob in diff:
-            for line in blob.diff.decode('utf-8').splitlines():
-                if line.startswith('+') and not line.startswith('+++'):
-                    additions += 1
-                elif line.startswith('-') and not line.startswith('---'):
-                    deletions += 1
-
-        logger.info(f"Lines added: {additions}")
-        logger.info(f"Lines removed: {deletions}")
         origin = repo.local_repo.remote(name='origin')
         origin.push(branch_name)
         # go back to the starting commit
