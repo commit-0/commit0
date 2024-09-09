@@ -30,7 +30,7 @@ def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: d
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    base_commit = generate_base_commit(repo, base_branch_name, removal)
+    base_commit = generate_base_commit(repo, spec_url=raw_info["specification"], base_branch_name=base_branch_name, removal=removal)
     setup = dict()
     setup["python"] = raw_info["python"]
     setup["install"] = raw_info["install"]
@@ -87,7 +87,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
     ds = Dataset.from_list(examples)
     ds = DatasetDict({"test": ds})
     hf_name = f"{hf_name}_{removal}"
-    ds.push_to_hub(hf_name, private=True)
+    #ds.push_to_hub(hf_name, private=True)
 
 
 if __name__ == "__main__":

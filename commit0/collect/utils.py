@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import shutil
@@ -10,6 +11,8 @@ import astor
 import git
 from ghapi.core import GhApi
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
+
+from commit0.collect.scrape_pdf import scrape_spec
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -168,28 +171,34 @@ def _find_files_to_edit(base_dir: str) -> list[str]:
         files (list[str]): a list of files to be edited.
 
     """
+    def find_helper(n):
+        path_src = os.path.join(base_dir, n, "**", "*.py")
+        files = glob(path_src, recursive=True)
+        path_src = os.path.join(base_dir, 'src', n, "**", "*.py")
+        files += glob(path_src, recursive=True)
+        path_src = os.path.join(base_dir, 'src', "**", "*.py")
+        files += glob(path_src, recursive=True)
+        path_test = os.path.join(base_dir, n, "**", "test*", "**", "*.py")
+        test_files = glob(path_test, recursive=True)
+        files = list(set(files) - set(test_files))
+        return files
     name = os.path.basename(base_dir)
-    path_src = os.path.join(base_dir, name, "**", "*.py")
-    files = glob(path_src, recursive=True)
-    path_src = os.path.join(base_dir, 'src', name, "**", "*.py")
-    files += glob(path_src, recursive=True)
-    path_src = os.path.join(base_dir, 'src', "**", "*.py")
-    files += glob(path_src, recursive=True)
-    path_test = os.path.join(base_dir, name, "**", "test*", "**", "*.py")
-    test_files = glob(path_test, recursive=True)
-    files = list(set(files) - set(test_files))
+    files = find_helper(name)
+    if name != name.lower():
+        files += find_helper(name.lower())
     # don't edit __init__ files
     files = [f for f in files if '__init__' not in f]
     # don't edit confest.py files
     files = [f for f in files if 'conftest.py' not in f]
     return files
 
-def generate_base_commit(repo: Repo, base_branch_name: str = "commit0", removal: str = "all") -> str:
+def generate_base_commit(repo: Repo, spec_url: str, base_branch_name: str = "commit0", removal: str = "all", spec_cache_dir: str = "pdfs") -> str:
     """Generate a base commit by removing all function contents
 
     Args:
         repo (Repo): from which repo to generate the base commit
         base_branch_name (str): base of the branch name of the base commit
+        spec_cache_dir (str): where spec is cache to
     Return:
         collected_tests (list[str]): a list of test function names
 
@@ -228,7 +237,38 @@ def generate_base_commit(repo: Repo, base_branch_name: str = "commit0", removal:
                     logger.warning(f"File {f} is in a submodule and won't be added.")
                 else:
                     raise
+
+        spec_path = os.path.join(spec_cache_dir, f"{repo.name}.pdf")
+        if os.path.exists(spec_path):
+            logger.info(f"Found spec PDF at {spec_path}")
+        else:
+            logger.info(f"Scraping spec PDF at {spec_url}")
+            asyncio.get_event_loop().run_until_complete(scrape_spec(spec_url, "pdfs", repo.name))
+        try:
+            shutil.copy(spec_path, f"{repo.clone_dir}/spec.pdf")
+        except IOError as e:
+            raise IOError(f"Unable to copy file. {e}")
+        except Exception as e:
+            raise Exception(f"Unexpected error: {e}")
+        #repo.local_repo.git.add(f"{repo.clone_dir}/spec.pdf")
+
         base_commit = repo.local_repo.index.commit("Commit 0")
+        # check if function body has actually been removed
+        parent_commit = base_commit.parents[0]
+        diff = base_commit.diff(parent_commit, create_patch=True)
+
+        additions = 0
+        deletions = 0
+
+        for blob in diff:
+            for line in blob.diff.decode('utf-8').splitlines():
+                if line.startswith('+') and not line.startswith('+++'):
+                    additions += 1
+                elif line.startswith('-') and not line.startswith('---'):
+                    deletions += 1
+
+        logger.info(f"Lines added: {additions}")
+        logger.info(f"Lines removed: {deletions}")
         origin = repo.local_repo.remote(name='origin')
         origin.push(branch_name)
         # go back to the starting commit

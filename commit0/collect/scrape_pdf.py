@@ -32,8 +32,6 @@ def convert_to_raw_github_url(github_url):
     
     return raw_url
 
-# Example usage
-
 # Function to clean PDFs
 def is_page_blank(page) -> bool:
     text = page.get_text("text")
@@ -145,7 +143,15 @@ def merge_pdfs(docs, output_filename) -> None:
     merger.write(output_filename)
     merger.close()
 
-async def main(base_url, output_dir, name) -> None:
+async def scrape_spec(base_url, output_dir, name) -> None:
+    output_dir = os.path.join("pdfs", name)
+    # the link is already a PDF
+    splitted = [x for x in base_url.split('/') if x!= '']
+    if splitted[-1] == 'pdf':
+        response = requests.get(base_url)
+        with open(os.path.join("pdfs", f"{name}.pdf"), 'wb') as pdf_file:
+            pdf_file.write(response.content)
+        return
     browser = await launch(args=['--no-sandbox'])
     os.makedirs(output_dir, exist_ok=True)
     pdfs = await crawl_website(browser, base_url, output_dir)
@@ -156,21 +162,15 @@ async def main(base_url, output_dir, name) -> None:
     # merge all pdfs together
     merge_pdfs(pdfs, os.path.join("pdfs", f"{name}.pdf"))
 
-if __name__ == "__main__":
+def main():
     with open(sys.argv[1], 'r') as f:
         ds = yaml.safe_load(f)
     for idx, one in ds.items():
         base_url = one['specification']
         lib_name = one['name'].split('/')[-1]
-        output_dir = os.path.join("pdfs", lib_name)
         os.makedirs(output_dir, exist_ok=True)
-        print(base_url)
-        print(output_dir)
-        splitted = [x for x in base_url.split('/') if x!= '']
-        if splitted[-1] == 'pdf':
-            response = requests.get(base_url)
-            with open(os.path.join("pdfs", f"{lib_name}.pdf"), 'wb') as pdf_file:
-                pdf_file.write(response.content)
-        else:
-            asyncio.get_event_loop().run_until_complete(main(base_url, output_dir, lib_name))
+        asyncio.get_event_loop().run_until_complete(scrape_spec(base_url, "pdfs", lib_name))
         print("Done:", one['name'])
+
+if __name__ == "__main__":
+    main()
