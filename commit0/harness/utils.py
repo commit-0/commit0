@@ -1,6 +1,7 @@
 import getpass
 import hashlib
 import requests
+import socket
 
 
 class EvaluationError(Exception):
@@ -18,14 +19,26 @@ class EvaluationError(Exception):
         )
 
 
+#def get_ip():
+#    try:
+#        response = requests.get('https://api.ipify.org?format=json')
+#        response.raise_for_status()
+#        public_ip = response.json()['ip']
+#        return public_ip
+#    except requests.RequestException as e:
+#        return f"Error: {e}"
 def get_ip():
     try:
-        response = requests.get('https://api.ipify.org?format=json')
-        response.raise_for_status()
-        public_ip = response.json()['ip']
-        return public_ip
-    except requests.RequestException as e:
-        return f"Error: {e}"
+        # Connect to a public DNS server, then get the local socket name
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.settimeout(0)
+        s.connect(('8.8.8.8', 80))
+        local_ip = s.getsockname()[0]
+    except Exception as e:
+        local_ip = '127.0.0.1'  # Fallback to localhost IP
+    finally:
+        s.close()
+    return local_ip
 
 
 def get_user():
