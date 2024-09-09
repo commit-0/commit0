@@ -6,7 +6,7 @@ import docker
 import yaml
 from datasets import load_dataset
 
-from commit0.collect.utils import clone_repo
+from commit0.harness.utils import clone_repo, create_branch
 from commit0.harness.constants import REPO_IMAGE_BUILD_DIR
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
@@ -31,7 +31,8 @@ def main(hf_name: str, base_dir: str, config_file: str, backend: str) -> None:
         out["repos"][repo_name] = example
         clone_url = f"https://github.com/{example['repo']}.git"
         clone_dir = os.path.join(out["base_repo_dir"], repo_name)
-        clone_repo(clone_url, clone_dir, example['base_commit'])
+        repo = clone_repo(clone_url, clone_dir, example['base_commit'], logger)
+        create_branch(repo, "aider", logger)
 
     config_file = os.path.abspath(config_file)
     with open(config_file, "w") as f:

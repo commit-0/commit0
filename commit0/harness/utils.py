@@ -1,6 +1,9 @@
 import getpass
+import git
 import hashlib
+import logging
 import socket
+import os
 from commit0.harness.constants import EVAL_BACKENDS
 
 
@@ -69,3 +72,87 @@ def extract_test_output(s, pattern):
             return "\n".join(out)
         if append:
             out.append(one)
+
+
+def clone_repo(clone_url: str, clone_dir: str, commit: str, logger: logging.Logger) -> git.Repo:
+    """Clone repo into the specified directory if it does not already exist.
+
+    If the repository already exists in the specified directory,
+    it fetches the latest changes and checks out the specified commit.
+
+    Parameters:
+    ----------
+    clone_url : str
+        URL of the repository to clone.
+    clone_dir : str
+        Directory where the repository will be cloned.
+    commit : str
+        The commit hash or branch/tag name to checkout.
+    logger : logging.Logger
+        The logger object.
+
+    Returns:
+    -------
+    git.Repo
+        The cloned repository object.
+
+    Raises:
+    ------
+    RuntimeError
+        If cloning or checking out the repository fails.
+    """
+    # Check if the repository already exists
+    if os.path.exists(clone_dir):
+        logger.info(f"Repository already exists at {clone_dir}. Fetching updates.")
+        try:
+            repo = git.Repo(clone_dir)
+            repo.git.fetch()
+        except git.exc.GitCommandError as e:
+            raise RuntimeError(f"Failed to fetch updates for repository: {e}")
+    else:
+        logger.info(f"Cloning {clone_url} into {clone_dir}")
+        try:
+            repo = git.Repo.clone_from(clone_url, clone_dir)
+        except git.exc.GitCommandError as e:
+            raise RuntimeError(f"Failed to clone repository: {e}")
+
+    logger.info(f"Checking out {commit}")
+    try:
+        repo.git.checkout(commit)
+    except git.exc.GitCommandError as e:
+        raise RuntimeError(f"Failed to check out {commit}: {e}")
+
+    return repo
+
+
+def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
+    """Create a new branch or switch to an existing branch.
+
+    Parameters:
+    ----------
+    repo : git.Repo
+        The repository object.
+    branch : str
+        The name of the branch to create or switch to.
+    logger : logging.Logger
+        The logger object.
+
+    Returns:
+    -------
+    None
+
+    Raises:
+    ------
+    RuntimeError
+        If creating or switching to the branch fails.
+    """
+    try:
+        # Check if the branch already exists
+        if branch in repo.heads:
+            logger.info(f"Branch '{branch}' already exists. Checking out the branch.")
+            repo.git.checkout(branch)
+        else:
+            logger.info(f"Creating new branch '{branch}' and checking out the branch.")
+            repo.git.checkout('-b', branch)
+    except git.exc.GitCommandError as e:
+        raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
