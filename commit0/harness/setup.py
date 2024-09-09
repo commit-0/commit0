@@ -17,20 +17,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(hf_name: str, base_dir: str, config_file: str) -> None:
+def main(hf_name: str, base_dir: str, config_file: str, backend: str) -> None:
     dataset = load_dataset(hf_name, split="test")
     out = dict()
+    out["backend"] = backend
+    out["base_repo_dir"] = base_dir
+    out["repos"] = dict()
     specs = []
     for example in dataset:
         spec = make_spec(example)
         specs.append(spec)
-        repo_name = example["repo"].split("/")[-1]
-        out[repo_name] = example
-        out[repo_name]["local_path"] = os.path.abspath(
-            os.path.join(base_dir, repo_name)
-        )
+        repo_name = example['repo'].split('/')[-1]
+        out["repos"][repo_name] = example
         clone_url = f"https://github.com/{example['repo']}.git"
-        clone_repo(clone_url, out[repo_name]["local_path"], example["base_commit"])
+        clone_dir = os.path.join(out["base_repo_dir"], repo_name)
+        clone_repo(clone_url, clone_dir, example['base_commit'])
 
     config_file = os.path.abspath(config_file)
     with open(config_file, "w") as f:
@@ -57,6 +58,13 @@ if __name__ == "__main__":
         type=str,
         default="config.yml",
         help="where to write config file to",
+    )
+    parser.add_argument(
+        "--backend",
+        type=str,
+        choices=["local", "modal"],
+        default="modal",
+        help="specify evaluation backend to be local or modal (remote)"
     )
     args = parser.parse_args()
     main(**vars(args))

@@ -4,7 +4,10 @@ import traceback
 import yaml
 from pathlib import Path
 
-from commit0.harness.constants import RUN_PYTEST_LOG_DIR
+from commit0.harness.constants import (
+    RUN_PYTEST_LOG_DIR,
+    EVAL_BACKENDS
+)
 from commit0.harness.docker_build import (
     close_logger,
     setup_logger,
@@ -23,13 +26,15 @@ from commit0.harness.utils import (
     EvaluationError,
     extract_test_output,
     get_hash_string,
+    get_ip,
+    get_user
 )
 
 
 def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None:
     with open("config.yml", "r") as file:
         data = yaml.safe_load(file)
-    spec = make_spec(data[repo])
+    spec = make_spec(data["repos"][repo])
     test_ids = " ".join(test_ids)
     hashed_test_ids = get_hash_string(test_ids)
 
@@ -41,7 +46,11 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None
 
     # make eval file
     eval_script = spec.eval_script.format(
-        local_repo=data[repo]["local_path"], branch_name=branch_name, test_ids=test_ids
+        local_repo=f"{data['base_repo_dir']}/{repo}",
+        branch_name=branch_name,
+        test_ids=test_ids,
+        ip=get_ip(data["backend"]),
+        user=get_user()
     )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)

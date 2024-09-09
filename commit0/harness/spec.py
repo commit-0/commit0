@@ -152,20 +152,19 @@ def make_repo_script_list(instance, repo_directory):
 
 def make_eval_script_list(instance, repo_directory):
     """Run the tests."""
-    ip = get_ip()
-    user = get_user()
-    origin_name = get_hash_string(f"{ip}:{user}")
+    origin_name = "tmp-test"
     eval_script_list = [
-        f"ssh-keyscan {ip} >> ~/.ssh/known_hosts",
+        f"ssh-keyscan {{ip}} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
         "source .venv/bin/activate",
-        f"git remote add {origin_name} ssh://{user}@{ip}:{{local_repo}}",
+        f"git remote add {origin_name} ssh://{{user}}@{{ip}}:{{local_repo}}",
         f"git fetch {origin_name}",
         f"git checkout -b {{branch_name}} {origin_name}/{{branch_name}}",
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
         f"git checkout {instance['base_commit']}",
-        "git status",
+        f"git remote remove {origin_name}"
+        "git status"
     ]
     return eval_script_list
 

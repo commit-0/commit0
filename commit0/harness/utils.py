@@ -1,6 +1,7 @@
 import getpass
 import hashlib
 import socket
+from commit0.harness.constants import EVAL_BACKENDS
 
 
 class EvaluationError(Exception):
@@ -18,26 +19,28 @@ class EvaluationError(Exception):
         )
 
 
-# def get_ip():
-#    try:
-#        response = requests.get('https://api.ipify.org?format=json')
-#        response.raise_for_status()
-#        public_ip = response.json()['ip']
-#        return public_ip
-#    except requests.RequestException as e:
-#        return f"Error: {e}"
-def get_ip():
-    try:
-        # Connect to a public DNS server, then get the local socket name
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-    except Exception:
-        local_ip = "127.0.0.1"  # Fallback to localhost IP
-    finally:
-        s.close()
-    return local_ip
+def get_ip(backend: str):
+    if backend not in EVAL_BACKENDS:
+        raise ValueError(f"We only support evaluation backends = {EVAL_BACKENDS}, but you provided {backend}")
+    if backend == "modal":
+        try:
+            response = requests.get('https://api.ipify.org?format=json')
+            response.raise_for_status()
+            ip = response.json()['ip']
+        except requests.RequestException as e:
+            raise Exception(f"Cannot get the public IP address.\n{e}")
+    elif backend == "local":
+        try:
+            # Connect to a public DNS server, then get the local socket name
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0)
+            s.connect(('8.8.8.8', 80))
+            ip = s.getsockname()[0]
+        except Exception as e:
+            ip = '127.0.0.1'  # Fallback to localhost IP
+        finally:
+            s.close()
+    return ip
 
 
 def get_user():
