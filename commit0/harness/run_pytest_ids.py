@@ -69,6 +69,8 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str):
         logger.info(output)
 
         test_output = extract_test_output(output, "--json-report --json-report-file=report.json")
+        # stdout might be more straightforward
+        print(test_output)
         test_output_path = log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
             f.write(test_output)
