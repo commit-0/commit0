@@ -29,11 +29,17 @@ class Spec:
 
     @property
     def setup_script(self):
-        return "\n".join(["#!/bin/bash", "set -euxo pipefail"] + self.repo_script_list) + "\n"
+        return (
+            "\n".join(["#!/bin/bash", "set -euxo pipefail"] + self.repo_script_list)
+            + "\n"
+        )
 
     @property
     def eval_script(self):
-        return "\n".join(["#!/bin/bash", "set -uxo pipefail"] + self.eval_script_list) + "\n"
+        return (
+            "\n".join(["#!/bin/bash", "set -uxo pipefail"] + self.eval_script_list)
+            + "\n"
+        )
         # Don't exit early because we need to revert tests at the end
 
     @property
@@ -51,11 +57,11 @@ class Spec:
         hash_object.update(str(self.setup_script).encode("utf-8"))
         hash_value = hash_object.hexdigest()
         val = hash_value[:22]  # 22 characters is still very likely to be unique
-        repo = self.repo.split('/')[-1]
+        repo = self.repo.split("/")[-1]
         return f"commit0.repo.{repo}.{val}:latest".lower()
 
     def get_container_name(self, run_id=None):
-        repo = self.repo.split('/')[-1]
+        repo = self.repo.split("/")[-1]
         if not run_id:
             return f"commit0.eval.{repo}"
         return f"commit0.eval.{repo}.{run_id}".lower()
@@ -67,13 +73,15 @@ class Spec:
     @property
     def repo_dockerfile(self):
         return get_dockerfile_repo(self.platform)
-    
+
     @property
     def platform(self) -> str:
         return "linux/x86_64"
 
 
-def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> list[Spec]:
+def get_specs_from_dataset(
+    dataset: Union[list[RepoInstance], list[Spec]],
+) -> list[Spec]:
     """Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects."""
     if isinstance(dataset[0], Spec):
         return cast(list[Spec], dataset)
@@ -84,7 +92,7 @@ def make_repo_script_list(instance, repo_directory):
     """Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
     """
-    specs = instance['setup']
+    specs = instance["setup"]
     repo = instance["repo"]
     env_setup_commit = instance["reference_commit"]
     base_commit = instance["base_commit"]
@@ -98,16 +106,20 @@ def make_repo_script_list(instance, repo_directory):
         "git remote remove origin",
         f"uv venv --python {specs['python']}",
         "source .venv/bin/activate",
-        'which python',
+        "which python",
     ]
 
     # Run pre-install set up if provided
     if "pre_install" in specs and specs["pre_install"] is not None:
         for pre_install in specs["pre_install"]:
             if "apt-get install" in pre_install and "-y" not in pre_install:
-                pre_install = pre_install.replace("apt-get install", "apt-get install -y --no-install-recommends")
+                pre_install = pre_install.replace(
+                    "apt-get install", "apt-get install -y --no-install-recommends"
+                )
             elif "apt install" in pre_install and "-y" not in pre_install:
-                pre_install = pre_install.replace("apt install", "apt install -y --no-install-recommends")
+                pre_install = pre_install.replace(
+                    "apt install", "apt install -y --no-install-recommends"
+                )
             setup_commands.append(pre_install)
 
     # Install dependencies
@@ -118,7 +130,7 @@ def make_repo_script_list(instance, repo_directory):
 
     # Install additional packages if specified
     if "pip_packages" in specs and specs["pip_packages"] is not None:
-        pip_packages = [f"\"{one}\"" for one in specs["pip_packages"]]
+        pip_packages = [f'"{one}"' for one in specs["pip_packages"]]
         pip_packages = " ".join(pip_packages)
         cmd = f"uv pip install {pip_packages}"
         setup_commands.append(cmd)
@@ -127,9 +139,13 @@ def make_repo_script_list(instance, repo_directory):
         if specs["install"].startswith("pip"):
             install = "uv " + specs["install"]
         else:
-            raise ValueError(f"install command should always start with pip, but you have {specs['install']}")
+            raise ValueError(
+                f"install command should always start with pip, but you have {specs['install']}"
+            )
         setup_commands.append(install)
-    setup_commands.append("uv pip install pytest pytest-cov coverage pytest-json-report")
+    setup_commands.append(
+        "uv pip install pytest pytest-cov coverage pytest-json-report"
+    )
     setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
 
@@ -149,7 +165,7 @@ def make_eval_script_list(instance, repo_directory):
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
         f"git checkout {instance['base_commit']}",
-        "git status"
+        "git status",
     ]
     return eval_script_list
 

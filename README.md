@@ -24,7 +24,7 @@ repos.yml
 There are two options to specify the version of the library:
 you can either provide a specific commit or a specific tag. You cannot specify both at the same time.
 Finally, include the commands that sets up the library from a local repository.
-For example, to create an example for the ``msiemens/tinydb`` with version 4.8, 
+For example, to create an example for the ``msiemens/tinydb`` with version 4.8,
 ```
 repos.yml
 0:

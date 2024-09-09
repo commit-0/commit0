@@ -10,7 +10,6 @@ class RepoInstance(TypedDict):
     setup: dict
 
 
-
 # Constants - Evaluation Log Directories
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")
 REPO_IMAGE_BUILD_DIR = Path("logs/build_images/repo")
@@ -22,10 +21,12 @@ FAIL_TO_FAIL = "FAIL_TO_FAIL"
 PASS_TO_PASS = "PASS_TO_PASS"
 PASS_TO_FAIL = "PASS_TO_FAIL"
 
+
 class ResolvedStatus(Enum):
     NO = "RESOLVED_NO"
     PARTIAL = "RESOLVED_PARTIAL"
     FULL = "RESOLVED_FULL"
+
 
 class TestStatus(Enum):
     FAILED = "FAILED"

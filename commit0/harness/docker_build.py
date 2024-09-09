@@ -10,13 +10,8 @@ from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
     REPO_IMAGE_BUILD_DIR,
 )
-from commit0.harness.spec import (
-    get_specs_from_dataset
-)
-from commit0.harness.docker_utils import (
-    remove_image,
-    find_dependent_images
-)
+from commit0.harness.spec import get_specs_from_dataset
+from commit0.harness.docker_utils import remove_image, find_dependent_images
 
 ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
@@ -60,17 +55,18 @@ def close_logger(logger) -> None:
 
 
 def build_image(
-        image_name: str,
-        setup_scripts: dict,
-        dockerfile: str,
-        platform: str,
-        client: docker.DockerClient,
-        build_dir: Path,
-        nocache: bool = False
-    ) -> None:
+    image_name: str,
+    setup_scripts: dict,
+    dockerfile: str,
+    platform: str,
+    client: docker.DockerClient,
+    build_dir: Path,
+    nocache: bool = False,
+) -> None:
     """Builds a docker image with the given name, setup scripts, dockerfile, and platform.
 
     Args:
+    ----
         image_name (str): Name of the image to build
         setup_scripts (dict): Dictionary of setup script names to setup script contents
         dockerfile (str): Contents of the Dockerfile
@@ -148,13 +144,12 @@ def build_image(
 
 
 def build_base_images(
-        client: docker.DockerClient,
-        dataset: list,
-        force_rebuild: bool = False
-    ) -> None:
+    client: docker.DockerClient, dataset: list, force_rebuild: bool = False
+) -> None:
     """Builds the base images required for the dataset if they do not already exist.
 
     Args:
+    ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
         force_rebuild (bool): Whether to force rebuild the images even if they already exist
@@ -196,13 +191,14 @@ def build_base_images(
 
 
 def get_repo_configs_to_build(
-        client: docker.DockerClient,
-        dataset: list,
-    ):
+    client: docker.DockerClient,
+    dataset: list,
+):
     """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
 
     Args:
+    ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
 
@@ -251,14 +247,15 @@ def get_repo_configs_to_build(
 
 
 def build_repo_images(
-        client: docker.DockerClient,
-        dataset: list,
-        force_rebuild: bool = False,
-        max_workers: int = 4
-    ):
+    client: docker.DockerClient,
+    dataset: list,
+    force_rebuild: bool = False,
+    max_workers: int = 4,
+):
     """Builds the repo images required for the dataset if they do not already exist.
 
     Args:
+    ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
         force_rebuild (bool): Whether to force rebuild the images even if they already exist

@@ -4,9 +4,7 @@ import traceback
 import yaml
 from pathlib import Path
 
-from commit0.harness.constants import (
-    RUN_PYTEST_LOG_DIR
-)
+from commit0.harness.constants import RUN_PYTEST_LOG_DIR
 from commit0.harness.docker_build import (
     close_logger,
     setup_logger,
@@ -29,7 +27,7 @@ from commit0.harness.utils import (
 
 
 def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None:
-    with open("config.yml", 'r') as file:
+    with open("config.yml", "r") as file:
         data = yaml.safe_load(file)
     spec = make_spec(data[repo])
     test_ids = " ".join(test_ids)
@@ -42,7 +40,9 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None
     logger = setup_logger(repo, log_file)
 
     # make eval file
-    eval_script = spec.eval_script.format(local_repo=data[repo]['local_path'], branch_name=branch_name, test_ids=test_ids)
+    eval_script = spec.eval_script.format(
+        local_repo=data[repo]["local_path"], branch_name=branch_name, test_ids=test_ids
+    )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
@@ -53,21 +53,23 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None
             client=client,
             image_name=spec.repo_image_key,
             container_name=spec.get_container_name(),
-            logger=logger
+            logger=logger,
         )
         container.start()
         copy_ssh_pubkey_from_container(container)
 
-        logger.info(
-            f"Eval script written to {eval_file}; copying to container..."
-        )
+        logger.info(f"Eval script written to {eval_file}; copying to container...")
         copy_to_container(container, eval_file, Path("/eval.sh"))
 
         # Run eval script, write output to logs
-        output, timed_out, total_runtime = exec_run_with_timeout(container, "/bin/bash /eval.sh", timeout)
+        output, timed_out, total_runtime = exec_run_with_timeout(
+            container, "/bin/bash /eval.sh", timeout
+        )
         logger.info(output)
 
-        test_output = extract_test_output(output, "--json-report --json-report-file=report.json")
+        test_output = extract_test_output(
+            output, "--json-report --json-report-file=report.json"
+        )
         # stdout might be more straightforward
         print(test_output)
         test_output_path = log_dir / "test_output.txt"
@@ -84,7 +86,7 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None
         # copy back report.json if there is any
         report_file = Path(spec.repo_directory) / "report.json"
         # Run the test command inside the container to check if the file exists
-        exit_code, output = container.exec_run(f'test -e {report_file}', demux=True)
+        exit_code, output = container.exec_run(f"test -e {report_file}", demux=True)
         # Check the exit code of the command
         if exit_code == 0:
             copy_from_container(container, report_file, Path(log_dir / "report.json"))
@@ -95,27 +97,32 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None
         logger.info(error_msg)
         print(e)
     except Exception as e:
-        error_msg = (f"Error in running pytest for {repo}: {e}\n"
-                     f"{traceback.format_exc()}\n"
-                     f"Check ({logger.log_file}) for more information.")
+        error_msg = (
+            f"Error in running pytest for {repo}: {e}\n"
+            f"{traceback.format_exc()}\n"
+            f"Check ({logger.log_file}) for more information."
+        )
         logger.error(error_msg)
     finally:
         # Remove repo container + image, close logger
         cleanup_container(client, container, logger)
         close_logger(logger)
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=str, help="which repo to run unit tests")
     parser.add_argument(
-        "--test_ids", 
-        type=str, 
-        nargs='+',
-        help="which test ids / files / directories"
+        "--test_ids", type=str, nargs="+", help="which test ids / files / directories"
     )
-    parser.add_argument("--branch_name", type=str, help="which git branch to run unit tests")
     parser.add_argument(
-        "--timeout", type=int, default=1_800, help="Timeout (in seconds) for running tests for each instance"
-        )
+        "--branch_name", type=str, help="which git branch to run unit tests"
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=1_800,
+        help="Timeout (in seconds) for running tests for each instance",
+    )
     args = parser.parse_args()
     main(**vars(args))
