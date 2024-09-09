@@ -104,10 +104,10 @@ async def crawl_website(browser, base_url, output_dir):
 
     while to_visit:
         current_url = to_visit.pop(0)
-        if 'pydantic' in current_url:
-            if 'changelog' in current_url or 'people' in current_url:
+        if 'pydantic' in base_url:
+            if 'changelog' in current_url or 'people' in current_url or 'integrations' in current_url or 'migration' in current_url or 'why' in current_url:
                 continue
-        elif 'fastapi' in current_url:
+        elif 'fastapi' in base_url:
             if 'changelog' in current_url or 'people' in current_url:
                 continue
             splitted = current_url.replace("https://", "")
@@ -116,10 +116,9 @@ async def crawl_website(browser, base_url, output_dir):
             if len(splitted) > 1 and splitted[1] in ["az","bn","de","es","fa","fr","he","hu","id","it","ja","ko","pl","pt","ru","tr","uk","ur","vi","yo","zh","zh-hant","em","?q="]:
                 print(f"Skip URL: {current_url}")
                 continue
-            if 'reference_' not in current_url or 'tutorial' not in current_url:
+        elif 'seaborn' in base_url:
+            if '.png' in current_url:
                 continue
-        elif 'seaborn' in current_url and '.png.' in current_url:
-            continue
         if current_url in visited:
             continue
         

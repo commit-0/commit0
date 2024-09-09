@@ -344,7 +344,7 @@
   install: "pip install -e .[all]"
   packages:
     - "requirements-tests.txt"
-  specification: "https://fastapi.tiangolo.com/"
+  specification: "https://fastapi.tiangolo.com/reference/"
   test_cmd: "pytest"
   test_dir: "tests/"
 
