@@ -1,7 +1,7 @@
 import os
 import sys
 
-def serialize_files(directory):
+def serialize_files(directory) -> None:
     for root, _, files in os.walk(directory):
         for file in files:
             file_path = os.path.join(root, file)

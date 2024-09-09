@@ -11,12 +11,9 @@ from commit0.harness.constants import (
     REPO_IMAGE_BUILD_DIR,
 )
 from commit0.harness.spec import (
-    get_specs_from_dataset,
-    make_spec,
-    Spec
+    get_specs_from_dataset
 )
 from commit0.harness.docker_utils import (
-    cleanup_container,
     remove_image,
     find_dependent_images
 )
@@ -40,8 +37,7 @@ class BuildImageError(Exception):
 
 
 def setup_logger(repo: str, log_file: Path, mode="w"):
-    """
-    This logger is used for logging the build process of images and containers.
+    """This logger is used for logging the build process of images and containers.
     It writes logs to the log file.
     """
     log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -56,7 +52,7 @@ def setup_logger(repo: str, log_file: Path, mode="w"):
     return logger
 
 
-def close_logger(logger):
+def close_logger(logger) -> None:
     # To avoid too many open files
     for handler in logger.handlers:
         handler.close()
@@ -71,9 +67,8 @@ def build_image(
         client: docker.DockerClient,
         build_dir: Path,
         nocache: bool = False
-    ):
-    """
-    Builds a docker image with the given name, setup scripts, dockerfile, and platform.
+    ) -> None:
+    """Builds a docker image with the given name, setup scripts, dockerfile, and platform.
 
     Args:
         image_name (str): Name of the image to build
@@ -83,6 +78,7 @@ def build_image(
         client (docker.DockerClient): Docker client to use for building the image
         build_dir (Path): Directory for the build context (will also contain logs, scripts, and artifacts)
         nocache (bool): Whether to use the cache when building
+
     """
     # Create a logger for the build process
     logger = setup_logger(image_name, build_dir / "build_image.log")
@@ -155,14 +151,14 @@ def build_base_images(
         client: docker.DockerClient,
         dataset: list,
         force_rebuild: bool = False
-    ):
-    """
-    Builds the base images required for the dataset if they do not already exist.
+    ) -> None:
+    """Builds the base images required for the dataset if they do not already exist.
 
     Args:
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
         force_rebuild (bool): Whether to force rebuild the images even if they already exist
+
     """
     # Get the base images to build from the dataset
     test_specs = get_specs_from_dataset(dataset)
@@ -203,13 +199,13 @@ def get_repo_configs_to_build(
         client: docker.DockerClient,
         dataset: list,
     ):
-    """
-    Returns a dictionary of image names to build scripts and dockerfiles for repo images.
+    """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
 
     Args:
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
+
     """
     image_scripts = dict()
     base_images = dict()
@@ -260,14 +256,14 @@ def build_repo_images(
         force_rebuild: bool = False,
         max_workers: int = 4
     ):
-    """
-    Builds the repo images required for the dataset if they do not already exist.
+    """Builds the repo images required for the dataset if they do not already exist.
 
     Args:
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
         force_rebuild (bool): Whether to force rebuild the images even if they already exist
         max_workers (int): Maximum number of workers to use for building images
+
     """
     # Get the repo images to build from the dataset
     if force_rebuild:
@@ -313,8 +309,8 @@ def build_repo_images(
                     traceback.print_exc()
                     failed.append(futures[future])
                     continue
-                except Exception as e:
-                    print(f"Error building image")
+                except Exception:
+                    print("Error building image")
                     traceback.print_exc()
                     failed.append(futures[future])
                     continue
@@ -327,54 +323,3 @@ def build_repo_images(
 
     # Return the list of (un)successfuly built images
     return successful, failed
-
-
-def build_container(
-        test_spec: Spec,
-        client: docker.DockerClient,
-        run_id: str,
-        logger: logging.Logger,
-        nocache: bool,
-        force_rebuild: bool = False
-    ):
-    """
-    Builds the repo image for the given test spec and creates a container from the image.
-
-    Args:
-        test_spec (Spec): Test spec to build the repo image and container for
-        client (docker.DockerClient): Docker client for building image + creating the container
-        run_id (str): Run ID identifying process, used for the container name
-        logger (logging.Logger): Logger to use for logging the build process
-        nocache (bool): Whether to use the cache when building
-        force_rebuild (bool): Whether to force rebuild the image even if it already exists
-    """
-    # Build corresponding repo image
-    if force_rebuild:
-        remove_image(client, test_spec.repo_image_key, "quiet")
-    build_repo_images(client, [test_spec])
-
-    container = None
-    try:
-        # Get configurations for how container should be created
-        user = "root"
-        nano_cpus = 4
-
-        # Create the container
-        logger.info(f"Creating container for {test_spec.repo}...")
-        container = client.containers.create(
-            image=test_spec.repo_image_key,
-            name=test_spec.get_container_name(run_id),
-            user=user,
-            detach=True,
-            command="tail -f /dev/null",
-            nano_cpus=nano_cpus,
-            platform=test_spec.platform,
-        )
-        logger.info(f"Container for {test_spec.repo} created: {container.id}")
-        return container
-    except Exception as e:
-        # If an error occurs, clean up the container and raise an exception
-        logger.error(f"Error creating container for {test_spec.repo}: {e}")
-        logger.info(traceback.format_exc())
-        cleanup_container(client, container, logger)
-        raise BuildImageError(test_spec.repo, str(e), logger) from e

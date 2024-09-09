@@ -10,7 +10,6 @@ from datasets import Dataset, DatasetDict
 
 from commit0.collect.utils import (
     generate_base_commit,
-    extract_patch,
     Repo,
 )
 
@@ -21,42 +20,38 @@ logger = logging.getLogger(__name__)
 
 
 def create_instance(repo: Repo, base_branch_name: str, removal: str, raw_info: dict) -> dict:
-    """
-    Create a single task instance from a commit, where task instance is:
+    """Create a single task instance from a commit, where task instance is:
 
     {
         repo (str): owner/repo this task instance is from,
         base_commit (str): SHA of the base commit for starter repo,
-        environment_setup_commit(str): SHA of the commit for setting up environment,
+        reference_commit(str): SHA of the commit for setting up environment,
         patch (str): reference solution as .patch (apply to base commit),
     }
     """
     # extract_test_names needs to be called on the environment set up commit
-    base_commit = generate_base_commit(repo, base_branch_name, removal)
-    patch = extract_patch(repo, base_commit)
-    docker_setup = dict()
-    docker_setup["python"] = raw_info["python"]
-    docker_setup["install"] = raw_info["install"]
-    docker_setup["specification"] = raw_info["specification"]
+    base_commit = generate_base_commit(repo, spec_url=raw_info["specification"], base_branch_name=base_branch_name, removal=removal)
+    setup = dict()
+    setup["python"] = raw_info["python"]
+    setup["install"] = raw_info["install"]
+    setup["specification"] = raw_info["specification"]
     if "pre_install" in raw_info:
-        docker_setup["pre_install"] = raw_info["pre_install"]
+        setup["pre_install"] = raw_info["pre_install"]
     if "packages" in raw_info:
-        docker_setup["packages"] = raw_info["packages"]
+        setup["packages"] = raw_info["packages"]
     if "pip_packages" in raw_info:
-        docker_setup["pip_packages"] = raw_info["pip_packages"]
+        setup["pip_packages"] = raw_info["pip_packages"]
     return {
         "repo": repo.repo.full_name,
         "base_commit": base_commit,
-        "environment_setup_commit": repo.commit,
-        "patch": patch,
-        "docker_setup": docker_setup,
+        "reference_commit": repo.commit,
+        "setup": setup,
         "test": {"test_cmd": raw_info["test_cmd"], "test_dir": raw_info["test_dir"]}
     }
 
 
-def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str, removal: str, token: Optional[str] = None):
-    """
-    Main thread for creating task instances from existing repositories
+def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str, removal: str, token: Optional[str] = None) -> None:
+    """Main thread for creating task instances from existing repositories
 
     Args:
         repo_file (str): path to repository YAML file
@@ -65,6 +60,7 @@ def main(repo_file: str, hf_name: str, organization: str, base_branch_name: str,
         base_branch_name (str): base of the branch name under which the base commit will be sent to
         removal (str): strategy to remove code body
         token (str): GitHub token
+
     """
     if token is None:
         # Get GitHub token from environment variable if not provided

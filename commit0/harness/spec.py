@@ -1,10 +1,7 @@
 import hashlib
-import json
-import platform
-import re
 
 from dataclasses import dataclass
-from typing import Any, Union, cast
+from typing import Union, cast
 
 from commit0.harness.constants import (
     RepoInstance,
@@ -13,14 +10,20 @@ from commit0.harness.dockerfiles import (
     get_dockerfile_base,
     get_dockerfile_repo,
 )
+from commit0.harness.utils import (
+    get_ip,
+    get_user,
+    get_hash_string,
+)
 
 
 @dataclass
 class Spec:
-    """
-    A dataclass that represents a test specification for a single instance of SWE-bench.
-    """
+    """A dataclass that represents a test specification for a single instance of SWE-bench."""
+
     repo: str
+    # repo dir on docker
+    repo_directory: str
     repo_script_list: list[str]
     eval_script_list: list[str]
 
@@ -34,13 +37,12 @@ class Spec:
         # Don't exit early because we need to revert tests at the end
 
     @property
-    def base_image_key(self):
-        return f"commit0.base:latest"
+    def base_image_key(self) -> str:
+        return "commit0.base:latest"
 
     @property
     def repo_image_key(self):
-        """
-        The key for the environment image is based on the hash of the environment script list.
+        """The key for the environment image is based on the hash of the environment script list.
         If the environment script list changes, the image will be rebuilt automatically.
 
         Note that old images are not automatically deleted, so consider cleaning up old images periodically.
@@ -67,34 +69,36 @@ class Spec:
         return get_dockerfile_repo(self.platform)
     
     @property
-    def platform(self):
+    def platform(self) -> str:
         return "linux/x86_64"
 
 
 def get_specs_from_dataset(dataset: Union[list[RepoInstance], list[Spec]]) -> list[Spec]:
-    """
-    Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects.
-    """
+    """Idempotent function that converts a list of SWEbenchInstance objects to a list of TestSpec objects."""
     if isinstance(dataset[0], Spec):
         return cast(list[Spec], dataset)
-    return list(map(make_test_spec, cast(list[RepoInstance], dataset)))
+    return list(map(make_spec, cast(list[RepoInstance], dataset)))
 
 
-def make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_name, base_commit):
-    """
-    Create a list of bash commands to set up the repository for testing.
+def make_repo_script_list(instance, repo_directory):
+    """Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
     """
+    specs = instance['setup']
+    repo = instance["repo"]
+    env_setup_commit = instance["reference_commit"]
+    base_commit = instance["base_commit"]
+
     setup_commands = [
         f"git clone -o origin https://github.com/{repo} {repo_directory}",
         f"chmod -R 777 {repo_directory}",  # So nonroot user can run tests
         f"cd {repo_directory}",
         f"git reset --hard {env_setup_commit}",
         # Remove the remote so the agent won't see newer commits.
-        f"git remote remove origin",
+        "git remote remove origin",
         f"uv venv --python {specs['python']}",
         "source .venv/bin/activate",
-        f'which python',
+        'which python',
     ]
 
     # Run pre-install set up if provided
@@ -125,51 +129,43 @@ def make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_nam
         else:
             raise ValueError(f"install command should always start with pip, but you have {specs['install']}")
         setup_commands.append(install)
-    setup_commands.append(f"uv pip install pytest pytest-cov coverage pytest-json-report")
+    setup_commands.append("uv pip install pytest pytest-cov coverage pytest-json-report")
     setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
 
 
-def make_eval_script_list(instance, env_name, repo_directory, base_commit):
-    """
-    Run the tests.
-    """
-    specs = instance["docker_setup"]
-    test_command = "{test_cmd} --json-report --json-report-file=report.json {tests}"
-    eval_commands = [
-        f"git config --global --add safe.directory {repo_directory}",  # for nonroot user
+def make_eval_script_list(instance, repo_directory):
+    """Run the tests."""
+    ip = get_ip()
+    user = get_user()
+    origin_name = get_hash_string(f"{ip}:{user}")
+    eval_script_list = [
+        f"ssh-keyscan {ip} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
-        # This is just informational, so we have a record
-        f"git status",
-        f"git show",
-        f"git diff {base_commit}",
         "source .venv/bin/activate",
+        f"git remote add {origin_name} ssh://{user}@{ip}:{{local_repo}}",
+        f"git fetch {origin_name}",
+        f"git checkout -b {{branch_name}} {origin_name}/{{branch_name}}",
+        "git status",
+        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
+        f"git checkout {instance['base_commit']}",
+        "git status"
     ]
-    eval_commands += [
-        test_command,
-        f"git reset --hard {base_commit}"
-    ]
-    return eval_commands
+    return eval_script_list
 
 
 def make_spec(instance: RepoInstance) -> Spec:
     if isinstance(instance, Spec):
         return instance
-    repo = instance["repo"]
-    env_setup_commit = instance["environment_setup_commit"]
-    base_commit = instance["base_commit"]
 
-    env_name = "testbed"
-    repo_directory = f"/{env_name}"
-    specs = instance['docker_setup']
+    repo_directory = "/testbed"
 
-    repo_script_list = make_repo_script_list(specs, repo, repo_directory, env_setup_commit, env_name, base_commit)
-    eval_script_list = make_eval_script_list(
-        instance, env_name, repo_directory, base_commit
-    )
+    repo_script_list = make_repo_script_list(instance, repo_directory)
+    eval_script_list = make_eval_script_list(instance, repo_directory)
 
     return Spec(
-        repo=repo,
+        repo=instance["repo"],
+        repo_directory=repo_directory,
         repo_script_list=repo_script_list,
         eval_script_list=eval_script_list,
     )

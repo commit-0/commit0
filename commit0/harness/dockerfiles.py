@@ -21,6 +21,17 @@ locales-all \
 tzdata \
 && rm -rf /var/lib/apt/lists/*
 
+# Define arguments for SSH key parameters
+ARG SSH_KEY_PATH="/root/.ssh"
+ARG SSH_KEY_NAME="id_rsa"
+ARG SSH_KEY_PASSPHRASE=""
+
+# Create the .ssh directory
+RUN mkdir -p ${{SSH_KEY_PATH}}
+
+# Generate SSH keys
+RUN ssh-keygen -t rsa -b 4096 -f ${{SSH_KEY_PATH}}/${{SSH_KEY_NAME}} -N "${{SSH_KEY_PASSPHRASE}}"
+
 # Set up uv
 # The installer requires curl (and certificates) to download the release archive
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates
