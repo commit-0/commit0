@@ -21,6 +21,7 @@ dependencies = [
    "pyppeteer",
    "pytest",
    "wget",
+   "ruff>=0.6.4",
 ]
 
 [tool.pyright]
