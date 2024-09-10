@@ -153,13 +153,17 @@ def copy_ssh_pubkey_from_container(container: Container) -> None:
 
         local_authorized_keys_path = os.path.expanduser("~/.ssh/authorized_keys")
         os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
-
-        with open(local_authorized_keys_path, "r") as authorized_keys_file:
-            content = authorized_keys_file.read()
-            if public_key not in content:
-                write = True
-            else:
-                write = False
+        if not os.path.exists(local_authorized_keys_path):
+            # Since the file does not exist, create it
+            open(local_authorized_keys_path, 'a').close()
+            write = True
+        else:
+            with open(local_authorized_keys_path, "r") as authorized_keys_file:
+                content = authorized_keys_file.read()
+                if public_key not in content:
+                    write = True
+                else:
+                    write = False
 
         if write:
             with open(local_authorized_keys_path, "a") as authorized_keys_file:
