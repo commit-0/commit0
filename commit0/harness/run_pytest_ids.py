@@ -40,7 +40,6 @@ class ExecutionBackend(StrEnum):
 def run_docker(spec, logger, eval_file, timeout, log_dir):
     client = docker.from_env()
     container = None
-    import pdb; pdb.set_trace()
     try:
         container = create_container(
             client=client,
@@ -112,7 +111,8 @@ async def run_modal(spec, logger, eval_file, timeout, log_dir):
     with modal.NetworkFileSystem.ephemeral() as nfs:
         # create sleepy sandbox
         sandbox = modal.Sandbox.create(
-            "sleep", "infinity",
+            "sleep",
+            "infinity",
             image=image,
             network_file_systems={
                 "/vol": nfs,
@@ -187,7 +187,6 @@ async def run_modal(spec, logger, eval_file, timeout, log_dir):
                     f"Test timed out after {timeout} seconds.",
                     logger,
                 )
-    import pdb; pdb.set_trace()
 
 
 def main(
