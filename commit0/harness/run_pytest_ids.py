@@ -6,9 +6,6 @@ import traceback
 from pathlib import Path
 import logging
 
-from omegaconf import DictConfig, OmegaConf
-import hydra
-
 from commit0.harness.constants import RUN_PYTEST_LOG_DIR
 from commit0.harness.docker_build import (
     close_logger,
@@ -196,39 +193,46 @@ def run_modal(
                 )
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="base")
-def main(config: DictConfig) -> None:
-    OmegaConf.to_yaml(config)
-    dataset = load_dataset(config.dataset_name, split="test")
+def main(
+    dataset_name: str,
+    dataset_split: str,
+    base_dir: str,
+    repo: str,
+    branch: str,
+    test_ids: str,
+    backend: str,
+    timeout: int,
+) -> None:
+    dataset = load_dataset(dataset_name, split="test")
     spec = None
     for example in dataset:
-        if example["repo"].endswith(config.repo):
+        if example["repo"].endswith(repo):
             spec = make_spec(example)
             break
     assert spec is not None, "No spec available"
 
-    hashed_test_ids = get_hash_string(config.test_ids)
+    hashed_test_ids = get_hash_string(test_ids)
     # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / config.repo / hashed_test_ids
+    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
-    logger = setup_logger(config.repo, log_file)
+    logger = setup_logger(repo, log_file)
 
     # make eval file
     eval_script = spec.eval_script.format(
-        local_repo=f"{config.base_dir}/{config.repo}",
-        branch_name=config.branch,
-        test_ids=config.test_ids,
-        ip=get_ip(config.backend),
+        local_repo=f"{base_dir}/{repo}",
+        branch_name=branch,
+        test_ids=test_ids,
+        ip=get_ip(backend),
         user=get_user(),
     )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
-    if ExecutionBackend(config.backend) == ExecutionBackend.LOCAL:
-        run_docker(spec, logger, eval_file, config.timeout, log_dir)
-    elif ExecutionBackend(config.backend) == ExecutionBackend.MODAL:
-        run_modal(spec, logger, eval_file, config.timeout, log_dir)
+    if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
+        run_docker(spec, logger, eval_file, timeout, log_dir)
+    elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
+        run_modal(spec, logger, eval_file, timeout, log_dir)
 
 
 __all__ = []

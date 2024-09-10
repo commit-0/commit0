@@ -330,7 +330,6 @@ def create_container(
         def log_info(x: str) -> None:
             print(x)
 
-        raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
         def log_info(x: str) -> None:

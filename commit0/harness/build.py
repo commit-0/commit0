@@ -4,11 +4,9 @@ import docker
 from datasets import load_dataset
 from typing import Iterator
 
-from omegaconf import DictConfig
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 from commit0.harness.constants import RepoInstance
-import hydra
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -16,9 +14,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="base")
-def main(config: DictConfig) -> None:
-    dataset: Iterator[RepoInstance] = load_dataset(hf_name, split="test")  # type: ignore
+def main(dataset_name: str, dataset_split: str) -> None:
+    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
     for example in dataset:
         spec = make_spec(example)
