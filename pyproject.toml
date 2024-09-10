@@ -23,6 +23,7 @@ dependencies = [
     "wget",
     "ruff>=0.6.4",
     "pre-commit>=3.8.0",
+    "modal>=0.64.95",
 ]
 
 [tool.pyright]

@@ -17,7 +17,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(hf_name: str, base_dir: str, config_file: str, backend: str, repo: str) -> None:
+def main(
+    hf_name: str, base_dir: str, config_file: str, backend: str, repo: str
+) -> None:
     dataset = load_dataset(hf_name, split="test")
     out = dict()
     out["backend"] = backend
