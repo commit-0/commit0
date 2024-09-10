@@ -11,6 +11,7 @@ import traceback
 from pathlib import Path
 from io import BytesIO
 from typing import Optional, List, Union
+import docker.errors
 
 from docker.models.containers import Container
 
@@ -107,7 +108,7 @@ def copy_from_container(container: Container, src: Path, dst: Path) -> None:
 
             tar.extractall(path, members, numeric_owner=numeric_owner)
 
-        safe_extract(tar, path=dst.parent)
+        safe_extract(tar, path=str(dst.parent))
 
     # Move the extracted file to desired dst path if tar extraction gives src.name
     extracted_file_path = dst.parent / src.name
@@ -192,7 +193,7 @@ def write_to_container(container: Container, data: str, dst: Path) -> None:
 def cleanup_container(
     client: docker.DockerClient,
     container: docker.Container,
-    logger: Union[str, logging.Logger],
+    logger: Union[None, str, logging.Logger],
 ) -> None:
     """Stop and remove a Docker container.
     Performs this forcefully if the container cannot be stopped with the python API.
@@ -211,8 +212,12 @@ def cleanup_container(
 
     if not logger:
         # if logger is None, print to stdout
-        log_error = print
-        log_info = print
+        def log_error(x: str) -> None:
+            print(x)
+
+        def log_info(x: str) -> None:
+            print(x)
+
         raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
@@ -224,9 +229,15 @@ def cleanup_container(
 
         raise_error = True
     else:
+        assert isinstance(logger, logging.Logger)
+
         # if logger is a logger object, use it
-        log_error = logger.info
-        log_info = logger.info
+        def log_error(x: str) -> None:
+            logger.info(x)
+
+        def log_info(x: str) -> None:
+            logger.info(x)
+
         raise_error = False
 
     # Attempt to stop the container
@@ -276,11 +287,11 @@ def cleanup_container(
 def create_container(
     client: docker.DockerClient,
     image_name: str,
-    container_name: str = None,
-    user: str = None,
-    command: str = None,
-    nano_cpus: int = None,
-    logger: Union[str, logging.Logger] = None,
+    container_name: Optional[str] = None,
+    user: Optional[str] = None,
+    command: Optional[str] = None,
+    nano_cpus: Optional[int] = None,
+    logger: Optional[Union[str, logging.Logger]] = None,
 ) -> Container:
     """Start a Docker container using the specified image.
 
@@ -312,8 +323,13 @@ def create_container(
 
     if not logger:
         # if logger is None, print to stdout
-        log_error = print
-        log_info = print
+        def log_error(x: str) -> None:
+            print(x)
+
+        def log_info(x: str) -> None:
+            print(x)
+
+        raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
         def log_info(x: str) -> None:
@@ -321,10 +337,19 @@ def create_container(
 
         def log_error(x: str) -> None:
             return None
+
+        raise_error = True
     else:
+        assert isinstance(logger, logging.Logger)
+
         # if logger is a logger object, use it
-        log_error = logger.info
-        log_info = logger.info
+        def log_error(x: str) -> None:
+            logger.info(x)
+
+        def log_info(x: str) -> None:
+            logger.info(x)
+
+        raise_error = False
 
     container = None
     try:
@@ -349,7 +374,7 @@ def create_container(
 
 def exec_run_with_timeout(
     container: Container, cmd: str, timeout: Optional[int] = 60
-) -> None:
+) -> tuple[str, bool, float]:
     """Run a command in a container with a timeout.
 
     Args:
@@ -369,6 +394,7 @@ def exec_run_with_timeout(
     def run_command() -> None:
         nonlocal exec_result, exec_id, exception
         try:
+            assert container.client is not None, "Client did not load"
             exec_id = container.client.api.exec_create(container.id, cmd)["Id"]
             exec_stream = container.client.api.exec_start(exec_id, stream=True)
             for chunk in exec_stream:
@@ -393,3 +419,6 @@ def exec_run_with_timeout(
         timed_out = True
     end_time = time.time()
     return exec_result, timed_out, end_time - start_time
+
+
+__all__ = []

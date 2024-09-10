@@ -1,13 +1,9 @@
 import argparse
 import logging
-import os
 
 import docker
-import yaml
 from datasets import load_dataset
 from typing import Iterator
-from commit0.harness.utils import clone_repo
-from commit0.harness.constants import REPO_IMAGE_BUILD_DIR, RepoInstance
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 
@@ -22,35 +18,24 @@ def main(
     base_dir: str,
     config_file: str,
 ) -> None:
-    dataset: Iterator[RepoInstance] = load_dataset(hf_name, split="test")  # type: ignore
-    out = dict()
+    dataset: Iterator[RepoInstance] = load_dataset(hf_name, split="test")
     specs = []
     for example in dataset:
         spec = make_spec(example)
         specs.append(spec)
-        repo_name = example["repo"].split("/")[-1]
-        out[repo_name] = example
-        out[repo_name]["local_path"] = os.path.abspath(
-            os.path.join(base_dir, repo_name)
-        )
-        clone_url = f"https://github.com/{example['repo']}.git"
-        clone_repo(
-            clone_url, out[repo_name]["local_path"], example["base_commit"], logger
-        )
 
-    config_file = os.path.abspath(config_file)
-    with open(config_file, "w") as f:
-        yaml.dump(out, f, default_flow_style=False)
-    logger.info(f"Config file has been written to {config_file}")
-    logger.info("Start building docker images")
-    logger.info(f"Please check {REPO_IMAGE_BUILD_DIR} for build details")
     client = docker.from_env()
     build_repo_images(client, specs)
     logger.info("Done building docker images")
 
 
 def add_init_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--hf_name", type=str, help="HF dataset name")
+    parser.add_argument(
+        "--hf_name",
+        type=str,
+        help="HF dataset name",
+        default="wentingzhao/commit0_docstring",
+    )
     parser.add_argument(
         "--base_dir",
         type=str,

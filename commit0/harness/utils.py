@@ -1,5 +1,6 @@
 import getpass
 import git
+import git.exc
 import hashlib
 import logging
 import socket
@@ -9,7 +10,7 @@ from commit0.harness.constants import EVAL_BACKENDS
 
 
 class EvaluationError(Exception):
-    def __init__(self, repo, message, logger):
+    def __init__(self, repo: str, message: str, logger: logging.Logger):
         super().__init__(message)
         self.super_str = super().__str__()
         self.repo = repo
@@ -23,7 +24,8 @@ class EvaluationError(Exception):
         )
 
 
-def get_ip(backend: str):
+def get_ip(backend: str) -> str:
+    ip = ""
     if backend not in EVAL_BACKENDS:
         raise ValueError(
             f"We only support evaluation backends = {EVAL_BACKENDS}, but you provided {backend}"
@@ -36,6 +38,7 @@ def get_ip(backend: str):
         except requests.RequestException as e:
             raise Exception(f"Cannot get the public IP address.\n{e}")
     elif backend == "local":
+        s = None
         try:
             # Connect to a public DNS server, then get the local socket name
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -45,15 +48,16 @@ def get_ip(backend: str):
         except Exception:
             ip = "127.0.0.1"  # Fallback to localhost IP
         finally:
-            s.close()
+            if s is not None:
+                s.close()
     return ip
 
 
-def get_user():
+def get_user() -> str:
     return getpass.getuser()
 
 
-def get_hash_string(input_string):
+def get_hash_string(input_string: str) -> str:
     # Create a new SHA-256 hash object
     sha256 = hashlib.sha256()
     # Update the hash object with the bytes of the input string
@@ -63,8 +67,8 @@ def get_hash_string(input_string):
     return hash_hex
 
 
-def extract_test_output(s, pattern):
-    s = s.split("\n")
+def extract_test_output(ss: str, pattern: str) -> str:
+    s = ss.split("\n")
     out = []
     append = False
     for one in s:
@@ -75,6 +79,7 @@ def extract_test_output(s, pattern):
             return "\n".join(out)
         if append:
             out.append(one)
+    return ""
 
 
 def clone_repo(
@@ -163,3 +168,6 @@ def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
             repo.git.checkout("-b", branch)
     except git.exc.GitCommandError as e:
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
+
+
+__all__ = []

@@ -8,6 +8,7 @@ class RepoInstance(TypedDict):
     base_commit: str
     reference_commit: str
     setup: dict
+    test: str
 
 
 # Constants - Evaluation Log Directories
