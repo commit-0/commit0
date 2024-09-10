@@ -4,6 +4,7 @@ import hashlib
 import logging
 import socket
 import os
+import requests
 from commit0.harness.constants import EVAL_BACKENDS
 
 
