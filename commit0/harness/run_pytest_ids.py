@@ -1,5 +1,9 @@
 import argparse
+import asyncio
 import docker
+from enum import StrEnum, auto
+import modal
+import os
 import traceback
 import yaml
 from pathlib import Path
@@ -28,32 +32,15 @@ from commit0.harness.utils import (
 )
 
 
-def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None:
-    with open("config.yml", "r") as file:
-        data = yaml.safe_load(file)
-    spec = make_spec(data["repos"][repo])
-    test_ids = " ".join(test_ids)
-    hashed_test_ids = get_hash_string(test_ids)
+class ExecutionBackend(StrEnum):
+    DOCKER = auto()
+    MODAL = auto()
 
-    # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / "run_pytest.log"
-    logger = setup_logger(repo, log_file)
 
-    # make eval file
-    eval_script = spec.eval_script.format(
-        local_repo=f"{data['base_repo_dir']}/{repo}",
-        branch_name=branch_name,
-        test_ids=test_ids,
-        ip=get_ip(data["backend"]),
-        user=get_user(),
-    )
-    eval_file = Path(log_dir / "eval.sh")
-    eval_file.write_text(eval_script)
-
+def run_docker(spec, logger, eval_file, timeout, log_dir):
     client = docker.from_env()
     container = None
+    import pdb; pdb.set_trace()
     try:
         container = create_container(
             client=client,
@@ -115,6 +102,130 @@ def main(repo: str, test_ids: list[str], timeout: int, branch_name: str) -> None
         close_logger(logger)
 
 
+async def run_modal(spec, logger, eval_file, timeout, log_dir):
+    # get image name to pull from dockerhub
+    # spec.repo_image_key
+    reponame = spec.repo.split("/")[-1]
+    image_name = f"wentingzhao/{reponame}"
+    image = modal.Image.from_registry(image_name)
+
+    with modal.NetworkFileSystem.ephemeral() as nfs:
+        # create sleepy sandbox
+        sandbox = modal.Sandbox.create(
+            "sleep", "infinity",
+            image=image,
+            network_file_systems={
+                "/vol": nfs,
+            },
+        )
+
+        # get ssh pubkey
+        process = sandbox.exec("bash", "-c", "cat /root/.ssh/id_rsa.pub")
+        public_key = "".join([line for line in process.stdout]).strip()
+
+        # add to authorized keys locally. copy-pasted from utils
+        local_authorized_keys_path = os.path.expanduser("~/.ssh/authorized_keys")
+        os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
+        if not os.path.exists(local_authorized_keys_path):
+            # Since the file does not exist, create it
+            open(local_authorized_keys_path, "a").close()
+            write = True
+        else:
+            with open(local_authorized_keys_path, "r") as authorized_keys_file:
+                content = authorized_keys_file.read()
+                if public_key not in content:
+                    write = True
+                else:
+                    write = False
+        if write:
+            with open(local_authorized_keys_path, "a") as authorized_keys_file:
+                authorized_keys_file.write(public_key + "\n")
+
+        # copy eval file
+        with open(eval_file, "rb") as f:
+            nfs.write_file("eval.sh", f)
+        sandbox.exec("bash", "-c", "cp /vol/eval.sh /eval.sh")
+
+        # DBG: check if eval file properly copied
+        process = sandbox.exec("bash", "-c", "ls /")
+        for line in process.stdout:
+            print(line)
+        # /DBG
+
+        # execute tests
+        process = sandbox.exec("bash", "-c", "/bin/bash /eval.sh")
+        output = []
+        for line in process.stdout:
+            output.append(line)
+        output = "".join(line)
+        logger.info(output)
+        print(output)
+
+        output = []
+        for line in process.stderr:
+            output.append(line)
+        output = "".join(line)
+        logger.info(output)
+        print(output)
+
+        timed_out = False
+        total_runtime = 1
+
+        test_output = extract_test_output(
+            output, "--json-report --json-report-file=report.json"
+        )
+
+        # stdout might be more straightforward
+        print(test_output)
+        test_output_path = log_dir / "test_output.txt"
+        with open(test_output_path, "w") as f:
+            f.write(test_output)
+            if timed_out:
+                f.write(f"\n\nTimeout error: {timeout} seconds exceeded.")
+                raise EvaluationError(
+                    repo,
+                    f"Test timed out after {timeout} seconds.",
+                    logger,
+                )
+    import pdb; pdb.set_trace()
+
+
+def main(
+    repo: str,
+    test_ids: list[str],
+    timeout: int,
+    branch_name: str,
+    backend: ExecutionBackend,
+) -> None:
+    with open("config.yml", "r") as file:
+        data = yaml.safe_load(file)
+    spec = make_spec(data["repos"][repo])
+    test_ids = " ".join(test_ids)
+    hashed_test_ids = get_hash_string(test_ids)
+
+    # set up logging
+    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "run_pytest.log"
+    logger = setup_logger(repo, log_file)
+
+    # make eval file
+    eval_script = spec.eval_script.format(
+        local_repo=f"{data['base_repo_dir']}/{repo}",
+        branch_name=branch_name,
+        test_ids=test_ids,
+        ip=get_ip(data["backend"]),
+        user=get_user(),
+    )
+    eval_file = Path(log_dir / "eval.sh")
+    eval_file.write_text(eval_script)
+
+    if ExecutionBackend(backend) == ExecutionBackend.DOCKER:
+        run_docker(spec, logger, eval_file, timeout, log_dir)
+    elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
+        asyncio.run(run_modal(spec, logger, eval_file, timeout, log_dir))
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", type=str, help="which repo to run unit tests")
@@ -129,6 +240,12 @@ if __name__ == "__main__":
         type=int,
         default=1_800,
         help="Timeout (in seconds) for running tests for each instance",
+    )
+    parser.add_argument(
+        "--backend",
+        choices=[backend.value for backend in ExecutionBackend],
+        default=ExecutionBackend.DOCKER.value,
+        help="Execution backend [docker, modal]",
     )
     args = parser.parse_args()
     main(**vars(args))
