@@ -6,7 +6,7 @@ import docker.errors
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List
+from typing import Any
 
 from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
@@ -22,7 +22,7 @@ class BuildImageError(Exception):
         super().__init__(message)
         self.super_str = super().__str__()
         self.image_name = image_name
-        self.log_path = logger.log_file
+        self.log_path = ""  # logger.log_file
         self.logger = logger
 
     def __str__(self):
@@ -185,7 +185,7 @@ def build_base_images(client: docker.DockerClient, dataset: list) -> None:
 def get_repo_configs_to_build(
     client: docker.DockerClient,
     dataset: list,
-) -> dict[str]:
+) -> dict[str, Any]:
     """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
 
@@ -229,7 +229,7 @@ def build_repo_images(
     client: docker.DockerClient,
     dataset: list,
     max_workers: int = 4,
-) -> (List[str], List[str]):
+) -> tuple[list[str], list[str]]:
     """Builds the repo images required for the dataset if they do not already exist.
 
     Args:

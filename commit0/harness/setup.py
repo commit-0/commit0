@@ -3,9 +3,8 @@ import os
 
 import docker
 import hydra
-import yaml
 from datasets import load_dataset
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 
 from typing import Iterator
 from commit0.harness.utils import clone_repo
@@ -43,10 +42,6 @@ def main(config: DictConfig) -> None:
     client = docker.from_env()
     build_repo_images(client, specs)
     logger.info("Done building docker images")
-
-
-def run() -> None:
-    main()
 
 
 __all__ = []

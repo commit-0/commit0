@@ -14,7 +14,7 @@ class EvaluationError(Exception):
         super().__init__(message)
         self.super_str = super().__str__()
         self.repo = repo
-        self.log_file = logger.log_file
+        self.log_file = ""  # logger.log_file
         self.logger = logger
 
     def __str__(self):
