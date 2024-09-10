@@ -1,5 +1,4 @@
 import argparse
-import asyncio
 import docker
 from enum import StrEnum, auto
 import modal
@@ -101,7 +100,7 @@ def run_docker(spec, logger, eval_file, timeout, log_dir):
         close_logger(logger)
 
 
-async def run_modal(spec, logger, eval_file, timeout, log_dir):
+def run_modal(spec, logger, eval_file, timeout, log_dir):
     # get image name to pull from dockerhub
     # spec.repo_image_key
     reponame = spec.repo.split("/")[-1]
@@ -222,7 +221,7 @@ def main(
     if ExecutionBackend(backend) == ExecutionBackend.DOCKER:
         run_docker(spec, logger, eval_file, timeout, log_dir)
     elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
-        asyncio.run(run_modal(spec, logger, eval_file, timeout, log_dir))
+        run_modal(spec, logger, eval_file, timeout, log_dir)
 
 
 if __name__ == "__main__":
