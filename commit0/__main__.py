@@ -1,23 +1,18 @@
-import argparse
 import commit0.harness.run_pytest_ids
 import commit0.harness.build
 import commit0.harness.setup
+import sys
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Commit0 version control system")
-    parser.add_subparsers(dest="command", help="Available commands")
+    command = sys.argv[1]
 
-    args = parser.parse_args()
-
-    if args.command == "clone":
+    if command == "clone":
         commit0.harness.setup.main()
-    elif args.command == "build":
+    elif command == "build":
         commit0.harness.build.main()
-    elif args.command == "test":
+    elif command == "test":
         commit0.harness.run_pytest_ids.main()
-    else:
-        parser.print_help()
 
 
 if __name__ == "__main__":
