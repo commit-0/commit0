@@ -192,7 +192,7 @@ def write_to_container(container: Container, data: str, dst: Path) -> None:
 
 def cleanup_container(
     client: docker.DockerClient,
-    container: docker.Container,
+    container: Container,
     logger: Union[None, str, logging.Logger],
 ) -> None:
     """Stop and remove a Docker container.
@@ -251,6 +251,7 @@ def cleanup_container(
         )
         try:
             # Get the PID of the container
+            assert container_id is not None
             container_info = client.api.inspect_container(container_id)
             pid = container_info["State"].get("Pid", 0)
 
@@ -338,7 +339,6 @@ def create_container(
         def log_error(x: str) -> None:
             return None
 
-        raise_error = True
     else:
         assert isinstance(logger, logging.Logger)
 
@@ -348,8 +348,6 @@ def create_container(
 
         def log_info(x: str) -> None:
             logger.info(x)
-
-        raise_error = False
 
     container = None
     try:
@@ -368,6 +366,7 @@ def create_container(
         # If an error occurs, clean up the container and raise an exception
         log_error(f"Error creating container for {image_name}: {e}")
         log_info(traceback.format_exc())
+        assert container is not None
         cleanup_container(client, container, logger)
         raise
 
