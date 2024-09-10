@@ -1,4 +1,5 @@
 import argparse
+from datasets import load_dataset
 import docker
 from enum import StrEnum, auto
 import modal
@@ -6,6 +7,9 @@ import os
 import traceback
 import yaml
 from pathlib import Path
+
+from omegaconf import DictConfig, OmegaConf
+import hydra
 
 from commit0.harness.constants import RUN_PYTEST_LOG_DIR
 from commit0.harness.docker_build import (
@@ -32,7 +36,7 @@ from commit0.harness.utils import (
 
 
 class ExecutionBackend(StrEnum):
-    DOCKER = auto()
+    LOCAL = auto()
     MODAL = auto()
 
 
@@ -188,62 +192,38 @@ def run_modal(spec, logger, eval_file, timeout, log_dir):
                 )
 
 
-def main(
-    repo: str,
-    test_ids: list[str],
-    timeout: int,
-    branch_name: str,
-    backend: ExecutionBackend,
-) -> None:
-    with open("config.yml", "r") as file:
-        data = yaml.safe_load(file)
-    spec = make_spec(data["repos"][repo])
-    test_ids = " ".join(test_ids)
-    hashed_test_ids = get_hash_string(test_ids)
+@hydra.main(version_base=None, config_path="configs", config_name="base")
+def main(config: DictConfig) -> None:
+    OmegaConf.to_yaml(config)
+    dataset = load_dataset(config.dataset_name, split="test")
+    for example in dataset:
+        if example["repo"].endswith(config.repo):
+            spec = make_spec(example)
+            break
 
+    hashed_test_ids = get_hash_string(config.test_ids)
     # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
+    log_dir = RUN_PYTEST_LOG_DIR / config.repo / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
-    logger = setup_logger(repo, log_file)
+    logger = setup_logger(config.repo, log_file)
 
     # make eval file
     eval_script = spec.eval_script.format(
-        local_repo=f"{data['base_repo_dir']}/{repo}",
-        branch_name=branch_name,
-        test_ids=test_ids,
-        ip=get_ip(data["backend"]),
+        local_repo=f"{config.base_dir}/{config.repo}",
+        branch_name=config.branch,
+        test_ids=config.test_ids,
+        ip=get_ip(config.backend),
         user=get_user(),
     )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
-    if ExecutionBackend(backend) == ExecutionBackend.DOCKER:
-        run_docker(spec, logger, eval_file, timeout, log_dir)
-    elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
-        run_modal(spec, logger, eval_file, timeout, log_dir)
+    if ExecutionBackend(config.backend) == ExecutionBackend.LOCAL:
+        run_docker(spec, logger, eval_file, config.timeout, log_dir)
+    elif ExecutionBackend(config.backend) == ExecutionBackend.MODAL:
+        run_modal(spec, logger, eval_file, config.timeout, log_dir)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--repo", type=str, help="which repo to run unit tests")
-    parser.add_argument(
-        "--test_ids", type=str, nargs="+", help="which test ids / files / directories"
-    )
-    parser.add_argument(
-        "--branch_name", type=str, help="which git branch to run unit tests"
-    )
-    parser.add_argument(
-        "--timeout",
-        type=int,
-        default=1_800,
-        help="Timeout (in seconds) for running tests for each instance",
-    )
-    parser.add_argument(
-        "--backend",
-        choices=[backend.value for backend in ExecutionBackend],
-        default=ExecutionBackend.DOCKER.value,
-        help="Execution backend [docker, modal]",
-    )
-    args = parser.parse_args()
-    main(**vars(args))
+    main()
