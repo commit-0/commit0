@@ -6,7 +6,8 @@ import traceback
 from pathlib import Path
 import logging
 
-from commit0.harness.constants import RUN_PYTEST_LOG_DIR
+from typing import Iterator
+from commit0.harness.constants import RUN_PYTEST_LOG_DIR, RepoInstance
 from commit0.harness.docker_build import (
     close_logger,
     setup_logger,
@@ -203,7 +204,7 @@ def main(
     backend: str,
     timeout: int,
 ) -> None:
-    dataset = load_dataset(dataset_name, split="test")
+    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     spec = None
     for example in dataset:
         if example["repo"].endswith(repo):

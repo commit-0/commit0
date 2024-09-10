@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import TypedDict
+from typing import Dict, TypedDict
 
 
 class RepoInstance(TypedDict):
@@ -8,7 +8,7 @@ class RepoInstance(TypedDict):
     base_commit: str
     reference_commit: str
     setup: dict
-    test: str
+    test: Dict[str, str]
 
 
 # Constants - Evaluation Log Directories

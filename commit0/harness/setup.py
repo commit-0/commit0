@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 def main(dataset_name: str, dataset_split: str, base_dir: str) -> None:
-    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split="test")  # type: ignore
+    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     out = dict()
     specs = []
     for example in dataset:

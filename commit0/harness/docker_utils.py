@@ -11,8 +11,8 @@ import traceback
 from pathlib import Path
 from io import BytesIO
 from typing import Optional, List, Union
-import docker.errors
 
+import docker.errors
 from docker.models.containers import Container
 
 HEREDOC_DELIMITER = "EOF_1399519320"  # different from dataset HEREDOC_DELIMITERs!
@@ -392,12 +392,12 @@ def exec_run_with_timeout(
     def run_command() -> None:
         nonlocal exec_result, exec_id, exception
         try:
-            assert container.client is not None, "Client did not load"
-            exec_id = container.client.api.exec_create(container.id, cmd)["Id"]
-            exec_stream = container.client.api.exec_start(exec_id, stream=True)
+            exec_id = container.client.api.exec_create(container=container.id, cmd=cmd)["Id"]
+            exec_stream = container.client.api.exec_start(exec_id=exec_id, stream=True)
             for chunk in exec_stream:
                 exec_result += chunk.decode("utf-8", errors="replace")
         except Exception as e:
+            print(e)
             exception = e
 
     # Start the command in a separate thread
@@ -406,13 +406,10 @@ def exec_run_with_timeout(
     thread.start()
     thread.join(timeout)
 
-    if exception:
-        raise exception
-
     # If the thread is still alive, the command timed out
     if thread.is_alive():
         if exec_id is not None:
-            exec_pid = container.client.api.exec_inspect(exec_id)["Pid"]
+            exec_pid = container.client.api.exec_inspect(exec_id=exec_id)["Pid"]
             container.exec_run(f"kill -TERM {exec_pid}", detach=True)
         timed_out = True
     end_time = time.time()
