@@ -2,11 +2,11 @@ import argparse
 from datasets import load_dataset
 import docker
 from enum import StrEnum, auto
-import modal
 import os
 import traceback
 import yaml
 from pathlib import Path
+import logging
 
 from omegaconf import DictConfig, OmegaConf
 import hydra
@@ -25,7 +25,7 @@ from commit0.harness.docker_utils import (
     delete_file_from_container,
     exec_run_with_timeout,
 )
-from commit0.harness.spec import make_spec
+from commit0.harness.spec import Spec, make_spec
 from commit0.harness.utils import (
     EvaluationError,
     extract_test_output,
@@ -40,7 +40,9 @@ class ExecutionBackend(StrEnum):
     MODAL = auto()
 
 
-def run_docker(spec, logger, eval_file, timeout, log_dir):
+def run_docker(
+    spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
+) -> None:
     client = docker.from_env()
     container = None
     try:
@@ -73,7 +75,7 @@ def run_docker(spec, logger, eval_file, timeout, log_dir):
             if timed_out:
                 f.write(f"\n\nTimeout error: {timeout} seconds exceeded.")
                 raise EvaluationError(
-                    repo,
+                    spec.repo,
                     f"Test timed out after {timeout} seconds.",
                     logger,
                 )
@@ -93,7 +95,7 @@ def run_docker(spec, logger, eval_file, timeout, log_dir):
         print(e)
     except Exception as e:
         error_msg = (
-            f"Error in running pytest for {repo}: {e}\n"
+            f"Error in running pytest for {spec.repo}: {e}\n"
             f"{traceback.format_exc()}\n"
             f"Check ({logger.log_file}) for more information."
         )
@@ -104,9 +106,13 @@ def run_docker(spec, logger, eval_file, timeout, log_dir):
         close_logger(logger)
 
 
-def run_modal(spec, logger, eval_file, timeout, log_dir):
+def run_modal(
+    spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
+) -> None:
     # get image name to pull from dockerhub
     # spec.repo_image_key
+    import modal
+
     reponame = spec.repo.split("/")[-1]
     image_name = f"wentingzhao/{reponame}"
     image = modal.Image.from_registry(image_name)
@@ -167,15 +173,15 @@ def run_modal(spec, logger, eval_file, timeout, log_dir):
         output = []
         for line in process.stderr:
             output.append(line)
-        output = "".join(line)
-        logger.info(output)
-        print(output)
+        output_s = "".join(line)
+        logger.info(output_s)
+        print(output_s)
 
         timed_out = False
         total_runtime = 1
 
         test_output = extract_test_output(
-            output, "--json-report --json-report-file=report.json"
+            output_s, "--json-report --json-report-file=report.json"
         )
 
         # stdout might be more straightforward
@@ -186,7 +192,7 @@ def run_modal(spec, logger, eval_file, timeout, log_dir):
             if timed_out:
                 f.write(f"\n\nTimeout error: {timeout} seconds exceeded.")
                 raise EvaluationError(
-                    repo,
+                    spec.repo,
                     f"Test timed out after {timeout} seconds.",
                     logger,
                 )
@@ -225,5 +231,8 @@ def main(config: DictConfig) -> None:
         run_modal(spec, logger, eval_file, config.timeout, log_dir)
 
 
-if __name__ == "__main__":
+def run(args: argparse.Namespace) -> None:
     main()
+
+
+__all__ = []

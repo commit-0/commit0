@@ -1,7 +1,7 @@
 import hashlib
 
 from dataclasses import dataclass
-from typing import Union, cast
+from typing import Union, cast, Optional
 
 from commit0.harness.constants import (
     RepoInstance,
@@ -23,14 +23,14 @@ class Spec:
     eval_script_list: list[str]
 
     @property
-    def setup_script(self):
+    def setup_script(self) -> str:
         return (
             "\n".join(["#!/bin/bash", "set -euxo pipefail"] + self.repo_script_list)
             + "\n"
         )
 
     @property
-    def eval_script(self):
+    def eval_script(self) -> str:
         return (
             "\n".join(["#!/bin/bash", "set -uxo pipefail"] + self.eval_script_list)
             + "\n"
@@ -42,7 +42,7 @@ class Spec:
         return "commit0.base:latest"
 
     @property
-    def repo_image_key(self):
+    def repo_image_key(self) -> str:
         """The key for the environment image is based on the hash of the environment script list.
         If the environment script list changes, the image will be rebuilt automatically.
 
@@ -55,18 +55,18 @@ class Spec:
         repo = self.repo.split("/")[-1]
         return f"commit0.repo.{repo}.{val}:latest".lower()
 
-    def get_container_name(self, run_id=None):
+    def get_container_name(self, run_id: Optional[str] = None) -> str:
         repo = self.repo.split("/")[-1]
         if not run_id:
             return f"commit0.eval.{repo}"
         return f"commit0.eval.{repo}.{run_id}".lower()
 
     @property
-    def base_dockerfile(self):
+    def base_dockerfile(self) -> str:
         return get_dockerfile_base(self.platform)
 
     @property
-    def repo_dockerfile(self):
+    def repo_dockerfile(self) -> str:
         return get_dockerfile_repo(self.platform)
 
     @property
@@ -83,7 +83,7 @@ def get_specs_from_dataset(
     return list(map(make_spec, cast(list[RepoInstance], dataset)))
 
 
-def make_repo_script_list(instance, repo_directory):
+def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[str]:
     """Create a list of bash commands to set up the repository for testing.
     This is the setup script for the instance image.
     """
@@ -145,7 +145,7 @@ def make_repo_script_list(instance, repo_directory):
     return setup_commands
 
 
-def make_eval_script_list(instance, repo_directory):
+def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[str]:
     """Run the tests."""
     origin_name = "tmp-test"
     eval_script_list = [
@@ -178,3 +178,6 @@ def make_spec(instance: RepoInstance) -> Spec:
         repo_script_list=repo_script_list,
         eval_script_list=eval_script_list,
     )
+
+
+__all__ = []

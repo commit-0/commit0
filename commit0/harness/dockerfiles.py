@@ -59,9 +59,12 @@ RUN echo "source /testbed/.venv/bin/activate" > /root/.bashrc
 """
 
 
-def get_dockerfile_base(platform):
+def get_dockerfile_base(platform: str) -> str:
     return _DOCKERFILE_BASE.format(platform=platform)
 
 
-def get_dockerfile_repo(platform):
+def get_dockerfile_repo(platform: str) -> str:
     return _DOCKERFILE_REPO.format(platform=platform)
+
+
+__all__ = []
