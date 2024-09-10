@@ -23,6 +23,7 @@ dependencies = [
     "wget",
     "ruff>=0.6.4",
     "pre-commit>=3.8.0",
+    "hydra-core>=1.3.2",
     "modal>=0.64.95",
 ]
 scripts = { commit0 = "commit0.__main__:main" }
