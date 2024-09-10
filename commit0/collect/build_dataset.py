@@ -25,7 +25,7 @@ def create_instance(
     """Create a single task instance from a commit, where task instance is:
 
     {
-        repo (str): owner/repo this task instance is from,
+        repo (Repo): owner/repo this task instance is from,
         base_commit (str): SHA of the base commit for starter repo,
         reference_commit(str): SHA of the commit for setting up environment,
         patch (str): reference solution as .patch (apply to base commit),
@@ -49,7 +49,7 @@ def create_instance(
     if "pip_packages" in raw_info:
         setup["pip_packages"] = raw_info["pip_packages"]
     return {
-        "repo": repo.repo.full_name,
+        "repo": f"{repo.owner}/{repo.name}",
         "base_commit": base_commit,
         "reference_commit": repo.commit,
         "setup": setup,

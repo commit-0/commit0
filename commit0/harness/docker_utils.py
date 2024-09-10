@@ -155,7 +155,7 @@ def copy_ssh_pubkey_from_container(container: Container) -> None:
         os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
         if not os.path.exists(local_authorized_keys_path):
             # Since the file does not exist, create it
-            open(local_authorized_keys_path, 'a').close()
+            open(local_authorized_keys_path, "a").close()
             write = True
         else:
             with open(local_authorized_keys_path, "r") as authorized_keys_file:
