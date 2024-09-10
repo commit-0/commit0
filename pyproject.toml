@@ -22,6 +22,7 @@ dependencies = [
     "pytest",
     "wget",
     "ruff>=0.6.4",
+    "pre-commit>=3.8.0",
 ]
 
 [tool.pyright]

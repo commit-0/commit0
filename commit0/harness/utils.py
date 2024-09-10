@@ -24,12 +24,14 @@ class EvaluationError(Exception):
 
 def get_ip(backend: str):
     if backend not in EVAL_BACKENDS:
-        raise ValueError(f"We only support evaluation backends = {EVAL_BACKENDS}, but you provided {backend}")
+        raise ValueError(
+            f"We only support evaluation backends = {EVAL_BACKENDS}, but you provided {backend}"
+        )
     if backend == "modal":
         try:
-            response = requests.get('https://api.ipify.org?format=json')
+            response = requests.get("https://api.ipify.org?format=json")
             response.raise_for_status()
-            ip = response.json()['ip']
+            ip = response.json()["ip"]
         except requests.RequestException as e:
             raise Exception(f"Cannot get the public IP address.\n{e}")
     elif backend == "local":
@@ -37,10 +39,10 @@ def get_ip(backend: str):
             # Connect to a public DNS server, then get the local socket name
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.settimeout(0)
-            s.connect(('8.8.8.8', 80))
+            s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
-        except Exception as e:
-            ip = '127.0.0.1'  # Fallback to localhost IP
+        except Exception:
+            ip = "127.0.0.1"  # Fallback to localhost IP
         finally:
             s.close()
     return ip
@@ -74,13 +76,15 @@ def extract_test_output(s, pattern):
             out.append(one)
 
 
-def clone_repo(clone_url: str, clone_dir: str, commit: str, logger: logging.Logger) -> git.Repo:
+def clone_repo(
+    clone_url: str, clone_dir: str, commit: str, logger: logging.Logger
+) -> git.Repo:
     """Clone repo into the specified directory if it does not already exist.
 
     If the repository already exists in the specified directory,
     it fetches the latest changes and checks out the specified commit.
 
-    Parameters:
+    Parameters
     ----------
     clone_url : str
         URL of the repository to clone.
@@ -91,15 +95,16 @@ def clone_repo(clone_url: str, clone_dir: str, commit: str, logger: logging.Logg
     logger : logging.Logger
         The logger object.
 
-    Returns:
+    Returns
     -------
     git.Repo
         The cloned repository object.
 
-    Raises:
+    Raises
     ------
     RuntimeError
         If cloning or checking out the repository fails.
+
     """
     # Check if the repository already exists
     if os.path.exists(clone_dir):
@@ -128,7 +133,7 @@ def clone_repo(clone_url: str, clone_dir: str, commit: str, logger: logging.Logg
 def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
     """Create a new branch or switch to an existing branch.
 
-    Parameters:
+    Parameters
     ----------
     repo : git.Repo
         The repository object.
@@ -137,14 +142,15 @@ def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
     logger : logging.Logger
         The logger object.
 
-    Returns:
+    Returns
     -------
     None
 
-    Raises:
+    Raises
     ------
     RuntimeError
         If creating or switching to the branch fails.
+
     """
     try:
         # Check if the branch already exists
@@ -153,6 +159,6 @@ def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
             repo.git.checkout(branch)
         else:
             logger.info(f"Creating new branch '{branch}' and checking out the branch.")
-            repo.git.checkout('-b', branch)
+            repo.git.checkout("-b", branch)
     except git.exc.GitCommandError as e:
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")

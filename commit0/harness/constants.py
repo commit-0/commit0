@@ -24,6 +24,7 @@ PASS_TO_FAIL = "PASS_TO_FAIL"
 # Evaluation backends
 EVAL_BACKENDS = ["local", "modal"]
 
+
 class ResolvedStatus(Enum):
     NO = "RESOLVED_NO"
     PARTIAL = "RESOLVED_PARTIAL"

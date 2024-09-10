@@ -27,11 +27,11 @@ def main(hf_name: str, base_dir: str, config_file: str, backend: str) -> None:
     for example in dataset:
         spec = make_spec(example)
         specs.append(spec)
-        repo_name = example['repo'].split('/')[-1]
+        repo_name = example["repo"].split("/")[-1]
         out["repos"][repo_name] = example
         clone_url = f"https://github.com/{example['repo']}.git"
         clone_dir = os.path.join(out["base_repo_dir"], repo_name)
-        repo = clone_repo(clone_url, clone_dir, example['base_commit'], logger)
+        repo = clone_repo(clone_url, clone_dir, example["base_commit"], logger)
         create_branch(repo, "aider", logger)
 
     config_file = os.path.abspath(config_file)
@@ -65,7 +65,7 @@ if __name__ == "__main__":
         type=str,
         choices=["local", "modal"],
         default="modal",
-        help="specify evaluation backend to be local or modal (remote)"
+        help="specify evaluation backend to be local or modal (remote)",
     )
     args = parser.parse_args()
     main(**vars(args))

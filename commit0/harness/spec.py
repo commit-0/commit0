@@ -10,11 +10,6 @@ from commit0.harness.dockerfiles import (
     get_dockerfile_base,
     get_dockerfile_repo,
 )
-from commit0.harness.utils import (
-    get_ip,
-    get_user,
-    get_hash_string,
-)
 
 
 @dataclass
@@ -154,7 +149,7 @@ def make_eval_script_list(instance, repo_directory):
     """Run the tests."""
     origin_name = "tmp-test"
     eval_script_list = [
-        f"ssh-keyscan {{ip}} >> ~/.ssh/known_hosts",
+        "ssh-keyscan {ip} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
         "source .venv/bin/activate",
         f"git remote add {origin_name} ssh://{{user}}@{{ip}}:{{local_repo}}",
@@ -163,8 +158,7 @@ def make_eval_script_list(instance, repo_directory):
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
         f"git checkout {instance['base_commit']}",
-        f"git remote remove {origin_name}"
-        "git status"
+        f"git remote remove {origin_name}" "git status",
     ]
     return eval_script_list
 
