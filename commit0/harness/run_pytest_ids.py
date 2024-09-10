@@ -1,7 +1,6 @@
 import argparse
 import docker
 from enum import StrEnum, auto
-import modal
 import os
 import traceback
 import yaml
@@ -103,6 +102,8 @@ def run_docker(spec, logger, eval_file, timeout, log_dir):
 def run_modal(spec, logger, eval_file, timeout, log_dir):
     # get image name to pull from dockerhub
     # spec.repo_image_key
+    import modal
+
     reponame = spec.repo.split("/")[-1]
     image_name = f"wentingzhao/{reponame}"
     image = modal.Image.from_registry(image_name)
@@ -224,8 +225,7 @@ def main(
         run_modal(spec, logger, eval_file, timeout, log_dir)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+def add_init_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--repo", type=str, help="which repo to run unit tests")
     parser.add_argument(
         "--test_ids", type=str, nargs="+", help="which test ids / files / directories"
@@ -245,5 +245,16 @@ if __name__ == "__main__":
         default=ExecutionBackend.DOCKER.value,
         help="Execution backend [docker, modal]",
     )
-    args = parser.parse_args()
-    main(**vars(args))
+
+
+def run(args: argparse.Namespace) -> None:
+    main(
+        repo=args.repo,
+        test_ids=args.test_ids,
+        timeout=args.timeout,
+        branch_name=args.branch_name,
+        backend=args.backend,
+    )
+
+
+__all__ = []
