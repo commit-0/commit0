@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(hf_name: str, base_dir: str, config_file: str, backend: str) -> None:
+def main(hf_name: str, base_dir: str, config_file: str, backend: str, repo: str) -> None:
     dataset = load_dataset(hf_name, split="test")
     out = dict()
     out["backend"] = backend
@@ -25,6 +25,9 @@ def main(hf_name: str, base_dir: str, config_file: str, backend: str) -> None:
     out["repos"] = dict()
     specs = []
     for example in dataset:
+        if repo != "all" and example["repo"] != repo:
+            logger.info(f"Skipping {example['repo']}")
+            continue
         spec = make_spec(example)
         specs.append(spec)
         repo_name = example['repo'].split('/')[-1]
@@ -66,6 +69,12 @@ if __name__ == "__main__":
         choices=["local", "modal"],
         default="modal",
         help="specify evaluation backend to be local or modal (remote)"
+    )
+    parser.add_argument(
+        "--repo",
+        type=str,
+        default="all",
+        help="which repos to build: all | one from the dataset",
     )
     args = parser.parse_args()
     main(**vars(args))
