@@ -5,19 +5,19 @@ import docker
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
+from typing import List
 
 from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
     REPO_IMAGE_BUILD_DIR,
 )
 from commit0.harness.spec import get_specs_from_dataset
-from commit0.harness.docker_utils import remove_image, find_dependent_images
 
 ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
 
 class BuildImageError(Exception):
-    def __init__(self, image_name, message, logger):
+    def __init__(self, image_name: str, message: str, logger: logging.Logger):
         super().__init__(message)
         self.super_str = super().__str__()
         self.image_name = image_name
@@ -31,8 +31,8 @@ class BuildImageError(Exception):
         )
 
 
-def setup_logger(repo: str, log_file: Path, mode="w"):
-    """This logger is used for logging the build process of images and containers.
+def setup_logger(repo: str, log_file: Path, mode: str = "w") -> logging.Logger:
+    """Used for logging the build process of images and running containers.
     It writes logs to the log file.
     """
     log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -47,7 +47,8 @@ def setup_logger(repo: str, log_file: Path, mode="w"):
     return logger
 
 
-def close_logger(logger) -> None:
+def close_logger(logger: logging.Logger) -> None:
+    """Closes all handlers associated with the given logger to prevent too many open files."""
     # To avoid too many open files
     for handler in logger.handlers:
         handler.close()
@@ -143,16 +144,13 @@ def build_image(
         close_logger(logger)  # functions that create loggers should close them
 
 
-def build_base_images(
-    client: docker.DockerClient, dataset: list, force_rebuild: bool = False
-) -> None:
+def build_base_images(client: docker.DockerClient, dataset: list) -> None:
     """Builds the base images required for the dataset if they do not already exist.
 
     Args:
     ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
-        force_rebuild (bool): Whether to force rebuild the images even if they already exist
 
     """
     # Get the base images to build from the dataset
@@ -160,21 +158,14 @@ def build_base_images(
     base_images = {
         x.base_image_key: (x.base_dockerfile, x.platform) for x in test_specs
     }
-    if force_rebuild:
-        for key in base_images:
-            remove_image(client, key, "quiet")
 
     # Build the base images
     for image_name, (dockerfile, platform) in base_images.items():
         try:
             # Check if the base image already exists
             client.images.get(image_name)
-            if force_rebuild:
-                # Remove the base image if it exists and force rebuild is enabled
-                remove_image(client, image_name, "quiet")
-            else:
-                print(f"Base image {image_name} already exists, skipping build.")
-                continue
+            print(f"Base image {image_name} already exists, skipping build.")
+            continue
         except docker.errors.ImageNotFound:
             pass
         # Build the base image (if it does not exist or force rebuild is enabled)
@@ -193,7 +184,7 @@ def build_base_images(
 def get_repo_configs_to_build(
     client: docker.DockerClient,
     dataset: list,
-):
+) -> dict[str]:
     """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
 
@@ -204,17 +195,12 @@ def get_repo_configs_to_build(
 
     """
     image_scripts = dict()
-    base_images = dict()
     test_specs = get_specs_from_dataset(dataset)
 
     for test_spec in test_specs:
         # Check if the base image exists
         try:
-            if test_spec.base_image_key not in base_images:
-                base_images[test_spec.base_image_key] = client.images.get(
-                    test_spec.base_image_key
-                )
-            base_image = base_images[test_spec.base_image_key]
+            client.images.get(test_spec.base_image_key)
         except docker.errors.ImageNotFound:
             raise Exception(
                 f"Base image {test_spec.base_image_key} not found for {test_spec.repo_image_key}\n."
@@ -224,16 +210,8 @@ def get_repo_configs_to_build(
         # Check if the repo image exists
         image_exists = False
         try:
-            repo_image = client.images.get(test_spec.repo_image_key)
+            client.images.get(test_spec.repo_image_key)
             image_exists = True
-
-            if repo_image.attrs["Created"] < base_image.attrs["Created"]:
-                # Remove the repo image if it was built after the base_image
-                for dep in find_dependent_images(client, test_spec.repo_image_key):
-                    # Remove repo images that depend on this repo image
-                    remove_image(client, dep.image_id, "quiet")
-                remove_image(client, test_spec.repo_image_key, "quiet")
-                image_exists = False
         except docker.errors.ImageNotFound:
             pass
         if not image_exists:
@@ -249,25 +227,23 @@ def get_repo_configs_to_build(
 def build_repo_images(
     client: docker.DockerClient,
     dataset: list,
-    force_rebuild: bool = False,
     max_workers: int = 4,
-):
+) -> (List[str], List[str]):
     """Builds the repo images required for the dataset if they do not already exist.
 
     Args:
     ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
-        force_rebuild (bool): Whether to force rebuild the images even if they already exist
         max_workers (int): Maximum number of workers to use for building images
 
+    Return:
+    ------
+        successful: a list of docker image keys for which build were successful
+        failed: a list of docker image keys for which build failed
+
     """
-    # Get the repo images to build from the dataset
-    if force_rebuild:
-        repo_image_keys = {x.repo_image_key for x in get_specs_from_dataset(dataset)}
-        for key in repo_image_keys:
-            remove_image(client, key, "quiet")
-    build_base_images(client, dataset, force_rebuild)
+    build_base_images(client, dataset)
     configs_to_build = get_repo_configs_to_build(client, dataset)
     if len(configs_to_build) == 0:
         print("No repo images need to be built.")

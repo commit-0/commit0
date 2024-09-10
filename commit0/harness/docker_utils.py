@@ -10,6 +10,7 @@ import time
 import traceback
 from pathlib import Path
 from io import BytesIO
+from typing import Optional, List, Union
 
 from docker.models.containers import Container
 
@@ -84,7 +85,7 @@ def copy_from_container(container: Container, src: Path, dst: Path) -> None:
 
     with tarfile.open(fileobj=tar_stream, mode="r") as tar:
         # Extract file from tar stream
-        def is_within_directory(directory, target):
+        def is_within_directory(directory: str, target: str) -> bool:
             abs_directory = os.path.abspath(directory)
             abs_target = os.path.abspath(target)
 
@@ -92,7 +93,13 @@ def copy_from_container(container: Container, src: Path, dst: Path) -> None:
 
             return prefix == abs_directory
 
-        def safe_extract(tar, path=".", members=None, *, numeric_owner=False) -> None:
+        def safe_extract(
+            tar: tarfile.TarFile,
+            path: str = ".",
+            members: Optional[List[tarfile.TarInfo]] = None,
+            *,
+            numeric_owner: bool = False,
+        ) -> None:
             for member in tar.getmembers():
                 member_path = os.path.join(path, member.name)
                 if not is_within_directory(path, member_path):
@@ -182,59 +189,19 @@ def write_to_container(container: Container, data: str, dst: Path) -> None:
     container.exec_run(command)
 
 
-def remove_image(client, image_id, logger=None) -> None:
-    """Remove a Docker image by ID.
-
-    Args:
-    ----
-        client (docker.DockerClient): Docker client.
-        image_id (str): Image ID.
-        rm_image (bool): Whether to remove the image.
-        logger (logging.Logger): Logger to use for output. If None, print to stdout.
-
-    """
-    if not logger:
-        # if logger is None, print to stdout
-        log_info = print
-        log_error = print
-        raise_error = True
-    elif logger == "quiet":
-        # if logger is "quiet", don't print anything
-        def log_info(x) -> None:
-            return None
-
-        def log_error(x) -> None:
-            return None
-
-        raise_error = True
-    else:
-        # if logger is a logger object, use it
-        log_error = logger.info
-        log_info = logger.info
-        raise_error = False
-    try:
-        log_info(f"Attempting to remove image {image_id}...")
-        client.images.remove(image_id, force=True)
-        log_info(f"Image {image_id} removed.")
-    except docker.errors.ImageNotFound:
-        log_info(f"Image {image_id} not found, removing has no effect.")
-    except Exception as e:
-        if raise_error:
-            raise e
-        log_error(
-            f"Failed to remove image {image_id}: {e}\n" f"{traceback.format_exc()}"
-        )
-
-
-def cleanup_container(client, container, logger) -> None:
+def cleanup_container(
+    client: docker.DockerClient,
+    container: docker.Container,
+    logger: Union[str, logging.Logger],
+) -> None:
     """Stop and remove a Docker container.
     Performs this forcefully if the container cannot be stopped with the python API.
 
     Args:
     ----
         client (docker.DockerClient): Docker client.
-        container (docker.models.containers.Container): Container to remove.
-        logger (logging.Logger): Logger to use for output. If None, print to stdout
+        container (docker.Container): Container to remove.
+        logger (Union[str, logging.Logger], optional): Logger instance or log level as string for logging container creation messages. Defaults to None.
 
     """
     if not container:
@@ -249,10 +216,10 @@ def cleanup_container(client, container, logger) -> None:
         raise_error = True
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        def log_info(x) -> None:
+        def log_info(x: str) -> None:
             return None
 
-        def log_error(x) -> None:
+        def log_error(x: str) -> None:
             return None
 
         raise_error = True
@@ -313,19 +280,19 @@ def create_container(
     user: str = None,
     command: str = None,
     nano_cpus: int = None,
-    logger: logging.Logger = None,
+    logger: Union[str, logging.Logger] = None,
 ) -> Container:
     """Start a Docker container using the specified image.
 
     Args:
     ----
-            client (docker.DockerClient): Docker client.
+    client (docker.DockerClient): Docker client.
     image_name (str): The name of the Docker image.
     container_name (str, optional): Name for the Docker container. Defaults to None.
-            user (str, option): Log in as which user. Defaults to None.
+    user (str, option): Log in as which user. Defaults to None.
     command (str, optional): Command to run in the container. Defaults to None.
-            nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
-    logger (logging.Logger, optional): Port mappings. Defaults to None.
+    nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
+    logger (Union[str, logging.Logger], optional): Logger instance or log level as string for logging container creation messages. Defaults to None.
 
     Returns:
     -------
@@ -349,10 +316,10 @@ def create_container(
         log_info = print
     elif logger == "quiet":
         # if logger is "quiet", don't print anything
-        def log_info(x) -> None:
+        def log_info(x: str) -> None:
             return None
 
-        def log_error(x) -> None:
+        def log_error(x: str) -> None:
             return None
     else:
         # if logger is a logger object, use it
@@ -361,7 +328,7 @@ def create_container(
 
     container = None
     try:
-        logger.info(f"Creating container for {image_name}...")
+        log_info(f"Creating container for {image_name}...")
         container = client.containers.run(
             image=image_name,
             name=container_name,
@@ -370,22 +337,24 @@ def create_container(
             nano_cpus=nano_cpus,
             detach=True,
         )
-        logger.info(f"Container for {image_name} created: {container.id}")
+        log_info(f"Container for {image_name} created: {container.id}")
         return container
     except Exception as e:
         # If an error occurs, clean up the container and raise an exception
-        logger.error(f"Error creating container for {image_name}: {e}")
-        logger.info(traceback.format_exc())
+        log_error(f"Error creating container for {image_name}: {e}")
+        log_info(traceback.format_exc())
         cleanup_container(client, container, logger)
         raise
 
 
-def exec_run_with_timeout(container, cmd, timeout: int | None = 60):
+def exec_run_with_timeout(
+    container: Container, cmd: str, timeout: Optional[int] = 60
+) -> None:
     """Run a command in a container with a timeout.
 
     Args:
     ----
-        container (docker.Container): Container to run the command in.
+        container (Container): Container to run the command in.
         cmd (str): Command to run.
         timeout (int): Timeout in seconds.
 
@@ -424,92 +393,3 @@ def exec_run_with_timeout(container, cmd, timeout: int | None = 60):
         timed_out = True
     end_time = time.time()
     return exec_result, timed_out, end_time - start_time
-
-
-def find_dependent_images(client: docker.DockerClient, image_name: str):
-    """Find all images that are built upon `image_name` image
-
-    Args:
-    ----
-        client (docker.DockerClient): Docker client.
-        image_name (str): Name of the base image.
-
-    """
-    dependent_images = []
-
-    # Get all local images
-    all_images = client.images.list()
-
-    # Get the ID of the base image
-    try:
-        base_image = client.images.get(image_name)
-        base_image_id = base_image.id
-    except docker.errors.ImageNotFound:
-        print(f"Base image {image_name} not found.")
-        return []
-
-    for image in all_images:
-        # Skip the base image itself
-        if image.id == base_image_id:
-            continue
-
-        # Check if the base image is in this image's history
-        history = image.history()
-        for layer in history:
-            if layer["Id"] == base_image_id:
-                # If found, add this image to the dependent images list
-                tags = image.tags
-                dependent_images.append(tags[0] if tags else image.id)
-                break
-
-    return dependent_images
-
-
-def list_images(client: docker.DockerClient):
-    """List all images from the Docker client."""
-    # don't use this in multi-threaded context
-    return {tag for i in client.images.list(all=True) for tag in i.tags}
-
-
-def clean_images(
-    client: docker.DockerClient, prior_images: set, cache_level: str, clean: bool
-) -> None:
-    """Clean Docker images based on cache level and clean flag.
-
-    Args:
-    ----
-        client (docker.DockerClient): Docker client.
-        prior_images (set): Set of images that existed before the current run.
-        cache (str): Cache level to use.
-        clean (bool): Whether to clean; remove images that are higher in the cache hierarchy than the current
-            cache level. E.g. if cache_level is set to env, remove all previously built instances images. if
-            clean is false, previously built instances images will not be removed, but instance images built
-            in the current run will be removed.
-
-    """
-    images = list_images(client)
-    removed = 0
-    print("Cleaning cached images...")
-    for image_name in images:
-        if should_remove(image_name, cache_level, clean, prior_images):
-            try:
-                remove_image(client, image_name, "quiet")
-                removed += 1
-            except Exception as e:
-                print(f"Error removing image {image_name}: {e}")
-                continue
-    print(f"Removed {removed} images.")
-
-
-def should_remove(
-    image_name: str, cache_level: str, clean: bool, prior_images: set
-) -> bool:
-    """Determine if an image should be removed based on cache level and clean flag."""
-    existed_before = image_name in prior_images
-    if image_name.startswith("commit0.base"):
-        if cache_level in {"none"} and (clean or not existed_before):
-            return True
-    elif image_name.startswith("commit0.repo"):
-        if cache_level in {"none", "base"} and (clean or not existed_before):
-            return True
-    return False
