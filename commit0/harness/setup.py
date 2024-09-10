@@ -5,9 +5,9 @@ import os
 import docker
 import yaml
 from datasets import load_dataset
-
+from typing import Iterator
 from commit0.harness.utils import clone_repo
-from commit0.harness.constants import REPO_IMAGE_BUILD_DIR
+from commit0.harness.constants import REPO_IMAGE_BUILD_DIR, RepoInstance
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 
@@ -22,7 +22,7 @@ def main(
     base_dir: str,
     config_file: str,
 ) -> None:
-    dataset = load_dataset(hf_name, split="test")
+    dataset: Iterator[RepoInstance] = load_dataset(hf_name, split="test")  # type: ignore
     out = dict()
     specs = []
     for example in dataset:
@@ -34,7 +34,9 @@ def main(
             os.path.join(base_dir, repo_name)
         )
         clone_url = f"https://github.com/{example['repo']}.git"
-        clone_repo(clone_url, out[repo_name]["local_path"], example["base_commit"])
+        clone_repo(
+            clone_url, out[repo_name]["local_path"], example["base_commit"], logger
+        )
 
     config_file = os.path.abspath(config_file)
     with open(config_file, "w") as f:

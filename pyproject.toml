@@ -25,6 +25,7 @@ dependencies = [
     "pre-commit>=3.8.0",
     "modal>=0.64.95",
 ]
+scripts = { commit0 = "commit0.__main__:main" }
 
 [tool.pyright]
 include = ["**/commit0"]
@@ -47,6 +48,7 @@ reportMissingParameterType = "error"
 [tool.ruff]
 exclude = [
     ".git",
+    "**/.venv/**",
     "__pycache__",
     "**/docs/**/*",
     "**/repos/**/*",

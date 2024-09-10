@@ -3,7 +3,7 @@ import logging
 
 import docker
 from datasets import load_dataset
-
+from typing import Iterator
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 
@@ -18,7 +18,7 @@ def main(
     base_dir: str,
     config_file: str,
 ) -> None:
-    dataset = load_dataset(hf_name, split="test")
+    dataset: Iterator[RepoInstance] = load_dataset(hf_name, split="test")
     specs = []
     for example in dataset:
         spec = make_spec(example)
@@ -30,7 +30,12 @@ def main(
 
 
 def add_init_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--hf_name", type=str, help="HF dataset name")
+    parser.add_argument(
+        "--hf_name",
+        type=str,
+        help="HF dataset name",
+        default="wentingzhao/commit0_docstring",
+    )
     parser.add_argument(
         "--base_dir",
         type=str,

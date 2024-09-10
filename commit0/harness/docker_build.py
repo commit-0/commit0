@@ -2,6 +2,7 @@ import logging
 import re
 import traceback
 import docker
+import docker.errors
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -296,3 +297,6 @@ def build_repo_images(
 
     # Return the list of (un)successfuly built images
     return successful, failed
+
+
+__all__ = []
