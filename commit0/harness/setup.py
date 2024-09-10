@@ -76,5 +76,11 @@ if __name__ == "__main__":
         default="all",
         help="which repos to build: all | one from the dataset",
     )
+    parser.add_argument(
+        "--repo",
+        type=str,
+        default="all",
+        help="which repos to build: all | one from the dataset",
+    )
     args = parser.parse_args()
     main(**vars(args))
