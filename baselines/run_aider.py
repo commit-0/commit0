@@ -68,7 +68,7 @@ def run_aider_for_repo(
         )
 
         try:
-            result = subprocess.call(aider_cmd, shell=True)
+            _ = subprocess.call(aider_cmd, shell=True)
         except subprocess.CalledProcessError as e:
             logger.error(f"Command failed with exit code {e.returncode}")
             logger.error(f"STDOUT: {e.stdout}")
@@ -80,9 +80,6 @@ def run_aider_for_repo(
                 logger.error(f"Command: {''.join(aider_cmd)}")
             else:
                 logger.error(f"OSError occurred: {e}")
-        if result != 0:
-            logger.error(f"Aider command failed with exit code {result}")
-            logger.error(f"Aider command: {aider_cmd}")
 
 
 @hydra.main(version_base=None, config_path="config", config_name="aider")
@@ -94,6 +91,9 @@ def main(config: BaselineConfig) -> None:
     config = BaselineConfig(config=OmegaConf.to_object(config))
     commit0_config = config.commit0_config
     aider_config = config.aider_config
+
+    if commit0_config is None or aider_config is None:
+        raise ValueError("Invalid input")
 
     dataset = load_dataset(commit0_config.dataset_name, split="test")
 

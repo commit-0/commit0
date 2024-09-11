@@ -73,6 +73,7 @@ def get_dir_info(
     current_depth (int): The current depth of traversal (used internally)
     ignore_dot_files (bool): Whether to ignore files/directories starting with a dot (default: True)
     include_stubs (bool): Whether to include function stubs for Python files (default: True)
+
     """
     if current_depth >= max_depth:
         return ""
@@ -123,14 +124,13 @@ Your output should be the edited code files.
 Use the above instructions to modify the supplied files: {file_list}
 Do not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.
 Only use standard python libraries, do not suggest installing any packages.
-""".format(
-        file_list=file_list
-    )
+""".format(file_list=file_list)
 
 
 def get_target_edit_files_cmd_args(target_dir: str) -> str:
     """Find the files with the error 'NotImplementedError('IMPLEMENT ME
-    HERE')'."""
+    HERE')'.
+    """
     # The grep command
     command = f"grep -R -l \"NotImplementedError('IMPLEMENT ME HERE')\" {target_dir}"
 
