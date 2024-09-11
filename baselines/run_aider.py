@@ -61,9 +61,9 @@ def run_aider_for_repo(
 
     target_edit_files_cmd_args = " ".join(target_edit_files)
 
+    # support context for aider
     prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
 
-    # support context for aider
     if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
         unit_tests_info = f"\n{UNIT_TESTS_INFO_HEADER} " + get_dir_info(
             dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
