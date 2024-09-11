@@ -20,6 +20,7 @@ def main(dataset_name: str, dataset_split: str, num_workers: int) -> None:
     for example in dataset:
         spec = make_spec(example)
         specs.append(spec)
+        break
 
     client = docker.from_env()
     build_repo_images(client, specs, num_workers)
