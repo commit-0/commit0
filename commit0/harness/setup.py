@@ -2,9 +2,7 @@ import logging
 import os
 
 import docker
-import hydra
 from datasets import load_dataset
-from omegaconf import DictConfig
 
 from typing import Iterator
 from commit0.harness.utils import clone_repo
@@ -19,9 +17,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="base")
-def main(config: DictConfig) -> None:
-    dataset: Iterator[RepoInstance] = load_dataset(hf_name, split="test")  # type: ignore
+def main(dataset_name: str, dataset_split: str, base_dir: str) -> None:
+    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     out = dict()
     specs = []
     for example in dataset:
