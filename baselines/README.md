@@ -10,15 +10,17 @@ python baselines/run_aider.py --config-name aider
 
 ## Config
 
-aider_config:
-  model_name: LLM model name
+`commit0_config`:
 
-context_config:
+- `base_dir`: Repos dir. Default `repos`.
+- `dataset_name`: commit0 HF dataset name. Default: `wentingzhao/commit0_docstring`.
 
-- use_repo_info: Whether to use repo info
-    Repo info
-    skeleton of the repo(filenames under each dir)
-    function stubs
-- use_unit_tests: Whether to use unit tests: unit_tests that target
-will be tested with
-- use_reference: Whether to use reference: reference doc/pdf/website
+`aider_config`:
+
+- `model_name`: LLM model name
+- `use_repo_info`: Whether to use repo info
+  - Repo info
+  - skeleton of the repo(filenames under each dir)
+  - function stubs
+- `use_unit_tests_info`: Whether to use unit tests: unit_tests that target will be tested with
+- `use_reference_info`: Whether to use reference: reference doc/pdf/website
