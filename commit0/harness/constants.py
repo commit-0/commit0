@@ -26,7 +26,7 @@ PASS_TO_FAIL = "PASS_TO_FAIL"
 EVAL_BACKENDS = ["local", "modal"]
 
 # available commands
-COMMANDS = ["clone", "build", "test", "test-reference"]
+COMMANDS = ["clone", "build", "test", "test-reference", "get-tests"]
 # repo splits
 SPLIT_MINITORCH = ["minitorch"]
 SPLIT_SIMPY = ["simpy"]
