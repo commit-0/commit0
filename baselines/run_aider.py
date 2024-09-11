@@ -5,7 +5,7 @@ from functools import partial
 from pathlib import Path
 
 import hydra
-from baseline_utils import (
+from baselines.baseline_utils import (
     PROMPT_HEADER,
     REFERENCE_HEADER,
     REPO_INFO_HEADER,
@@ -15,7 +15,7 @@ from baseline_utils import (
     get_prompt,
     get_reference,
 )
-from class_types import AiderConfig, BaselineConfig, Commit0Config
+from baselines.class_types import AiderConfig, BaselineConfig, Commit0Config
 from datasets import load_dataset
 from omegaconf import OmegaConf
 from tqdm.contrib.concurrent import thread_map
