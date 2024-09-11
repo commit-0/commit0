@@ -125,7 +125,9 @@ Only use standard python libraries, do not suggest installing any packages.
 
 
 def find_files_with_error(target_dir: str) -> List[str]:
-    """Find the files with the error 'NotImplementedError('IMPLEMENT ME HERE')'."""
+    """Find the files with the error 'NotImplementedError('IMPLEMENT ME
+    HERE')'.
+    """
     # The grep command
     command = f"grep -R -l \"NotImplementedError('IMPLEMENT ME HERE')\" {target_dir}"
 
