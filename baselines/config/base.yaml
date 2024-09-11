@@ -1,0 +1,18 @@
+defaults:
+  - _self_
+
+
+
+commit0_config:
+  base_dir: /Users/willjiang/Desktop/ai2dev/commit0/repos
+  dataset_name: "wentingzhao/commit0_docstring"
+
+aider_config:
+  llm_name: "claude-3-5-sonnet-20240620"
+  use_repo_info: false
+  use_unit_tests_info: false
+  use_reference_info: false
+
+hydra:
+  run:
+    dir: ./hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
