@@ -244,7 +244,7 @@ def cleanup_container(
     try:
         if container:
             log_info(f"Attempting to stop container {container.name}...")
-            container.stop(timeout=15)
+            container.kill()
     except Exception as e:
         log_error(
             f"Failed to stop container {container.name}: {e}. Trying to forcefully kill..."
