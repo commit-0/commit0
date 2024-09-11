@@ -2,7 +2,6 @@ import logging
 import os
 import subprocess
 from functools import partial
-from pathlib import Path
 
 import hydra
 from datasets import load_dataset
@@ -10,14 +9,8 @@ from omegaconf import OmegaConf
 from tqdm.contrib.concurrent import thread_map
 
 from baselines.baseline_utils import (
-    PROMPT_HEADER,
-    REFERENCE_HEADER,
-    REPO_INFO_HEADER,
-    UNIT_TESTS_INFO_HEADER,
-    find_files_with_error,
-    get_dir_info,
-    get_prompt,
-    get_reference,
+    get_message_to_aider,
+    get_target_edit_files_cmd_args,
 )
 from baselines.class_types import AiderConfig, BaselineConfig, Commit0Config
 
@@ -57,36 +50,12 @@ def run_aider_for_repo(
     test_files = ds["test_files"]
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
-    target_edit_files = find_files_with_error(repo_path)
 
-    target_edit_files_cmd_args = " ".join(target_edit_files)
+    target_edit_files_cmd_args = get_target_edit_files_cmd_args(repo_path)
 
-    # support context for aider
-    prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
-
-    if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
-        unit_tests_info = f"\n{UNIT_TESTS_INFO_HEADER} " + get_dir_info(
-            dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
-            prefix="",
-            include_stubs=True,
-        )
-    else:
-        unit_tests_info = ""
-
-    # TODO: assuming we have specification, which we currently do not have
-    if aider_config.use_reference_info and ds["specification"]:
-        reference = f"\n{REFERENCE_HEADER} " + get_reference(ds["specification"])
-    else:
-        reference = ""
-
-    if aider_config.use_repo_info:
-        repo_info = f"\n{REPO_INFO_HEADER} " + get_dir_info(
-            dir_path=Path(repo_path), prefix="", max_depth=2, include_stubs=False
-        )
-    else:
-        repo_info = ""
-
-    message_to_aider = prompt + reference + repo_info + unit_tests_info
+    message_to_aider = get_message_to_aider(
+        aider_config, target_edit_files_cmd_args, repo_path, ds
+    )
 
     for test_file in test_files:
         test_cmd = f"python -m commit0.harness.run_pytest_ids --repo {repo_name} --test_ids {test_file} --branch_name aider"

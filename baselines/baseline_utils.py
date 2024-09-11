@@ -1,7 +1,10 @@
+import os
 import re
 import subprocess
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List
+
+from baselines.class_types import AiderConfig
 
 PROMPT_HEADER = ">>> Here is the Task:\n"
 REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"
@@ -70,7 +73,6 @@ def get_dir_info(
     current_depth (int): The current depth of traversal (used internally)
     ignore_dot_files (bool): Whether to ignore files/directories starting with a dot (default: True)
     include_stubs (bool): Whether to include function stubs for Python files (default: True)
-
     """
     if current_depth >= max_depth:
         return ""
@@ -121,13 +123,14 @@ Your output should be the edited code files.
 Use the above instructions to modify the supplied files: {file_list}
 Do not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.
 Only use standard python libraries, do not suggest installing any packages.
-""".format(file_list=file_list)
+""".format(
+        file_list=file_list
+    )
 
 
-def find_files_with_error(target_dir: str) -> List[str]:
+def get_target_edit_files_cmd_args(target_dir: str) -> str:
     """Find the files with the error 'NotImplementedError('IMPLEMENT ME
-    HERE')'.
-    """
+    HERE')'."""
     # The grep command
     command = f"grep -R -l \"NotImplementedError('IMPLEMENT ME HERE')\" {target_dir}"
 
@@ -137,7 +140,43 @@ def find_files_with_error(target_dir: str) -> List[str]:
     # Split the output into lines and remove the base_dir prefix
     files = result.stdout.strip().split("\n")
 
-    return files
+    return " ".join(files)
+
+
+def get_message_to_aider(
+    aider_config: AiderConfig,
+    target_edit_files_cmd_args: str,
+    repo_path: str,
+    ds: Dict[str, Any],
+) -> str:
+    """Get the message to Aider."""
+    # support context for aider
+    prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
+
+    if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
+        unit_tests_info = f"\n{UNIT_TESTS_INFO_HEADER} " + get_dir_info(
+            dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
+            prefix="",
+            include_stubs=True,
+        )
+    else:
+        unit_tests_info = ""
+
+    # TODO: assuming we have specification, which we currently do not have
+    if aider_config.use_reference_info and ds["specification"]:
+        reference = f"\n{REFERENCE_HEADER} " + get_reference(ds["specification"])
+    else:
+        reference = ""
+    if aider_config.use_repo_info:
+        repo_info = f"\n{REPO_INFO_HEADER} " + get_dir_info(
+            dir_path=Path(repo_path), prefix="", max_depth=2, include_stubs=False
+        )
+    else:
+        repo_info = ""
+
+    message_to_aider = prompt + reference + repo_info + unit_tests_info
+
+    return message_to_aider
 
 
 def get_reference(specification_url: str) -> str:
