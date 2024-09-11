@@ -19,4 +19,4 @@ jobs:
       - name: Install the project
         run: uv pip install pre-commit
       - name: PreCommit
-        run: pre-commit run --show-diff-on-failure --color=always --all-files
+        run: uv run pre-commit run --show-diff-on-failure --color=always --all-files
