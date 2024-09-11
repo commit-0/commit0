@@ -35,11 +35,5 @@ def main(dataset_name: str, dataset_split: str, base_dir: str) -> None:
         )
         break
 
-    logger.info("Start building docker images")
-    logger.info(f"Please check {REPO_IMAGE_BUILD_DIR} for build details")
-    client = docker.from_env()
-    build_repo_images(client, specs)
-    logger.info("Done building docker images")
-
 
 __all__ = []
