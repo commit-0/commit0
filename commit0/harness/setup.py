@@ -33,6 +33,7 @@ def main(dataset_name: str, dataset_split: str, base_dir: str) -> None:
         clone_repo(
             clone_url, out[repo_name]["local_path"], example["base_commit"], logger
         )
+        break
 
     logger.info("Start building docker images")
     logger.info(f"Please check {REPO_IMAGE_BUILD_DIR} for build details")
