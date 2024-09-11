@@ -9,10 +9,10 @@ class Commit0Config:
 
     # clone related
     base_dir: str
+    repo_split: str
 
     # build related
     # which repo to build, all or one repo
-    build: str
     num_workers: int
 
     # test related

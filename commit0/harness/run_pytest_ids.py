@@ -7,6 +7,7 @@ from pathlib import Path
 import logging
 
 from typing import Iterator
+from git import Repo
 from commit0.harness.constants import RUN_PYTEST_LOG_DIR, RepoInstance
 from commit0.harness.docker_build import (
     close_logger,
@@ -206,11 +207,13 @@ def main(
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     spec = None
+    example = None
     for example in dataset:
         if example["repo"].endswith(repo):
             spec = make_spec(example)
             break
     assert spec is not None, "No spec available"
+    assert example is not None, "No example available"
 
     hashed_test_ids = get_hash_string(test_ids)
     # set up logging
@@ -219,10 +222,17 @@ def main(
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo, log_file)
 
+    if branch == "reference":
+        commit_id = example["reference_commit"]
+    else:
+        local_repo = Repo(f"{base_dir}/{repo}")
+        local_branch = local_repo.branches[branch]
+        commit_id = local_branch.commit.hexsha
+
     # make eval file
     eval_script = spec.eval_script.format(
         local_repo=f"{base_dir}/{repo}",
-        branch_name=branch,
+        commit_id=commit_id,
         test_ids=test_ids,
         ip=get_ip(backend),
         user=get_user(),

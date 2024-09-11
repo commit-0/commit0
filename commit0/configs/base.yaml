@@ -7,9 +7,9 @@ dataset_split: test
 
 # clone related
 base_dir: repos/
+repo_split: all
 
 # build related
-build: all
 num_workers: 8
 
 # test related

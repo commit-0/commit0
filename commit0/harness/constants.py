@@ -25,6 +25,88 @@ PASS_TO_FAIL = "PASS_TO_FAIL"
 # Evaluation backends
 EVAL_BACKENDS = ["local", "modal"]
 
+# available commands
+COMMANDS = ["clone", "build", "test", "test-reference"]
+# repo splits
+SPLIT_MINITORCH = ["minitorch"]
+SPLIT_SIMPY = ["simpy"]
+SPLIT_LITE = [
+    "tinydb",
+    "simpy",
+    "deprecated",
+    "wcwidth",
+    "voluptuous",
+    "cachetools",
+    "imapclient",
+    "marshmallow",
+    "jinja",
+    "cookiecutter",
+]
+SPLIT_ALL = [
+    "statsmodels",
+    "python-progressbar",
+    "xarray",
+    "imbalanced-learn",
+    "web3.py",
+    "scrapy",
+    "seaborn",
+    "pypdf",
+    "pexpect",
+    "pytest",
+    "pylint",
+    "joblib",
+    "dulwich",
+    "virtualenv",
+    "minitorch",
+    "networkx",
+    "requests",
+    "sphinx",
+    "jedi",
+    "moviepy",
+    "loguru",
+    "paramiko",
+    "geopandas",
+    "bitstring",
+    "fastapi",
+    "chardet",
+    "tornado",
+    "python-prompt-toolkit",
+    "attrs",
+    "PyBoy",
+    "pydantic",
+    "filesystem_spec",
+    "tlslite-ng",
+    "graphene",
+    "mimesis",
+    "babel",
+    "dnspython",
+    "portalocker," "cookiecutter",
+    "pyjwt",
+    "python-rsa",
+    "more-itertools",
+    "simpy",
+    "click",
+    "fabric",
+    "jinja",
+    "flask",
+    "sqlparse",
+    "marshmallow",
+    "imapclient",
+    "tinydb",
+    "cachetools",
+    "voluptuous",
+    "parsel",
+    "wcwidth",
+    "deprecated",
+]
+
+SPLIT = {
+    "all": SPLIT_ALL,
+    "minitorch": SPLIT_MINITORCH,
+    "simpy": SPLIT_SIMPY,
+    "lite": SPLIT_LITE,
+}
+
 
 class ResolvedStatus(Enum):
     NO = "RESOLVED_NO"
