@@ -14,7 +14,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(dataset_name: str, dataset_split: str) -> None:
+def main(dataset_name: str, dataset_split: str, num_workers: int) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
     for example in dataset:
@@ -22,7 +22,7 @@ def main(dataset_name: str, dataset_split: str) -> None:
         specs.append(spec)
 
     client = docker.from_env()
-    build_repo_images(client, specs)
+    build_repo_images(client, specs, num_workers)
     logger.info("Done building docker images")
 
 

@@ -385,20 +385,20 @@ def exec_run_with_timeout(
     # Local variables to store the result of executing the command
     exec_result = ""
     exec_id = None
-    exception = None
     timed_out = False
 
     # Wrapper function to run the command
     def run_command() -> None:
-        nonlocal exec_result, exec_id, exception
+        nonlocal exec_result, exec_id
         try:
-            exec_id = container.client.api.exec_create(container=container.id, cmd=cmd)["Id"]
-            exec_stream = container.client.api.exec_start(exec_id=exec_id, stream=True)
+            exec_id = container.client.api.exec_create(container=container.id, cmd=cmd)[  # pyright: ignore
+                "Id"
+            ]
+            exec_stream = container.client.api.exec_start(exec_id=exec_id, stream=True)  # pyright: ignore
             for chunk in exec_stream:
                 exec_result += chunk.decode("utf-8", errors="replace")
-        except Exception as e:
-            print(e)
-            exception = e
+        except docker.errors.APIError as e:
+            raise Exception(f"Container {container.id} cannot execute {cmd}.\n{str(e)}")
 
     # Start the command in a separate thread
     thread = threading.Thread(target=run_command)
@@ -409,7 +409,7 @@ def exec_run_with_timeout(
     # If the thread is still alive, the command timed out
     if thread.is_alive():
         if exec_id is not None:
-            exec_pid = container.client.api.exec_inspect(exec_id=exec_id)["Pid"]
+            exec_pid = container.client.api.exec_inspect(exec_id=exec_id)["Pid"]  # pyright: ignore
             container.exec_run(f"kill -TERM {exec_pid}", detach=True)
         timed_out = True
     end_time = time.time()

@@ -1,0 +1,18 @@
+defaults:
+  - _self_
+
+# shared in all steps
+dataset_name: wentingzhao/commit0_docstring
+dataset_split: test
+
+# clone related
+base_dir: repos/
+
+# build related
+build: all
+num_workers: 8
+
+# test related
+backend: local
+branch: ai
+timeout: 1_800
