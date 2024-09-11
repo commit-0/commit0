@@ -156,7 +156,7 @@ def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         f"git fetch {origin_name}",
         "git checkout {commit_id}",
         "git status",
-        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
+        f"uv run {instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
         f"git checkout {instance['base_commit']}",
         f"git remote remove {origin_name}",
         "git status",
