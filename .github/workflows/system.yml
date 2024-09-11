@@ -1,0 +1,26 @@
+name: system
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  system:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+      - name: Set up Python
+        run: uv venv --python 3.12
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+      - name: Install the project
+        run: uv sync
+      - name: Clone
+        run: uv run commit0 clone simpy
+      - name: Setup
+        run: uv run commit0 build simpy
+      - name: Test
+        run: uv run commit0 test-reference simpy tests/test_event.py::test_succeed

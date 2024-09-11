@@ -6,7 +6,7 @@ import docker.errors
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List
+from typing import Any
 
 from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
@@ -22,7 +22,7 @@ class BuildImageError(Exception):
         super().__init__(message)
         self.super_str = super().__str__()
         self.image_name = image_name
-        self.log_path = logger.log_file
+        self.log_path = ""  # logger.log_file
         self.logger = logger
 
     def __str__(self):
@@ -119,24 +119,14 @@ def build_image(
         )
 
         # Log the build process continuously
-        buildlog = ""
         for chunk in response:
             if "stream" in chunk:
                 # Remove ANSI escape sequences from the log
                 chunk_stream = ansi_escape.sub("", chunk["stream"])
                 logger.info(chunk_stream.strip())
-                buildlog += chunk_stream
-            elif "errorDetail" in chunk:
-                # Decode error message, raise BuildError
-                logger.error(
-                    f"Error: {ansi_escape.sub('', chunk['errorDetail']['message'])}"
-                )
-                raise docker.errors.BuildError(
-                    chunk["errorDetail"]["message"], buildlog
-                )
         logger.info("Image built successfully!")
-    except docker.errors.BuildError as e:
-        logger.error(f"docker.errors.BuildError during {image_name}: {e}")
+    except docker.errors.APIError as e:
+        logger.error(f"docker.errors.APIError during {image_name}: {e}")
         raise BuildImageError(image_name, str(e), logger) from e
     except Exception as e:
         logger.error(f"Error building image {image_name}: {e}")
@@ -185,7 +175,7 @@ def build_base_images(client: docker.DockerClient, dataset: list) -> None:
 def get_repo_configs_to_build(
     client: docker.DockerClient,
     dataset: list,
-) -> dict[str]:
+) -> dict[str, Any]:
     """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
 
@@ -229,7 +219,7 @@ def build_repo_images(
     client: docker.DockerClient,
     dataset: list,
     max_workers: int = 4,
-) -> (List[str], List[str]):
+) -> tuple[list[str], list[str]]:
     """Builds the repo images required for the dataset if they do not already exist.
 
     Args:

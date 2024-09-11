@@ -1,17 +1,14 @@
-import argparse
 from datasets import load_dataset
 import docker
 from enum import StrEnum, auto
 import os
 import traceback
-import yaml
 from pathlib import Path
 import logging
 
-from omegaconf import DictConfig, OmegaConf
-import hydra
-
-from commit0.harness.constants import RUN_PYTEST_LOG_DIR
+from typing import Iterator
+from git import Repo
+from commit0.harness.constants import RUN_PYTEST_LOG_DIR, RepoInstance
 from commit0.harness.docker_build import (
     close_logger,
     setup_logger,
@@ -87,7 +84,7 @@ def run_docker(
         # Check the exit code of the command
         if exit_code == 0:
             copy_from_container(container, report_file, Path(log_dir / "report.json"))
-            delete_file_from_container(container, report_file)
+            delete_file_from_container(container, str(report_file))
 
     except EvaluationError as e:
         error_msg = traceback.format_exc()
@@ -97,11 +94,12 @@ def run_docker(
         error_msg = (
             f"Error in running pytest for {spec.repo}: {e}\n"
             f"{traceback.format_exc()}\n"
-            f"Check ({logger.log_file}) for more information."
+            # f"Check ({logger.log_file}) for more information."
         )
         logger.error(error_msg)
     finally:
         # Remove repo container + image, close logger
+        assert container is not None
         cleanup_container(client, container, logger)
         close_logger(logger)
 
@@ -164,6 +162,7 @@ def run_modal(
         # execute tests
         process = sandbox.exec("bash", "-c", "/bin/bash /eval.sh")
         output = []
+        line = ""
         for line in process.stdout:
             output.append(line)
         output = "".join(line)
@@ -178,8 +177,6 @@ def run_modal(
         print(output_s)
 
         timed_out = False
-        total_runtime = 1
-
         test_output = extract_test_output(
             output_s, "--json-report --json-report-file=report.json"
         )
@@ -198,41 +195,55 @@ def run_modal(
                 )
 
 
-@hydra.main(version_base=None, config_path="configs", config_name="base")
-def main(config: DictConfig) -> None:
-    OmegaConf.to_yaml(config)
-    dataset = load_dataset(config.dataset_name, split="test")
+def main(
+    dataset_name: str,
+    dataset_split: str,
+    base_dir: str,
+    repo: str,
+    branch: str,
+    test_ids: str,
+    backend: str,
+    timeout: int,
+) -> None:
+    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    spec = None
+    example = None
     for example in dataset:
-        if example["repo"].endswith(config.repo):
+        if example["repo"].endswith(repo):
             spec = make_spec(example)
             break
+    assert spec is not None, "No spec available"
+    assert example is not None, "No example available"
 
-    hashed_test_ids = get_hash_string(config.test_ids)
+    hashed_test_ids = get_hash_string(test_ids)
     # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / config.repo / hashed_test_ids
+    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
-    logger = setup_logger(config.repo, log_file)
+    logger = setup_logger(repo, log_file)
+
+    if branch == "reference":
+        commit_id = example["reference_commit"]
+    else:
+        local_repo = Repo(f"{base_dir}/{repo}")
+        local_branch = local_repo.branches[branch]
+        commit_id = local_branch.commit.hexsha
 
     # make eval file
     eval_script = spec.eval_script.format(
-        local_repo=f"{config.base_dir}/{config.repo}",
-        branch_name=config.branch,
-        test_ids=config.test_ids,
-        ip=get_ip(config.backend),
+        local_repo=f"{base_dir}/{repo}",
+        commit_id=commit_id,
+        test_ids=test_ids,
+        ip=get_ip(backend),
         user=get_user(),
     )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
-    if ExecutionBackend(config.backend) == ExecutionBackend.LOCAL:
-        run_docker(spec, logger, eval_file, config.timeout, log_dir)
-    elif ExecutionBackend(config.backend) == ExecutionBackend.MODAL:
-        run_modal(spec, logger, eval_file, config.timeout, log_dir)
-
-
-def run(args: argparse.Namespace) -> None:
-    main()
+    if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
+        run_docker(spec, logger, eval_file, timeout, log_dir)
+    elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
+        run_modal(spec, logger, eval_file, timeout, log_dir)
 
 
 __all__ = []
