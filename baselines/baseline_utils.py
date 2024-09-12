@@ -140,6 +140,12 @@ def get_target_edit_files_cmd_args(target_dir: str) -> str:
     # Split the output into lines and remove the base_dir prefix
     files = result.stdout.strip().split("\n")
 
+    # Remove the base_dir prefix
+    files = [file.replace(target_dir, "").lstrip("/") for file in files]
+
+    # Only keep python files
+    files = [file for file in files if file.endswith(".py")]
+
     return " ".join(files)
 
 
@@ -186,17 +192,7 @@ def get_message_to_aider(
     else:
         repo_info = ""
 
-    if aider_config.use_lint_info:
-        lint_info = (
-            f"\n{LINT_INFO_HEADER} "
-            + subprocess.run(
-                ["pre-commit", "run", "--all-files"], capture_output=True, text=True
-            ).stdout
-        )[: aider_config.max_lint_info_length]
-    else:
-        lint_info = ""
-
-    message_to_aider = prompt + reference + repo_info + unit_tests_info + lint_info
+    message_to_aider = prompt + reference + repo_info + unit_tests_info
 
     return message_to_aider
 

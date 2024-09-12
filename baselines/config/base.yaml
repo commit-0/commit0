@@ -6,6 +6,7 @@ defaults:
 commit0_config:
   base_dir: /Users/willjiang/Desktop/ai2dev/commit0/repos
   dataset_name: "wentingzhao/commit0_docstring"
+  repo_split: "lite"
 
 aider_config:
   llm_name: "claude-3-5-sonnet-20240620"
@@ -17,6 +18,7 @@ aider_config:
   max_reference_info_length: 10000
   use_lint_info: false
   max_lint_info_length: 10000
+  pre_commit_config_path: .pre-commit-config.yaml
 
 hydra:
   run:

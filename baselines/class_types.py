@@ -6,6 +6,7 @@ from pydantic import BaseModel
 class Commit0Config(BaseModel):
     base_dir: str
     dataset_name: str
+    repo_split: str
 
 
 class AiderConfig(BaseModel):

@@ -1,19 +1,17 @@
 import logging
 import os
 import subprocess
-from functools import partial
 
 import hydra
 from datasets import load_dataset
 from omegaconf import OmegaConf
-from tqdm.contrib.concurrent import thread_map
 import tarfile
 from baselines.baseline_utils import (
     get_message_to_aider,
     get_target_edit_files_cmd_args,
 )
 from baselines.class_types import AiderConfig, BaselineConfig, Commit0Config
-
+from commit0.harness.constants import SPLIT
 # from aider.run_aider import get_aider_cmd
 
 logging.basicConfig(
@@ -27,11 +25,16 @@ def get_aider_cmd(
     files: str,
     message_to_aider: str,
     test_cmd: str,
+    lint_cmd: str,
 ) -> str:
     """Get the Aider command based on the given context."""
-    aider_cmd = f"aider --model {model} --file {files} --message \"{message_to_aider}\" --auto-test --test --test-cmd '{test_cmd}' --yes"
-
-    return aider_cmd
+    base_cmd = f'aider --model {model} --file {files} --message "{message_to_aider}"'
+    if lint_cmd:
+        base_cmd += f" --auto-lint --lint-cmd '{lint_cmd}'"
+    if test_cmd:
+        base_cmd += f" --auto-test --test --test-cmd '{test_cmd}'"
+    base_cmd += " --yes"
+    return base_cmd
 
 
 def run_aider_for_repo(
@@ -61,29 +64,39 @@ def run_aider_for_repo(
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
 
+    os.chdir(repo_path)
+
     target_edit_files_cmd_args = get_target_edit_files_cmd_args(repo_path)
 
     message_to_aider = get_message_to_aider(
         aider_config, target_edit_files_cmd_args, repo_path, ds
     )
 
-    test_files = test_files[:1]
+    if aider_config.use_lint_info:
+        lint_cmd = "pre-commit run --config ../../.pre-commit-config.yaml --files"
+    else:
+        lint_cmd = ""
+
     for test_file in test_files:
-        test_cmd = f"uv run commit0 test-reference {repo_name} {test_file}"
+        test_cmd = f"python -m commit0 test {repo_name} {test_file}"
 
         aider_cmd = get_aider_cmd(
             aider_config.llm_name,
             target_edit_files_cmd_args,
             message_to_aider,
             test_cmd,
+            lint_cmd,
         )
 
-        print(aider_cmd)
-
         try:
-            process = subprocess.Popen(aider_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            process = subprocess.Popen(
+                aider_cmd,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
             stdout, stderr = process.communicate()
-            results = process.returncode
             logger.info(f"STDOUT: {stdout}")
             logger.info(f"STDERR: {stderr}")
         except subprocess.CalledProcessError as e:
@@ -97,6 +110,7 @@ def run_aider_for_repo(
                 logger.error(f"Command: {''.join(aider_cmd)}")
             else:
                 logger.error(f"OSError occurred: {e}")
+        asdf
 
 
 @hydra.main(version_base=None, config_path="config", config_name="aider")
@@ -114,13 +128,15 @@ def main(config: BaselineConfig) -> None:
 
     dataset = load_dataset(commit0_config.dataset_name, split="test")
 
-    dataset = [dataset[3]]
-    thread_map(
-        partial(run_aider_for_repo, commit0_config, aider_config),
-        dataset,
-        desc="Running aider for repos",
-        max_workers=10,
-    )
+    filtered_dataset = [
+        example
+        for example in dataset
+        if commit0_config.repo_split == "all"
+        or example["repo"].split("/")[-1] in SPLIT.get(commit0_config.repo_split, [])
+    ]
+
+    for example in filtered_dataset:
+        run_aider_for_repo(commit0_config, aider_config, example)
 
 
 if __name__ == "__main__":
