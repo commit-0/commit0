@@ -2,6 +2,7 @@ import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
 import commit0.harness.build
 import commit0.harness.setup
+import commit0.harness.evaluate
 import copy
 import sys
 import os
@@ -28,7 +29,7 @@ def main() -> None:
     # after hydra gets all configs, put command-line arguments back
     sys.argv = sys_argv
     # repo_split: split from command line has a higher priority than split in hydra
-    if command in ["clone", "build"]:
+    if command in ["clone", "build", "evaluate", "evaluate-reference"]:
         if len(sys.argv) == 3:
             if sys.argv[2] not in SPLIT:
                 raise ValueError(
@@ -53,7 +54,7 @@ def main() -> None:
         )
     elif command == "get-tests":
         repo = sys.argv[2]
-        commit0.harness.get_pytest_ids.main(repo)
+        commit0.harness.get_pytest_ids.main(repo, stdout=True)
     elif command == "test" or command == "test-reference":
         repo = sys.argv[2]
         test_ids = sys.argv[3]
@@ -68,6 +69,20 @@ def main() -> None:
             test_ids,
             config.backend,
             config.timeout,
+            stdout=True,
+        )
+    elif command == "evaluate" or command == "evaluate-reference":
+        if command == "evaluate-reference":
+            config.branch = "reference"
+        commit0.harness.evaluate.main(
+            config.dataset_name,
+            config.dataset_split,
+            config.repo_split,
+            config.base_dir,
+            config.branch,
+            config.backend,
+            config.timeout,
+            config.num_workers,
         )
 
 

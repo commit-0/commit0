@@ -26,3 +26,5 @@ jobs:
         run: uv run commit0 get-tests simpy
       - name: Test
         run: uv run commit0 test-reference simpy tests/test_event.py::test_succeed
+      - name: Evaluate
+        run: uv run commit0 evaluate-reference simpy
