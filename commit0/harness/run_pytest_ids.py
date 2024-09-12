@@ -1,7 +1,6 @@
 from datasets import load_dataset
 import docker
 from enum import StrEnum, auto
-import os
 import traceback
 from pathlib import Path
 import logging
@@ -40,7 +39,7 @@ class ExecutionBackend(StrEnum):
 def run_docker(
     spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
 ) -> None:
-    """ Runs the tests in a local docker container.
+    """Runs the tests in a local docker container.
 
     1. Creates docker container.
     2. Copies ssh public key from container to local machine.
@@ -115,7 +114,7 @@ def run_docker(
 def run_modal(
     spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
 ) -> None:
-    """ Runs the tests in a remote Modal container.
+    """Runs the tests in a remote Modal container.
 
     1. Creates modal container.
     2. Copies ssh public key from container to local machine.
@@ -126,11 +125,9 @@ def run_modal(
     import modal
     from commit0.harness.modal_utils import (
         create_sandbox,
-        copy_to_sandbox,
-        copy_from_sandbox,
-        delete_file_from_sandbox,
         copy_ssh_pubkey_from_sandbox,
-        write_to_sandbox,
+        copy_file_to_sandbox,
+        execute_command,
     )
 
     # the image must exist on dockerhub
@@ -147,10 +144,10 @@ def run_modal(
         copy_file_to_sandbox(sandbox, nfs, eval_file, Path("/eval.sh"))
 
         # DBG: check if eval file properly copied
-        print(execute_command("ls /")[0])
+        print(execute_command(sandbox, "ls /")[0])
 
         # execute tests
-        output, error = execute_command("/bin/bash /eval.sh")
+        output, error = execute_command(sandbox, "/bin/bash /eval.sh")
         print(output)
         print(error)
 
@@ -183,7 +180,7 @@ def main(
     backend: str,
     timeout: int,
 ) -> None:
-    """ Runs the pytests for repos in a dataset.
+    """Runs the pytests for repos in a dataset.
 
     Tests are run either locally through docker
     or remotely through Modal.
