@@ -5,7 +5,7 @@ import os
 import traceback
 from pathlib import Path
 import logging
-
+import sys
 from typing import Iterator
 from git import Repo
 from commit0.harness.constants import RUN_PYTEST_LOG_DIR, RepoInstance
@@ -108,6 +108,7 @@ def run_docker(
         assert container is not None
         cleanup_container(client, container, logger)
         close_logger(logger)
+    return test_output
 
 
 def run_modal(
@@ -254,10 +255,14 @@ def main(
     eval_file.write_text(eval_script)
 
     if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
-        run_docker(spec, logger, eval_file, timeout, log_dir, stdout)
+        exit_error_message = run_docker(
+            spec, logger, eval_file, timeout, log_dir, stdout
+        )
     elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
         run_modal(spec, logger, eval_file, timeout, log_dir, stdout)
-    return str(log_dir)
+
+    if exit_error_message:
+        sys.exit(exit_error_message)
 
 
 __all__ = []
