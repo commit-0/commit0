@@ -1,4 +1,6 @@
 import logging
+import os
+from collections import Counter
 
 import docker
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -7,6 +9,7 @@ from tqdm import tqdm
 from typing import Iterator
 
 from commit0.harness.run_pytest_ids import main as run_tests
+from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RepoInstance, SPLIT
 
 logging.basicConfig(
@@ -18,12 +21,12 @@ logger = logging.getLogger(__name__)
 def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, branch: str, backend: str, timeout: int, num_workers: int) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     repos = SPLIT[repo_split]
-    test_dirs = []
+    pairs = []
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         if repo_split != "all" and repo_name not in SPLIT[repo_split]:
             continue
-        test_dirs.append(example["test"]["test_dir"])
+        pairs.append((repo_name, example["test"]["test_dir"]))
 
     log_dirs = []
     with tqdm(total=len(repos), smoothing=0, desc="Evaluating repos") as pbar:
@@ -42,7 +45,7 @@ def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, 
                     timeout,
                     stdout=False,
                 ): None
-                for repo, test_dir in zip(repos, test_dirs)
+                for repo, test_dir in pairs
             }
             # Wait for each future to complete
             for future in as_completed(futures):
@@ -54,6 +57,63 @@ def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, 
                 except Exception as e:
                     traceback.print_exc()
                     continue
+
+    # get numbers
+    out = []
+    for name in tqdm(log_dirs):
+        report_file = os.path.join(name, "report.json")
+        name = name.split('/')[2]
+        if not os.path.exists(report_file):
+            out.append(
+                {
+                    "name": name,
+                    "sum": 0,
+                    "passed": 0,
+                    "num_passed": 0,
+                }
+            )
+            continue
+        dataset: Iterator[RepoInstance] = load_dataset("json", data_files=report_file, split="train")
+        test_ids = get_tests(name, stdout=False)
+        tests = {x['nodeid']: x['call'] for x in dataset["tests"][0]}
+        status = []
+        runtimes = []
+        no_runs = 0
+        for test_id in test_ids:
+            if test_id in tests and tests[test_id] is not None:
+                status.append(tests[test_id]["outcome"])
+                runtimes.append(tests[test_id]["duration"])
+                no_runs += 1
+            else:
+                status.append("failed")
+                runtimes.append(0)
+        status = Counter(status)
+        if no_runs == 0:
+            total = 0
+        else:
+            total = sum(runtimes)
+        if "xfail" not in status:
+            status["xfail"] = 0
+        passed = (status["passed"] + status["xfail"]) / sum(status.values())
+        out.append(
+            {
+                "name": name,
+                "sum": total,
+                "passed": passed,
+                "num_passed": status["passed"]+status["xfail"],
+                "num_tests": sum(status.values())
+            }
+        )
+    print("repo,runtime,num_passed/num_tests")
+    out = sorted(out, key=lambda x: x["sum"], reverse=True)
+    for x in out:
+        print(
+            f"{x['name']},{x['sum']},{x['num_passed']}/{x['num_tests']}"
+        )
+    total_runtime = sum([x["sum"] for x in out])
+    averaged_passed = sum([x["passed"] for x in out])/len(out)
+    print(f"total runtime: {total_runtime}")
+    print(f"average pass rate: {averaged_passed}")
 
 
 __all__ = []

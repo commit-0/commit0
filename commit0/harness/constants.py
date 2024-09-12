@@ -26,7 +26,7 @@ PASS_TO_FAIL = "PASS_TO_FAIL"
 EVAL_BACKENDS = ["local", "modal"]
 
 # available commands
-COMMANDS = ["clone", "build", "test", "test-reference", "get-tests", "evaluate"]
+COMMANDS = ["clone", "build", "test", "test-reference", "get-tests", "evaluate", "evaluate-reference"]
 # repo splits
 SPLIT_MINITORCH = ["minitorch"]
 SPLIT_SIMPY = ["simpy"]
@@ -80,7 +80,8 @@ SPLIT_ALL = [
     "mimesis",
     "babel",
     "dnspython",
-    "portalocker," "cookiecutter",
+    "portalocker",
+    "cookiecutter",
     "pyjwt",
     "python-rsa",
     "more-itertools",

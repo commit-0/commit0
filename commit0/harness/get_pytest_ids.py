@@ -1,16 +1,21 @@
 import tarfile
 
 
-def main(repo: str) -> None:
+def main(repo: str, stdout: bool) -> None:
     repo = repo.lower()
     repo = repo.replace(".", "-")
+    out = ""
     with tarfile.open(f"commit0/data/test_ids/{repo}.tar.bz2", "r:bz2") as tar:
         for member in tar.getmembers():
             if member.isfile():
                 file = tar.extractfile(member)
                 if file:
-                    content = file.read()
-                    print(content.decode("utf-8"))
+                    content = file.read().decode("utf-8")
+                    out += content
+                    if stdout:
+                        print(content)
+    out = out.split('\n')
+    return out
 
 
 __all__ = []

@@ -230,7 +230,7 @@ def main(
 
     hashed_test_ids = get_hash_string(test_ids)
     # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
+    log_dir = RUN_PYTEST_LOG_DIR / repo / branch / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo, log_file)
