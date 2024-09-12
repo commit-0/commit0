@@ -1,4 +1,5 @@
 import commit0.harness.run_pytest_ids
+import commit0.harness.get_pytest_ids
 import commit0.harness.build
 import commit0.harness.setup
 import copy
@@ -50,6 +51,9 @@ def main() -> None:
             config.repo_split,
             config.num_workers,
         )
+    elif command == "get-tests":
+        repo = sys.argv[2]
+        commit0.harness.get_pytest_ids.main(repo)
     elif command == "test" or command == "test-reference":
         repo = sys.argv[2]
         test_ids = sys.argv[3]
