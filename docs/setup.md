@@ -52,8 +52,19 @@ This is all just standard shell commands.
 ```bash
 cd repos/minitorch/
 git checkout -b mychange
-patch ../../minitorch.example.patch .
-cd ../..
+```
+
+And apply and commit this patch.
+
+```
+--- a/minitorch/operators.py
++++ b/minitorch/operators.py
+@@ -81,7 +81,7 @@ def relu(x: float) -> float:
+     (See https://en.wikipedia.org/wiki/Rectifier_(neural_networks) .)
+     """
+     # TODO: Implement for Task 0.1.
+-    raise NotImplementedError('Need to implement for Task 0.1')
++    return 1. if x > 0. else 0.
 ```
 
 Once this is done we can run `test` with
@@ -65,8 +76,28 @@ commit0 test minitorch branch=mychange tests/test_operators.py::test_relu
 
 ## Running an Agent
 
-Next we will see how this can be run with an agent system.
+Next we will see how this can be run with an AI agent system.
+We will use [Aider](https://aider.chat/) which is a nice
+command-line oriented agent system.
 
-...
+To setup Aider first set your api key.
+We recommend using Claude Sonnet.
+
+```bash
+# Work with Claude 3.5 Sonnet on your repo
+export ANTHROPIC_API_KEY=your-key-goes-here
+```
+
+Once this is setup you can run Aider with the following command.
+This will edit the files locally in your branch, but
+run the tests inside the environment.
+
+```bash
+aider --model sonnet --file repos/minitorch/operators.py --message "fill in" \
+     --auto-test --test \
+     --test-cmd 'commit0 test minitorch branch=mychange tests/test_operators.py::test_relu' \
+     --yes
+```
+
 
 ## Distributed Environments
