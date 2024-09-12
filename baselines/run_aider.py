@@ -67,8 +67,9 @@ def run_aider_for_repo(
         aider_config, target_edit_files_cmd_args, repo_path, ds
     )
 
+    test_files = test_files[:1]
     for test_file in test_files:
-        test_cmd = f"python -m commit0.harness.run_pytest_ids --repo {repo_name} --test_ids {test_file} --branch_name aider"
+        test_cmd = f"uv run commit0 test-reference {repo_name} {test_file}"
 
         aider_cmd = get_aider_cmd(
             aider_config.llm_name,
@@ -77,8 +78,14 @@ def run_aider_for_repo(
             test_cmd,
         )
 
+        print(aider_cmd)
+
         try:
-            _ = subprocess.call(aider_cmd, shell=True)
+            process = subprocess.Popen(aider_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+            stdout, stderr = process.communicate()
+            results = process.returncode
+            logger.info(f"STDOUT: {stdout}")
+            logger.info(f"STDERR: {stderr}")
         except subprocess.CalledProcessError as e:
             logger.error(f"Command failed with exit code {e.returncode}")
             logger.error(f"STDOUT: {e.stdout}")
@@ -107,6 +114,7 @@ def main(config: BaselineConfig) -> None:
 
     dataset = load_dataset(commit0_config.dataset_name, split="test")
 
+    dataset = [dataset[3]]
     thread_map(
         partial(run_aider_for_repo, commit0_config, aider_config),
         dataset,
