@@ -5,7 +5,11 @@ import hashlib
 import logging
 import socket
 import os
+import time
 import requests
+from typing import Callable, Optional
+from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError
+from ghapi.core import GhApi
 from commit0.harness.constants import EVAL_BACKENDS
 
 
@@ -169,5 +173,27 @@ def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
     except git.exc.GitCommandError as e:
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
 
+
+def create_repo_on_github(organization: str, repo: str, logger: logging.Logger, token: Optional[str] = None) -> None:
+    api = GhApi(token=token)
+    while True:
+        try:
+            api.repos.get(owner=organization, repo=repo)
+            logger.info(f"{organization}/{repo} already exists")
+            break
+        except HTTP403ForbiddenError:
+            while True:
+                rl = api.rate_limit.get()
+                logger.info(
+                    f"Rate limit exceeded for token {token[:10]},"
+                    f"waiting for 5 minutes, remaining calls: {rl.resources.core.remaining}"
+                )
+                if rl.resources.core.remaining > 0:
+                    break
+                time.sleep(60 * 5)
+        except HTTP404NotFoundError:
+            api.repos.create_in_org(org=organization, name=repo)
+            logger.info(f"Created {organization}/{repo} on GitHub")
+            break
 
 __all__ = []
