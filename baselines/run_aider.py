@@ -110,7 +110,6 @@ def run_aider_for_repo(
                 logger.error(f"Command: {''.join(aider_cmd)}")
             else:
                 logger.error(f"OSError occurred: {e}")
-        asdf
 
 
 @hydra.main(version_base=None, config_path="config", config_name="aider")
