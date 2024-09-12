@@ -1,7 +1,8 @@
 import tarfile
+from typing import List
 
 
-def main(repo: str, stdout: bool) -> None:
+def main(repo: str, stdout: bool) -> List[str]:
     repo = repo.lower()
     repo = repo.replace(".", "-")
     out = ""
@@ -14,7 +15,7 @@ def main(repo: str, stdout: bool) -> None:
                     out += content
                     if stdout:
                         print(content)
-    out = out.split('\n')
+    out = out.split("\n")
     return out
 
 

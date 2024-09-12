@@ -1,8 +1,8 @@
 import logging
 import os
+import traceback
 from collections import Counter
 
-import docker
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datasets import load_dataset
 from tqdm import tqdm
@@ -18,7 +18,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, branch: str, backend: str, timeout: int, num_workers: int) -> None:
+def main(
+    dataset_name: str,
+    dataset_split: str,
+    repo_split: str,
+    base_dir: str,
+    branch: str,
+    backend: str,
+    timeout: int,
+    num_workers: int,
+) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     repos = SPLIT[repo_split]
     pairs = []
@@ -54,7 +63,7 @@ def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, 
                     # Update progress bar, check if instance ran successfully
                     result = future.result()
                     log_dirs.append(result)
-                except Exception as e:
+                except Exception:
                     traceback.print_exc()
                     continue
 
@@ -62,7 +71,7 @@ def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, 
     out = []
     for name in tqdm(log_dirs):
         report_file = os.path.join(name, "report.json")
-        name = name.split('/')[2]
+        name = name.split("/")[2]
         if not os.path.exists(report_file):
             out.append(
                 {
@@ -73,9 +82,9 @@ def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, 
                 }
             )
             continue
-        dataset: Iterator[RepoInstance] = load_dataset("json", data_files=report_file, split="train")
+        report = load_dataset("json", data_files=report_file, split="train")  # type: ignore
         test_ids = get_tests(name, stdout=False)
-        tests = {x['nodeid']: x['call'] for x in dataset["tests"][0]}
+        tests = {x["nodeid"]: x["call"] for x in report["tests"][0]}  # type: ignore
         status = []
         runtimes = []
         no_runs = 0
@@ -100,18 +109,16 @@ def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, 
                 "name": name,
                 "sum": total,
                 "passed": passed,
-                "num_passed": status["passed"]+status["xfail"],
-                "num_tests": sum(status.values())
+                "num_passed": status["passed"] + status["xfail"],
+                "num_tests": sum(status.values()),
             }
         )
     print("repo,runtime,num_passed/num_tests")
     out = sorted(out, key=lambda x: x["sum"], reverse=True)
     for x in out:
-        print(
-            f"{x['name']},{x['sum']},{x['num_passed']}/{x['num_tests']}"
-        )
+        print(f"{x['name']},{x['sum']},{x['num_passed']}/{x['num_tests']}")
     total_runtime = sum([x["sum"] for x in out])
-    averaged_passed = sum([x["passed"] for x in out])/len(out)
+    averaged_passed = sum([x["passed"] for x in out]) / len(out)
     print(f"total runtime: {total_runtime}")
     print(f"average pass rate: {averaged_passed}")
 
