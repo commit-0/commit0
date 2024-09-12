@@ -44,7 +44,7 @@ def run_docker(
     timeout: int,
     log_dir: Path,
     stdout: bool,
-) -> None:
+) -> str:
     client = docker.from_env()
     container = None
     try:
@@ -91,11 +91,13 @@ def run_docker(
         if exit_code == 0:
             copy_from_container(container, report_file, Path(log_dir / "report.json"))
             delete_file_from_container(container, str(report_file))
+        return test_output
 
     except EvaluationError as e:
         error_msg = traceback.format_exc()
         logger.info(error_msg)
         print(e)
+        return error_msg
     except Exception as e:
         error_msg = (
             f"Error in running pytest for {spec.repo}: {e}\n"
@@ -103,6 +105,7 @@ def run_docker(
             # f"Check ({logger.log_file}) for more information."
         )
         logger.error(error_msg)
+        return error_msg
     finally:
         # Remove repo container + image, close logger
         assert container is not None
@@ -253,10 +256,13 @@ def main(
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
+    error_message = None
     if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
-        run_docker(spec, logger, eval_file, timeout, log_dir, stdout)
+        error_message = run_docker(spec, logger, eval_file, timeout, log_dir, stdout)
     elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
         run_modal(spec, logger, eval_file, timeout, log_dir, stdout)
+    if error_message:
+        return error_message
     return str(log_dir)
 
 
