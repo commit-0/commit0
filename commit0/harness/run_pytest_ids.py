@@ -38,7 +38,12 @@ class ExecutionBackend(StrEnum):
 
 
 def run_docker(
-    spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
+    spec: Spec,
+    logger: logging.Logger,
+    eval_file: Path,
+    timeout: int,
+    log_dir: Path,
+    stdout: bool,
 ) -> None:
     client = docker.from_env()
     container = None
@@ -65,7 +70,8 @@ def run_docker(
             output, "--json-report --json-report-file=report.json"
         )
         # stdout might be more straightforward
-        print(test_output)
+        if stdout:
+            print(test_output)
         test_output_path = log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
             f.write(test_output)
@@ -105,7 +111,12 @@ def run_docker(
 
 
 def run_modal(
-    spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
+    spec: Spec,
+    logger: logging.Logger,
+    eval_file: Path,
+    timeout: int,
+    log_dir: Path,
+    stdout: bool,
 ) -> None:
     # get image name to pull from dockerhub
     # spec.repo_image_key
@@ -182,7 +193,8 @@ def run_modal(
         )
 
         # stdout might be more straightforward
-        print(test_output)
+        if stdout:
+            print(test_output)
         test_output_path = log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
             f.write(test_output)
@@ -204,7 +216,8 @@ def main(
     test_ids: str,
     backend: str,
     timeout: int,
-) -> None:
+    stdout: bool,
+) -> str:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     spec = None
     example = None
@@ -241,9 +254,10 @@ def main(
     eval_file.write_text(eval_script)
 
     if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
-        run_docker(spec, logger, eval_file, timeout, log_dir)
+        run_docker(spec, logger, eval_file, timeout, log_dir, stdout)
     elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
-        run_modal(spec, logger, eval_file, timeout, log_dir)
+        run_modal(spec, logger, eval_file, timeout, log_dir, stdout)
+    return str(log_dir)
 
 
 __all__ = []
