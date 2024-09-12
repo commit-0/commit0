@@ -4,6 +4,7 @@ defaults:
   - _self_
 
 aider_config:
-  use_repo_info: true
-  use_unit_tests_info: true
+  use_repo_info: false
+  use_unit_tests_info: false
   use_reference_info: false
+  use_lint_info: true

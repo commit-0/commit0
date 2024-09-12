@@ -11,12 +11,17 @@ class Commit0Config(BaseModel):
 class AiderConfig(BaseModel):
     llm_name: str
     use_repo_info: bool
+    max_repo_info_length: int
     use_unit_tests_info: bool
+    max_unit_tests_info_length: int
     use_reference_info: bool
+    max_reference_info_length: int
+    use_lint_info: bool
+    max_lint_info_length: int
 
 
 class BaselineConfig(BaseModel):
-    config: Dict[str, Dict[str, Union[str, bool]]]
+    config: Dict[str, Dict[str, Union[str, bool, int]]]
 
     commit0_config: Commit0Config | None = None
     aider_config: AiderConfig | None = None

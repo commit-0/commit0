@@ -7,7 +7,7 @@ import hydra
 from datasets import load_dataset
 from omegaconf import OmegaConf
 from tqdm.contrib.concurrent import thread_map
-
+import tarfile
 from baselines.baseline_utils import (
     get_message_to_aider,
     get_target_edit_files_cmd_args,
@@ -46,8 +46,18 @@ def run_aider_for_repo(
     # get repo info
     _, repo_name = ds["repo"].split("/")
 
-    # TODO: assuming we have all test_files, which we currently do not have
-    test_files = ds["test_files"]
+    repo_name = repo_name.lower()
+    repo_name = repo_name.replace(".", "-")
+    with tarfile.open(f"commit0/data/test_ids/{repo_name}.tar.bz2", "r:bz2") as tar:
+        for member in tar.getmembers():
+            if member.isfile():
+                file = tar.extractfile(member)
+                if file:
+                    test_files_str = file.read().decode("utf-8")
+                    # print(content.decode("utf-8"))
+
+    test_files = test_files_str.split("\n") if isinstance(test_files_str, str) else []
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files])))
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
 

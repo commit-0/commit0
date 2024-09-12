@@ -10,7 +10,7 @@ PROMPT_HEADER = ">>> Here is the Task:\n"
 REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"
 REPO_INFO_HEADER = "\n\n>>> Here is the Repository Information:\n"
 UNIT_TESTS_INFO_HEADER = "\n\n>>> Here are the Unit Tests Information:\n"
-EDIT_HISTORY_HEADER = "\n\n>>> Here is the Edit History:\n"
+LINT_INFO_HEADER = "\n\n>>> Here is the Lint Information:\n"
 
 # prefix components:
 space = "    "
@@ -154,31 +154,54 @@ def get_message_to_aider(
     prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
 
     if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
-        unit_tests_info = f"\n{UNIT_TESTS_INFO_HEADER} " + get_dir_info(
-            dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
-            prefix="",
-            include_stubs=True,
+        unit_tests_info = (
+            f"\n{UNIT_TESTS_INFO_HEADER} "
+            + get_dir_info(
+                dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
+                prefix="",
+                include_stubs=True,
+            )[: aider_config.max_unit_tests_info_length]
         )
     else:
         unit_tests_info = ""
 
     # TODO: assuming we have specification, which we currently do not have
     if aider_config.use_reference_info and ds["specification"]:
-        reference = f"\n{REFERENCE_HEADER} " + get_reference(ds["specification"])
+        reference = (
+            f"\n{REFERENCE_HEADER} "
+            + get_reference(ds["specification"])[
+                : aider_config.max_reference_info_length
+            ]
+        )
     else:
         reference = ""
+
     if aider_config.use_repo_info:
-        repo_info = f"\n{REPO_INFO_HEADER} " + get_dir_info(
-            dir_path=Path(repo_path), prefix="", max_depth=2, include_stubs=False
+        repo_info = (
+            f"\n{REPO_INFO_HEADER} "
+            + get_dir_info(
+                dir_path=Path(repo_path), prefix="", max_depth=2, include_stubs=False
+            )[: aider_config.max_repo_info_length]
         )
     else:
         repo_info = ""
 
-    message_to_aider = prompt + reference + repo_info + unit_tests_info
+    if aider_config.use_lint_info:
+        lint_info = (
+            f"\n{LINT_INFO_HEADER} "
+            + subprocess.run(
+                ["pre-commit", "run", "--all-files"], capture_output=True, text=True
+            ).stdout
+        )[: aider_config.max_lint_info_length]
+    else:
+        lint_info = ""
+
+    message_to_aider = prompt + reference + repo_info + unit_tests_info + lint_info
 
     return message_to_aider
 
 
-def get_reference(specification_url: str) -> str:
-    """Get the reference for a given specification URL."""
-    return f"/web {specification_url}"
+def get_reference(specification_pdf_path: str) -> str:
+    """Get the reference for a given specification PDF path."""
+    # TODO: after pdf_to_text is available, use it to extract the text from the PDF
+    return f"/pdf {specification_pdf_path}"

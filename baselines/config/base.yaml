@@ -10,8 +10,13 @@ commit0_config:
 aider_config:
   llm_name: "claude-3-5-sonnet-20240620"
   use_repo_info: false
+  max_repo_info_length: 10000
   use_unit_tests_info: false
+  max_unit_tests_info_length: 10000
   use_reference_info: false
+  max_reference_info_length: 10000
+  use_lint_info: false
+  max_lint_info_length: 10000
 
 hydra:
   run:
