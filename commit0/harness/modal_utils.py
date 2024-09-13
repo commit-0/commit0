@@ -17,6 +17,7 @@ def create_sandbox(image: modal.Image, nfs: modal.NetworkFileSystem) -> modal.Sa
         network_file_systems={
             "/vol": nfs,
         },
+        timeout=60,
     )
 
 
@@ -38,9 +39,10 @@ def copy_file_to_sandbox(
     sandbox: modal.Sandbox, nfs: modal.NetworkFileSystem, src: Path, dst: Path
 ) -> None:
     """Copy file to modal sandbox"""
+    path = "tmpfile"
     with src.open("rb") as f:
-        nfs.write_file(str(src), f)
-    sandbox.exec("bash", "-c", f"cp /vol/{str(src)} {str(dst)}")
+        nfs.write_file(path, f)
+    sandbox.exec("bash", "-c", f"cp /vol/{path} {str(dst)}")
 
 
 def copy_from_sandbox(sandbox: modal.Sandbox, src: Path, dst: Path) -> None:

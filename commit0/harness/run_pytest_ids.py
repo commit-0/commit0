@@ -35,7 +35,6 @@ from commit0.harness.execution_context import (
 )
 
 
-
 class ExecutionBackend(StrEnum):
     LOCAL = auto()
     MODAL = auto()
@@ -149,40 +148,15 @@ def run_modal(
         copy_file_to_sandbox(sandbox, nfs, eval_file, Path("/eval.sh"))
 
         # DBG: check if eval file properly copied
+        print("checking for eval.sh")
         print(execute_command(sandbox, "ls /")[0])
 
         # execute tests
         output, error = execute_command(sandbox, "/bin/bash /eval.sh")
         # TODO: add timeout
-        #print(output)
-        #print(error)
-
-        timed_out = False
-        test_output = extract_test_output(
-            output, "--json-report --json-report-file=report.json"
-        )
-
-        # stdout might be more straightforward
-        print(test_output)
-        test_output_path = log_dir / "test_output.txt"
-        with open(test_output_path, "w") as f:
-            f.write(test_output)
-            if timed_out:
-                f.write(f"\n\nTimeout error: {timeout} seconds exceeded.")
-                raise EvaluationError(
-                    spec.repo,
-                    f"Test timed out after {timeout} seconds.",
-                    logger,
-                )
-
-        # copy back report.json if there is any
-        report_file = Path(spec.repo_directory) / "report.json"
-        # Run the test command inside the container to check if the file exists
-        exit_code, output = container.exec_run(f"test -e {report_file}", demux=True)
-        # Check the exit code of the command
-        if exit_code == 0:
-            copy_from_sandbox(container, report_file, Path(log_dir / "report.json"))
-            delete_file_from_sandbox(container, str(report_file))
+        print(output)
+        print(error)
+        return
 
 
 def main(
@@ -235,6 +209,11 @@ def main(
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
+    #run_docker(spec, logger, eval_file, timeout, log_dir)
+    run_modal(spec, logger, eval_file, timeout, log_dir)
+    return
+
+    #backend = "local"
     backend = "modal"
     execution_context = None
     if ExecutionBackend(backend) == ExecutionBackend.MODAL:
@@ -244,7 +223,12 @@ def main(
     print(backend, execution_context)
 
     with execution_context(spec, logger, eval_file, timeout, log_dir) as context:
-        context.copy_to_remote(eval_file, "/eval.sh")
+        context.copy_to_remote(eval_file, Path("/eval.sh"))
+        print(context.exec_run("ls /vol")[1])
+        print(context.exec_run("ls /")[1])
+
+        print(context.exec_run("cat /eval.sh")[1])
+
         output, timed_out, total_runtime = context.exec_run_with_timeout(
             "/bin/bash /eval.sh", timeout
         )
@@ -269,19 +253,17 @@ def main(
         # copy back report.json if there is any
         report_file = Path(spec.repo_directory) / "report.json"
         # Run the test command inside the container to check if the file exists
-        #exit_code, output = container.exec_run(f"test -e {report_file}", demux=True)
+        # exit_code, output = container.exec_run(f"test -e {report_file}", demux=True)
         exit_code, output = context.exec_run(f"test -e {report_file}")
         # Check the exit code of the command
         if exit_code == 0:
             context.copy_from_remote(report_file, Path(log_dir / "report.json"))
             context.delete_file_from_remote(report_file)
 
-
     """
     if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
         run_docker(spec, logger, eval_file, timeout, log_dir)
     elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
-        run_modal(spec, logger, eval_file, timeout, log_dir)
     """
 
 

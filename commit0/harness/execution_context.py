@@ -1,9 +1,8 @@
-""" Remote code execution contexts
+"""Remote code execution contexts
 
 Implements the interface for local docker containers, remote modal sandboxes,
 and HTTP servers.
 """
-
 
 from abc import ABC
 import docker
@@ -15,7 +14,6 @@ from pathlib import Path
 from commit0.harness.spec import Spec
 from commit0.harness.docker_build import (
     close_logger,
-    setup_logger,
 )
 from commit0.harness.docker_utils import (
     cleanup_container,
@@ -26,14 +24,13 @@ from commit0.harness.docker_utils import (
     delete_file_from_container,
     exec_run_with_timeout,
 )
-from commit0.harness.utils import (
-    EvaluationError,
-    extract_test_output,
-    get_hash_string,
-    get_ip,
-    get_user,
-)
 
+
+def read_stream(stream: modal.io_streams.StreamReader) -> str:
+    strings = []
+    for line in stream:
+        strings.append(line)
+    return "\n".join(strings)
 
 class ExecutionContext(ABC):
     def __init__(
@@ -44,29 +41,29 @@ class ExecutionContext(ABC):
         timeout: int,
         log_dir: Path,
     ):
-        """ Create the remote execution context
+        """Create the remote execution context
 
         The execution context will persist for the lifetime of this object.
         The execution context can be a Docker container or Modal sandbox.
         """
         raise NotImplementedError
 
-    def copy_ssh_pubkey_from_remote(self):
+    def copy_ssh_pubkey_from_remote(self) -> None:
         raise NotImplementedError
 
-    def copy_to_remote(self, local_path, remote_path):
+    def copy_to_remote(self, local_path: Path, remote_path: Path) -> None:
         raise NotImplementedError
 
-    def exec_run_with_timeout(self, command, timeout):
+    def exec_run_with_timeout(self, command: str, timeout: int) -> None:
         raise NotImplementedError
 
-    def exec_run(self, command):
+    def exec_run(self, command: str) -> None:
         raise NotImplementedError
 
-    def copy_from_remote(self, remote_path, local_path):
+    def copy_from_remote(self, remote_path, local_path) -> None:
         raise NotImplementedError
 
-    def delete_file_from_remote(self, remote_path):
+    def delete_file_from_remote(self, remote_path) -> None:
         raise NotImplementedError
 
     def __enter__(self):
@@ -85,10 +82,10 @@ class Docker(ExecutionContext):
         timeout: int,
         log_dir: Path,
     ):
-        client = docker.from_env()
+        self.client = docker.from_env()
         self.logger = logger
         self.container = create_container(
-            client=client,
+            client=self.client,
             image_name=spec.repo_image_key,
             container_name=spec.get_container_name(),
             logger=logger,
@@ -103,9 +100,7 @@ class Docker(ExecutionContext):
         copy_to_container(self.container, local_file, remote_path)
 
     def exec_run_with_timeout(self, command: str, timeout: int) -> ():
-        return exec_run_with_timeout(
-            self.container, command, timeout
-        )
+        return exec_run_with_timeout(self.container, command, timeout)
 
     def exec_run(self, command: str) -> None:
         return self.container.exec_run(command, demux=True)
@@ -147,6 +142,8 @@ class Modal(ExecutionContext):
             network_file_systems={
                 "/vol": self.nfs,
             },
+            cpu=8.0,
+            timeout=30,
         )
 
         self.copy_ssh_pubkey_from_remote()
@@ -174,32 +171,30 @@ class Modal(ExecutionContext):
                 authorized_keys_file.write(public_key + "\n")
 
     def copy_to_remote(self, local_path: Path, remote_path: Path) -> None:
+        tempname = "tmpfile"
         with local_path.open("rb") as f:
-            self.nfs.write_file(str(local_path), f)
-        self.sandbox.exec("bash", "-c", f"cp /vol/{str(local_path)} {str(remote_path)}")
+            self.nfs.write_file(tempname, f)
+        self.sandbox.exec("bash", "-c", f"cp /vol/{tempname} {str(remote_path)}")
 
     def exec_run_with_timeout(self, command: str, timeout: int) -> None:
         """Execute command on modal sandbox"""
+        print("Executing:", command)
         process = self.sandbox.exec("bash", "-c", command)
-        stdout = []
-        for line in process.stdout:
-            stdout.append(line)
-        stderr = []
-        for line in process.stderr:
-            stderr.append(line)
-        return "\n".join(stdout), False, 1
-        return "\n".join(stdout), "\n".join(stderr)
+        print("stdout")
+        stdout = read_stream(process.stdout)
+        print("stderr")
+        stderr = read_stream(process.stderr)
+        print(stderr)
+        return stdout, False, 1
+        return stdout, stderr
 
     def exec_run(self, command: str) -> None:
         """Execute command on modal sandbox"""
         process = self.sandbox.exec("bash", "-c", command)
-        stdout = []
-        for line in process.stdout:
-            stdout.append(line)
-        stderr = []
-        for line in process.stderr:
-            stderr.append(line)
-        return 1, "\n".join(stdout)
+        stdout = read_stream(process.stdout)
+        stderr = read_stream(process.stderr)
+        print(stderr)
+        return 1, stdout
 
     def copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
         """Copy file from modal sandbox"""
@@ -215,4 +210,5 @@ class Modal(ExecutionContext):
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.nfs.__exit__()
+        # self.nfs.__exit__()
+        pass
