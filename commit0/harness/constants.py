@@ -34,6 +34,7 @@ COMMANDS = [
     "get-tests",
     "evaluate",
     "evaluate-reference",
+    "save",
 ]
 # repo splits
 SPLIT_MINITORCH = ["minitorch"]
