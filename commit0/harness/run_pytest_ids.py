@@ -41,7 +41,12 @@ class ExecutionBackend(StrEnum):
 
 
 def run_docker(
-    spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
+    spec: Spec,
+    logger: logging.Logger,
+    eval_file: Path,
+    timeout: int,
+    log_dir: Path,
+    stdout: bool,
 ) -> None:
     """Runs the tests in a local docker container.
 
@@ -76,7 +81,8 @@ def run_docker(
             output, "--json-report --json-report-file=report.json"
         )
         # stdout might be more straightforward
-        print(test_output)
+        if stdout:
+            print(test_output)
         test_output_path = log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
             f.write(test_output)
@@ -116,7 +122,12 @@ def run_docker(
 
 
 def run_modal(
-    spec: Spec, logger: logging.Logger, eval_file: Path, timeout: int, log_dir: Path
+    spec: Spec,
+    logger: logging.Logger,
+    eval_file: Path,
+    timeout: int,
+    log_dir: Path,
+    stdout: bool,
 ) -> None:
     """Runs the tests in a remote Modal container.
 
@@ -156,7 +167,32 @@ def run_modal(
         # TODO: add timeout
         print(output)
         print(error)
-        return
+
+        output = []
+        for line in process.stderr:
+            output.append(line)
+        output_s = "".join(line)
+        logger.info(output_s)
+        print(output_s)
+
+        timed_out = False
+        test_output = extract_test_output(
+            output_s, "--json-report --json-report-file=report.json"
+        )
+
+        # stdout might be more straightforward
+        if stdout:
+            print(test_output)
+        test_output_path = log_dir / "test_output.txt"
+        with open(test_output_path, "w") as f:
+            f.write(test_output)
+            if timed_out:
+                f.write(f"\n\nTimeout error: {timeout} seconds exceeded.")
+                raise EvaluationError(
+                    spec.repo,
+                    f"Test timed out after {timeout} seconds.",
+                    logger,
+                )
 
 
 def main(
@@ -168,7 +204,8 @@ def main(
     test_ids: str,
     backend: str,
     timeout: int,
-) -> None:
+    stdout: bool,
+) -> str:
     """Runs the pytests for repos in a dataset.
 
     Tests are run either locally through docker
@@ -186,7 +223,7 @@ def main(
 
     hashed_test_ids = get_hash_string(test_ids)
     # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / repo / hashed_test_ids
+    log_dir = RUN_PYTEST_LOG_DIR / repo / branch / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo, log_file)
@@ -262,9 +299,11 @@ def main(
 
     """
     if ExecutionBackend(backend) == ExecutionBackend.LOCAL:
-        run_docker(spec, logger, eval_file, timeout, log_dir)
+        run_docker(spec, logger, eval_file, timeout, log_dir, stdout)
     elif ExecutionBackend(backend) == ExecutionBackend.MODAL:
+        run_modal(spec, logger, eval_file, timeout, log_dir, stdout)
     """
+    return str(log_dir)
 
 
 __all__ = []

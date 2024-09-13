@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass
@@ -21,3 +22,6 @@ class Commit0Config:
     branch: str
     # timeout for running pytest
     timeout: int
+
+    # save related
+    github_token: Optional[str]
