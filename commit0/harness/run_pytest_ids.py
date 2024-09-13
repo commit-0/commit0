@@ -79,7 +79,8 @@ def main(
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
-    execution_context = None
+    # Not sure how to appease typechecker
+    execution_context = Docker
     if ExecutionBackend(backend) == ExecutionBackend.MODAL:
         execution_context = Modal
     elif ExecutionBackend(backend) == ExecutionBackend.LOCAL:

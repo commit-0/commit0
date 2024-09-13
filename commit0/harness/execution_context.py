@@ -9,6 +9,7 @@ import docker
 import logging
 import os
 import modal
+import modal.io_streams
 from pathlib import Path
 from typing import Optional, Type
 from types import TracebackType
@@ -70,12 +71,14 @@ class ExecutionContext(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def exec_run_with_timeout(self, command: str, timeout: int) -> None:
+    def exec_run_with_timeout(
+        self, command: str, timeout: int
+    ) -> tuple[str, bool, float]:
         """Exec"""
         raise NotImplementedError
 
     @abstractmethod
-    def exec_run(self, command: str) -> None:
+    def exec_run(self, command: str) -> tuple[int, str]:
         """Exec"""
         raise NotImplementedError
 
@@ -109,7 +112,7 @@ class ExecutionContext(ABC):
         # Check the exit code of the command
         if exit_code == 0:
             self.copy_from_remote(report_file, self.log_dir / "report.json")
-            self.delete_file_from_remote(str(report_file))
+            self.delete_file_from_remote(report_file)
 
     def __enter__(self):
         return self
@@ -120,7 +123,7 @@ class ExecutionContext(ABC):
         exctype: Optional[Type[BaseException]],
         excinst: Optional[BaseException],
         exctb: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         raise NotImplementedError
 
 
@@ -154,11 +157,13 @@ class Docker(ExecutionContext):
         """Copy"""
         copy_to_container(self.container, local_file, remote_path)
 
-    def exec_run_with_timeout(self, command: str, timeout: int) -> ():
+    def exec_run_with_timeout(
+        self, command: str, timeout: int
+    ) -> tuple[str, bool, float]:
         """Exec"""
         return exec_run_with_timeout(self.container, command, timeout)
 
-    def exec_run(self, command: str) -> (int, str):
+    def exec_run(self, command: str) -> tuple[int, str]:
         """Exec"""
         return self.container.exec_run(command, demux=True)
 
@@ -175,7 +180,7 @@ class Docker(ExecutionContext):
         exctype: Optional[Type[BaseException]],
         excinst: Optional[BaseException],
         exctb: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         cleanup_container(self.client, self.container, self.logger)
         close_logger(self.logger)
 
@@ -189,7 +194,7 @@ class Modal(ExecutionContext):
         timeout: int,
         log_dir: Path,
     ):
-        super().__init_(spec, logger, eval_file, timeout, log_dir)
+        super().__init__(spec, logger, eval_file, timeout, log_dir)
 
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
@@ -233,12 +238,15 @@ class Modal(ExecutionContext):
 
     def copy_to_remote(self, local_path: Path, remote_path: Path) -> None:
         """Copy"""
-        tempname = "tmpfile"
-        with local_path.open("rb") as f:
-            self.nfs.write_file(tempname, f)
-        self.sandbox.exec("bash", "-c", f"cp /vol/{tempname} {str(remote_path)}")
+        raise NotImplementedError
+        # tempname = "tmpfile"
+        # with local_path.open("rb") as f:
+        #    self.nfs.write_file(tempname, f)
+        # self.sandbox.exec("bash", "-c", f"cp /vol/{tempname} {str(remote_path)}")
 
-    def exec_run_with_timeout(self, command: str, timeout: int) -> None:
+    def exec_run_with_timeout(
+        self, command: str, timeout: int
+    ) -> tuple[str, bool, float]:
         """Execute command on modal sandbox"""
         print("Executing:", command)
         process = self.sandbox.exec("bash", "-c", command)
@@ -247,10 +255,10 @@ class Modal(ExecutionContext):
         print("stderr")
         stderr = read_stream(process.stderr)
         print(stderr)
-        return stdout, False, 1
+        return stdout, False, 1.0
         return stdout, stderr
 
-    def exec_run(self, command: str) -> (int, str):
+    def exec_run(self, command: str) -> tuple[int, str]:
         """Execute command on modal sandbox"""
         process = self.sandbox.exec("bash", "-c", command)
         stdout = read_stream(process.stdout)
@@ -274,6 +282,6 @@ class Modal(ExecutionContext):
         exctype: Optional[Type[BaseException]],
         excinst: Optional[BaseException],
         exctb: Optional[TracebackType],
-    ) -> bool:
+    ) -> None:
         self.sandbox.terminate()
         close_logger(self.logger)
