@@ -30,5 +30,7 @@ jobs:
         run: uv run commit0 evaluate-reference simpy
       - name: Save
         env:
+          GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
+          GIT_PASSWORD: ${{ secrets.GIT_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: uv run commit0 save simpy test-save-commit0
