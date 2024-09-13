@@ -33,4 +33,7 @@ jobs:
           GIT_USERNAME: ${{ secrets.GIT_USERNAME }}
           GIT_PASSWORD: ${{ secrets.GIT_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-        run: uv run commit0 save simpy test-save-commit0
+        run: |
+          git config --global user.email "wentingzhao@outlook.com"
+          git config --global user.name "Wenting Zhao"
+          uv run commit0 save simpy test-save-commit0
