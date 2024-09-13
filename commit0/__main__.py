@@ -21,7 +21,7 @@ def main() -> None:
         )
     # type check config values
     cs = ConfigStore.instance()
-    cs.store(name="user", node=Commit0Config)
+    cs.store(name="user", group="Commit0Config", node=Commit0Config)
     # have hydra to ignore all command-line arguments
     sys_argv = copy.deepcopy(sys.argv)
     sys.argv = [sys.argv[0]]
