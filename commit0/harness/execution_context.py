@@ -158,7 +158,7 @@ class Docker(ExecutionContext):
         """Exec"""
         return exec_run_with_timeout(self.container, command, timeout)
 
-    def exec_run(self, command: str) -> None:
+    def exec_run(self, command: str) -> (int, str):
         """Exec"""
         return self.container.exec_run(command, demux=True)
 
@@ -250,7 +250,7 @@ class Modal(ExecutionContext):
         return stdout, False, 1
         return stdout, stderr
 
-    def exec_run(self, command: str) -> None:
+    def exec_run(self, command: str) -> (int, str):
         """Execute command on modal sandbox"""
         process = self.sandbox.exec("bash", "-c", command)
         stdout = read_stream(process.stdout)
