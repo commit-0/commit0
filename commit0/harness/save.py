@@ -26,7 +26,7 @@ def main(
 ) -> None:
     if github_token is None:
         # Get GitHub token from environment variable if not provided
-        token = os.environ.get("GITHUB_TOKEN")
+        github_token = os.environ.get("GITHUB_TOKEN")
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
@@ -34,7 +34,9 @@ def main(
             continue
         local_repo_path = f"{base_dir}/{repo_name}"
         github_repo_url = f"https://github.com/{organization}/{repo_name}.git"
-        github_repo_url = github_repo_url.replace('https://', f'https://x-access-token:{token}@')
+        github_repo_url = github_repo_url.replace(
+            "https://", f"https://x-access-token:{github_token}@"
+        )
 
         # Initialize the local repository if it is not already initialized
         if not os.path.exists(local_repo_path):
