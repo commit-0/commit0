@@ -95,7 +95,7 @@ def main() -> None:
             config.base_dir,
             organization,
             config.branch,
-            config.github_token
+            config.github_token,
         )
 
 

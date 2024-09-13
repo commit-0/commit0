@@ -16,7 +16,13 @@ logger = logging.getLogger(__name__)
 
 
 def main(
-    dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, organization: str, branch: str, github_token: str
+    dataset_name: str,
+    dataset_split: str,
+    repo_split: str,
+    base_dir: str,
+    organization: str,
+    branch: str,
+    github_token: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     for example in dataset:
@@ -24,24 +30,28 @@ def main(
         if repo_split != "all" and repo_name not in SPLIT[repo_split]:
             continue
         local_repo_path = f"{base_dir}/{repo_name}"
-        github_repo_url = f'https://github.com/{organization}/{repo_name}.git'
-        
+        github_repo_url = f"https://github.com/{organization}/{repo_name}.git"
+
         # Initialize the local repository if it is not already initialized
         if not os.path.exists(local_repo_path):
             raise OSError(f"{local_repo_path} does not exists")
         else:
             repo = git.Repo(local_repo_path)
- 
+
         # create Github repo
-        create_repo_on_github(organization=organization, repo=repo_name, logger=logger, token=github_token)
+        create_repo_on_github(
+            organization=organization, repo=repo_name, logger=logger, token=github_token
+        )
         # Add your remote repository URL
-        remote_name = 'progress-tracker'
+        remote_name = "progress-tracker"
         if remote_name not in [remote.name for remote in repo.remotes]:
             repo.create_remote(remote_name, url=github_repo_url)
         else:
-            logger.info(f"Remote {remote_name} already exists, replacing it with {github_repo_url}")
+            logger.info(
+                f"Remote {remote_name} already exists, replacing it with {github_repo_url}"
+            )
             repo.remote(name=remote_name).set_url(github_repo_url)
-        
+
         # Check if the branch already exists
         if branch in repo.heads:
             repo.git.checkout(branch)
@@ -52,14 +62,16 @@ def main(
         if not repo.is_dirty(untracked_files=True):
             repo.git.add(A=True)
             repo.index.commit("AI generated code.")
-        
+
         # Push to the GitHub repository
         origin = repo.remote(name=remote_name)
         try:
-            origin.push(refspec=f'{branch}:{branch}')
-            logger.info(f'Pushed to {github_repo_url} on branch {branch}')
+            origin.push(refspec=f"{branch}:{branch}")
+            logger.info(f"Pushed to {github_repo_url} on branch {branch}")
         except Exception as e:
-            raise Exception(f"Push {branch} to {organization}/{repo_name} fails.\n{str(e)}")
+            raise Exception(
+                f"Push {branch} to {organization}/{repo_name} fails.\n{str(e)}"
+            )
 
 
 __all__ = []
