@@ -32,6 +32,7 @@ def read_stream(stream: modal.io_streams.StreamReader) -> str:
         strings.append(line)
     return "\n".join(strings)
 
+
 class ExecutionContext(ABC):
     def __init__(
         self,
@@ -46,7 +47,11 @@ class ExecutionContext(ABC):
         The execution context will persist for the lifetime of this object.
         The execution context can be a Docker container or Modal sandbox.
         """
-        raise NotImplementedError
+        self.spec = spec
+        self.logger = logger
+        self.eval_file = eval_file
+        self.timeout = timeout
+        self.log_dir = log_dir
 
     def copy_ssh_pubkey_from_remote(self) -> None:
         raise NotImplementedError
@@ -60,14 +65,35 @@ class ExecutionContext(ABC):
     def exec_run(self, command: str) -> None:
         raise NotImplementedError
 
-    def copy_from_remote(self, remote_path, local_path) -> None:
+    def copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
         raise NotImplementedError
 
-    def delete_file_from_remote(self, remote_path) -> None:
+    def delete_file_from_remote(self, remote_path: Path) -> None:
         raise NotImplementedError
+
+    def write_test_output(self, test_output, timed_out):
+        test_output_path = self.log_dir / "test_output.txt"
+        with open(test_output_path, "w") as f:
+            f.write(test_output)
+            if timed_out:
+                f.write(f"\n\nTimeout error: {timeout} seconds exceeded.")
+                raise EvaluationError(
+                    self.spec.repo,
+                    f"Test timed out after {timeout} seconds.",
+                    self.logger,
+                )
+
+        # copy back report.json if there is any
+        report_file = Path(self.spec.repo_directory) / "report.json"
+        # Run the test command inside the container to check if the file exists
+        exit_code, output = self.exec_run(f"test -e {report_file}")
+        # Check the exit code of the command
+        if exit_code == 0:
+            self.copy_from_remote(report_file, self.log_dir / "report.json")
+            self.delete_file_from_remote(str(report_file))
 
     def __enter__(self):
-        raise NotImplementedError
+        return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         raise NotImplementedError
@@ -82,8 +108,9 @@ class Docker(ExecutionContext):
         timeout: int,
         log_dir: Path,
     ):
+        super().__init__(spec, logger, eval_file, timeout, log_dir)
+
         self.client = docker.from_env()
-        self.logger = logger
         self.container = create_container(
             client=self.client,
             image_name=spec.repo_image_key,
@@ -92,6 +119,8 @@ class Docker(ExecutionContext):
         )
         self.container.start()
         self.copy_ssh_pubkey_from_remote()
+        copy_to_container(self.container, eval_file, Path("/eval.sh"))
+
 
     def copy_ssh_pubkey_from_remote(self) -> None:
         copy_ssh_pubkey_from_container(self.container)
@@ -111,9 +140,6 @@ class Docker(ExecutionContext):
     def delete_file_from_remote(self, remote_path: Path) -> None:
         delete_file_from_container(self.container, str(remote_path))
 
-    def __enter__(self):
-        return self
-
     def __exit__(self, exc_type, exc_value, exc_traceback):
         cleanup_container(self.client, self.container, self.logger)
         close_logger(self.logger)
@@ -128,22 +154,22 @@ class Modal(ExecutionContext):
         timeout: int,
         log_dir: Path,
     ):
-        self.logger = logger
+        super().__init_(spec, logger, eval_file, timeout, log_dir)
+
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
         image_name = f"wentingzhao/{reponame}"
-        image = modal.Image.from_registry(image_name)
+        image = (
+            modal.Image.from_registry(image_name)
+            .copy_local_file(eval_file, "/eval.sh")
+        )
 
-        self.nfs = modal.NetworkFileSystem.ephemeral().__enter__()
         self.sandbox = modal.Sandbox.create(
             "sleep",
             "infinity",
             image=image,
-            network_file_systems={
-                "/vol": self.nfs,
-            },
-            cpu=8.0,
-            timeout=30,
+            cpu=4.0,
+            timeout=300,
         )
 
         self.copy_ssh_pubkey_from_remote()
@@ -206,9 +232,6 @@ class Modal(ExecutionContext):
     def delete_file_from_remote(src, remote_path):
         self.sandbox.exec("bash", "-c", f"rm {str(remote_path)}")
 
-    def __enter__(self):
-        return self
-
     def __exit__(self, exc_type, exc_value, exc_traceback):
-        # self.nfs.__exit__()
-        pass
+        self.sandbox.terminate()
+        close_logger(self.logger)
