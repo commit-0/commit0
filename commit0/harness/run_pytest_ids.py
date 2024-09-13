@@ -1,18 +1,15 @@
 from datasets import load_dataset
-import docker
 from enum import StrEnum, auto
 import traceback
 from pathlib import Path
-import logging
 
 from typing import Iterator
 from git import Repo
 from commit0.harness.constants import RUN_PYTEST_LOG_DIR, RepoInstance
 from commit0.harness.docker_build import (
-    close_logger,
     setup_logger,
 )
-from commit0.harness.spec import Spec, make_spec
+from commit0.harness.spec import make_spec
 from commit0.harness.utils import (
     EvaluationError,
     extract_test_output,
@@ -109,7 +106,6 @@ def main(
             # f"Check ({logger.log_file}) for more information."
         )
         logger.error(error_msg)
- 
 
     return str(log_dir)
 
