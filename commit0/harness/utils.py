@@ -91,7 +91,7 @@ def setup_git(logger: logging.Logger) -> None:
     commands = [
         ('sudo adduser --disabled-password --gecos "" git', "adds git user"),
         (
-            "sudo -u git bash -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'",
+            "sudo -u git bash -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 666 ~/.ssh/authorized_keys'",
             "sets up .ssh directory for git",
         ),
         ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exists yet"),
