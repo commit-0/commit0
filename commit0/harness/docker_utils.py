@@ -161,9 +161,9 @@ def copy_ssh_pubkey_from_container(container: Container) -> None:
         public_key = output.decode("utf-8").strip()
         public_key = f"no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {public_key}"
 
-        user_info = pwd.getpwnam('git')
+        user_info = pwd.getpwnam("git")
         home_directory = user_info.pw_dir
-        authorized_keys_path = os.path.join(home_directory, '.ssh', 'authorized_keys')
+        authorized_keys_path = os.path.join(home_directory, ".ssh", "authorized_keys")
         os.makedirs(os.path.dirname(authorized_keys_path), exist_ok=True)
         if not os.path.exists(authorized_keys_path):
             # Since the file does not exist, create it

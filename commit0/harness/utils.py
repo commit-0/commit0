@@ -1,4 +1,3 @@
-import getpass
 import git
 import git.exc
 import hashlib
@@ -60,20 +59,26 @@ def get_ip(backend: str) -> str:
 
 
 def run_command(command: str) -> Tuple[str, str, int]:
-    """
-    Runs a shell command and returns the output, error message, and exit code.
-    """
+    """Runs a shell command and returns the output, error message, and exit code."""
     try:
-        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.stdout.decode('utf-8'), result.stderr.decode('utf-8'), result.returncode
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return (
+            result.stdout.decode("utf-8"),
+            result.stderr.decode("utf-8"),
+            result.returncode,
+        )
     except subprocess.CalledProcessError as e:
-        return e.stdout.decode('utf-8'), e.stderr.decode('utf-8'), e.returncode
+        return e.stdout.decode("utf-8"), e.stderr.decode("utf-8"), e.returncode
 
 
 def handle_command(command: str, description: str, logger: logging.Logger) -> None:
-    """
-    Runs a command and handles success or failure with appropriate messages.
-    """
+    """Runs a command and handles success or failure with appropriate messages."""
     stdout, stderr, exit_code = run_command(command)
     if exit_code != 0:
         logger.error(f"Error running '{command}' which {description}:\n{stderr}")
@@ -82,10 +87,20 @@ def handle_command(command: str, description: str, logger: logging.Logger) -> No
 
 
 def setup_git(logger: logging.Logger) -> None:
-    """
-    Sets up the 'git' user with appropriate shell settings, .ssh directory, and git-shell as login shell.
-    """
-    commands = [("sudo adduser --disabled-password --gecos \"\" git", "adds git user"), ("sudo -u git bash -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'", "sets up .ssh directory for git"), ("cat /etc/shells", "views available shells"), ("sudo which git-shell >> /etc/shells", "adds git-shell to /etc/shells"), ("sudo chsh git -s $(which git-shell)", "changes shell for git user to git-shell")]
+    """Sets up the 'git' user with appropriate shell settings, .ssh directory, and git-shell as login shell."""
+    commands = [
+        ('sudo adduser --disabled-password --gecos "" git', "adds git user"),
+        (
+            "sudo -u git bash -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'",
+            "sets up .ssh directory for git",
+        ),
+        ("cat /etc/shells", "views available shells"),
+        ("sudo which git-shell >> /etc/shells", "adds git-shell to /etc/shells"),
+        (
+            "sudo chsh git -s $(which git-shell)",
+            "changes shell for git user to git-shell",
+        ),
+    ]
 
     for command, description in commands:
         handle_command(command, description, logger)
@@ -102,8 +117,9 @@ def is_safe_directory_added(safe_directory: str) -> bool:
     else:
         return False
 
-def add_safe_directory(safe_directory: str, logger: logging.Logger):
-    safe_directory = os.path.join(safe_directory, '.git')
+
+def add_safe_directory(safe_directory: str, logger: logging.Logger) -> None:
+    safe_directory = os.path.join(safe_directory, ".git")
     # Check if the directory is already added
     if not is_safe_directory_added(safe_directory):
         # Command to add the directory to safe.directory

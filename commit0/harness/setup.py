@@ -4,7 +4,12 @@ import os
 from datasets import load_dataset
 
 from typing import Iterator
-from commit0.harness.utils import clone_repo, create_branch, setup_git, add_safe_directory
+from commit0.harness.utils import (
+    clone_repo,
+    create_branch,
+    setup_git,
+    add_safe_directory,
+)
 from commit0.harness.constants import RepoInstance, SPLIT
 
 
