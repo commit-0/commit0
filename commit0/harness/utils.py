@@ -96,7 +96,10 @@ def setup_git(logger: logging.Logger) -> None:
         ),
         ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exists yet"),
         ("cat /etc/shells", "views available shells"),
-        ("sudo sh -c 'which git-shell >> /etc/shells'", "adds git-shell to /etc/shells"),
+        (
+            "sudo sh -c 'which git-shell >> /etc/shells'",
+            "adds git-shell to /etc/shells",
+        ),
         (
             "sudo chsh git -s $(which git-shell)",
             "changes shell for git user to git-shell",
