@@ -94,6 +94,7 @@ def setup_git(logger: logging.Logger) -> None:
             "sudo -u git bash -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys'",
             "sets up .ssh directory for git",
         ),
+        ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exists yet"),
         ("cat /etc/shells", "views available shells"),
         ("sudo which git-shell >> /etc/shells", "adds git-shell to /etc/shells"),
         (
@@ -108,7 +109,7 @@ def setup_git(logger: logging.Logger) -> None:
 
 def is_safe_directory_added(safe_directory: str) -> bool:
     # Run command to get all safe directories
-    command = "git config --system --get-all safe.directory"
+    command = "sudo git config --system --get-all safe.directory"
     stdout, stderr, exit_code = run_command(command)
 
     # Check if the directory is listed
@@ -123,7 +124,7 @@ def add_safe_directory(safe_directory: str, logger: logging.Logger) -> None:
     # Check if the directory is already added
     if not is_safe_directory_added(safe_directory):
         # Command to add the directory to safe.directory
-        command = f"git config --system --add safe.directory {safe_directory}"
+        command = f"sudo git config --system --add safe.directory {safe_directory}"
         stdout, stderr, exit_code = run_command(command)
 
         if exit_code == 0:
