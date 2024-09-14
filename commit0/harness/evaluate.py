@@ -72,6 +72,7 @@ def main(
     for name in tqdm(log_dirs):
         report_file = os.path.join(name, "report.json")
         name = name.split("/")[2]
+        test_ids = get_tests(name, stdout=False)
         if not os.path.exists(report_file):
             out.append(
                 {
@@ -79,11 +80,11 @@ def main(
                     "sum": 0,
                     "passed": 0,
                     "num_passed": 0,
+                    "num_tests": len(test_ids),
                 }
             )
             continue
         report = load_dataset("json", data_files=report_file, split="train")  # type: ignore
-        test_ids = get_tests(name, stdout=False)
         tests = {x["nodeid"]: x["call"] for x in report["tests"][0]}  # type: ignore
         status = []
         runtimes = []
@@ -110,7 +111,7 @@ def main(
                 "sum": total,
                 "passed": passed,
                 "num_passed": status["passed"] + status["xfail"],
-                "num_tests": sum(status.values()),
+                "num_tests": len(test_ids),
             }
         )
     print("repo,runtime,num_passed/num_tests")

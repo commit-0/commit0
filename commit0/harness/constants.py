@@ -27,7 +27,7 @@ EVAL_BACKENDS = ["local", "modal"]
 
 # available commands
 COMMANDS = [
-    "clone",
+    "setup",
     "build",
     "test",
     "test-reference",

@@ -15,7 +15,6 @@ from commit0.harness.utils import (
     extract_test_output,
     get_hash_string,
     get_ip,
-    get_user,
 )
 from commit0.harness.execution_context import (
     Docker,
@@ -74,7 +73,6 @@ def main(
         commit_id=commit_id,
         test_ids=test_ids,
         ip=get_ip(backend),
-        user=get_user(),
     )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
@@ -96,18 +94,21 @@ def main(
                 output, "--json-report --json-report-file=report.json"
             )
             context.write_test_output(test_output, timed_out)
+            print(test_output)
     except EvaluationError as e:
-        error_msg = traceback.format_exc()
-        logger.info(error_msg)
-        print(e)
+        error_msg = (
+            f"Error in running pytest for {repo}: {e}\n"
+            f"{traceback.format_exc()}\n"
+            f"Check ({log_file}) for more information."
+        )
+        raise EvaluationError(repo, error_msg, logger)
     except Exception as e:
         error_msg = (
-            f"Error in running pytest for {spec.repo}: {e}\n"
+            f"General error: {e}\n"
             f"{traceback.format_exc()}\n"
-            # f"Check ({logger.log_file}) for more information."
+            f"Check ({log_file}) for more information."
         )
-        logger.error(error_msg)
-
+        raise RuntimeError(error_msg)
     return str(log_dir)
 
 

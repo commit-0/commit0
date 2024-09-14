@@ -1,4 +1,3 @@
-import getpass
 import git
 import git.exc
 import hashlib
@@ -7,7 +6,8 @@ import socket
 import os
 import time
 import requests
-from typing import Optional
+import subprocess
+from typing import Optional, Tuple
 
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
 from ghapi.core import GhApi
@@ -58,8 +58,97 @@ def get_ip(backend: str) -> str:
     return ip
 
 
-def get_user() -> str:
-    return getpass.getuser()
+def run_command(command: str) -> Tuple[str, str, int]:
+    """Runs a shell command and returns the output, error message, and exit code."""
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return (
+            result.stdout.decode("utf-8"),
+            result.stderr.decode("utf-8"),
+            result.returncode,
+        )
+    except subprocess.CalledProcessError as e:
+        return e.stdout.decode("utf-8"), e.stderr.decode("utf-8"), e.returncode
+
+
+def handle_command(command: str, description: str, logger: logging.Logger) -> None:
+    """Runs a command and handles success or failure with appropriate messages."""
+    stdout, stderr, exit_code = run_command(command)
+    if exit_code != 0:
+        logger.error(f"Error running '{command}' which {description}:\n{stderr}")
+    else:
+        logger.info(f"Succeeded in running '{command}' which {description}")
+
+
+def setup_git(logger: logging.Logger) -> None:
+    """Sets up the 'git' user with appropriate shell settings, .ssh directory, and git-shell as login shell."""
+    handle_command(
+        'sudo adduser --disabled-password --gecos "" git', "adds git user", logger
+    )
+
+    # Get git user's home directory dynamically
+    git_home_command = "getent passwd git | cut -d: -f6"
+    stdout, stderr, exit_code = run_command(git_home_command)
+    if exit_code != 0:
+        raise RuntimeError(f"Error getting git user's home directory: {stderr}")
+    git_home = stdout.strip()  # Extract and trim the home directory
+
+    # Commands to be executed
+    commands = [
+        (f"sudo chmod 755 {git_home}", "make home of git viewable by others"),
+        (
+            f"sudo sh -c 'mkdir -p {git_home}/.ssh && chmod 755 {git_home}/.ssh && touch {git_home}/.ssh/authorized_keys && chmod 666 {git_home}/.ssh/authorized_keys'",
+            "sets up .ssh directory for git",
+        ),
+        ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exist yet"),
+        ("cat /etc/shells", "views available shells"),
+        (
+            "sudo sh -c 'which git-shell >> /etc/shells'",
+            "adds git-shell to /etc/shells",
+        ),
+        (
+            "sudo chsh git -s $(which git-shell)",
+            "changes shell for git user to git-shell",
+        ),
+    ]
+
+    # Execute each command
+    for command, description in commands:
+        handle_command(command, description, logger)
+
+
+def is_safe_directory_added(safe_directory: str) -> bool:
+    # Run command to get all safe directories
+    command = "sudo git config --system --get-all safe.directory"
+    stdout, stderr, exit_code = run_command(command)
+
+    # Check if the directory is listed
+    if exit_code == 0 and safe_directory in stdout.splitlines():
+        return True
+    else:
+        return False
+
+
+def add_safe_directory(safe_directory: str, logger: logging.Logger) -> None:
+    safe_directory = os.path.join(safe_directory, ".git")
+    # Check if the directory is already added
+    if not is_safe_directory_added(safe_directory):
+        # Command to add the directory to safe.directory
+        command = f"sudo git config --system --add safe.directory {safe_directory}"
+        stdout, stderr, exit_code = run_command(command)
+
+        if exit_code == 0:
+            logger.info(f"Directory '{safe_directory}' added to safe.directory.")
+        else:
+            logger.error(f"Error adding directory: {stderr}")
+    else:
+        logger.info(f"Directory '{safe_directory}' is already in the list.")
 
 
 def get_hash_string(input_string: str) -> str:

@@ -152,7 +152,7 @@ def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         "ssh-keyscan {ip} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
         "source .venv/bin/activate",
-        f"git remote add {origin_name} ssh://{{user}}@{{ip}}:{{local_repo}}",
+        f"git remote add {origin_name} ssh://git@{{ip}}:{{local_repo}}",
         f"git fetch {origin_name}",
         "git checkout {commit_id}",
         "git status",

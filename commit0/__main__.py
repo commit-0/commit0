@@ -30,7 +30,7 @@ def main() -> None:
     # after hydra gets all configs, put command-line arguments back
     sys.argv = sys_argv
     # repo_split: split from command line has a higher priority than split in hydra
-    if command in ["clone", "build", "evaluate", "evaluate-reference", "save"]:
+    if command in ["setup", "build", "evaluate", "evaluate-reference", "save"]:
         if len(sys.argv) >= 3:
             if sys.argv[2] not in SPLIT:
                 raise ValueError(
@@ -39,7 +39,7 @@ def main() -> None:
             config.repo_split = sys.argv[2]
     config.base_dir = os.path.abspath(config.base_dir)
 
-    if command == "clone":
+    if command == "setup":
         commit0.harness.setup.main(
             config.dataset_name,
             config.dataset_split,
