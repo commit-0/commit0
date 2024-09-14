@@ -106,7 +106,8 @@ def main(
             # f"Check ({logger.log_file}) for more information."
         )
         logger.error(error_msg)
-
+    import os
+    os.system(f"cat {log_file}")
     return str(log_dir)
 
 
