@@ -94,6 +94,7 @@ def main(
                 output, "--json-report --json-report-file=report.json"
             )
             context.write_test_output(test_output, timed_out)
+            print(test_output)
     except EvaluationError as e:
         error_msg = traceback.format_exc()
         logger.info(error_msg)
