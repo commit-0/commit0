@@ -15,7 +15,6 @@ from commit0.harness.utils import (
     extract_test_output,
     get_hash_string,
     get_ip,
-    get_user,
 )
 from commit0.harness.execution_context import (
     Docker,
@@ -74,7 +73,6 @@ def main(
         commit_id=commit_id,
         test_ids=test_ids,
         ip=get_ip(backend),
-        user=get_user(),
     )
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
