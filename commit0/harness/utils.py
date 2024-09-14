@@ -88,13 +88,25 @@ def handle_command(command: str, description: str, logger: logging.Logger) -> No
 
 def setup_git(logger: logging.Logger) -> None:
     """Sets up the 'git' user with appropriate shell settings, .ssh directory, and git-shell as login shell."""
+    handle_command(
+        'sudo adduser --disabled-password --gecos "" git', "adds git user", logger
+    )
+
+    # Get git user's home directory dynamically
+    git_home_command = "getent passwd git | cut -d: -f6"
+    stdout, stderr, exit_code = run_command(git_home_command)
+    if exit_code != 0:
+        raise RuntimeError(f"Error getting git user's home directory: {stderr}")
+    git_home = stdout.strip()  # Extract and trim the home directory
+
+    # Commands to be executed
     commands = [
-        ('sudo adduser --disabled-password --gecos "" git', "adds git user"),
+        (f"sudo chmod 755 {git_home}", "make home of git viewable by others"),
         (
-            "sudo -u git bash -c 'mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 666 ~/.ssh/authorized_keys'",
+            f"sudo sh -c 'mkdir -p {git_home}/.ssh && chmod 755 {git_home}/.ssh && touch {git_home}/.ssh/authorized_keys && chmod 666 {git_home}/.ssh/authorized_keys'",
             "sets up .ssh directory for git",
         ),
-        ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exists yet"),
+        ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exist yet"),
         ("cat /etc/shells", "views available shells"),
         (
             "sudo sh -c 'which git-shell >> /etc/shells'",
@@ -106,6 +118,7 @@ def setup_git(logger: logging.Logger) -> None:
         ),
     ]
 
+    # Execute each command
     for command, description in commands:
         handle_command(command, description, logger)
 

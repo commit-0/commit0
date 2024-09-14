@@ -20,7 +20,7 @@ jobs:
         run: uv sync
       - name: Set up commit0
         run: uv run commit0 setup simpy
-      - name: Setup
+      - name: Build docker images
         run: uv run commit0 build simpy
       - name: Get tests
         run: uv run commit0 get-tests simpy
