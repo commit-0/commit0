@@ -7,7 +7,7 @@ from datasets import load_dataset
 from tqdm import tqdm
 from typing import Iterator
 
-from commit0.harness.constants import RepoInstance, SPLIT
+from commit0.harness.constants import EVAL_BACKENDS, RepoInstance, SPLIT
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.execution_context import (
     ExecutionBackend,
@@ -23,7 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 def main(
-    dataset_name: str, dataset_split: str, repo_split: str, num_workers: int, backend: str, key_path: str
+    dataset_name: str,
+    dataset_split: str,
+    repo_split: str,
+    num_workers: int,
+    backend: str,
+    key_path: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
@@ -40,6 +45,10 @@ def main(
         client = docker.from_env()
         build_repo_images(client, specs, num_workers)
         execution_context = Docker
+    else:
+        raise ValueError(
+            f"Evaluation must be from {', '.join(EVAL_BACKENDS)}, but {backend} is provided."
+        )
 
     # get ssh key from each docker image
     img2key = dict()
@@ -49,12 +58,9 @@ def main(
                 key = context.get_ssh_pubkey_from_remote(user="root")
                 img2key[spec.repo_image_key] = key
         except Exception as e:
-            error_msg = (
-                f"General error: {e}\n"
-                f"{traceback.format_exc()}\n"
-            )
+            error_msg = f"General error: {e}\n" f"{traceback.format_exc()}\n"
             raise RuntimeError(error_msg)
-    with open(key_path, 'w') as json_file:
+    with open(key_path, "w") as json_file:
         json.dump(img2key, json_file, indent=4)
 
 

@@ -8,7 +8,6 @@ import tarfile
 import threading
 import time
 import traceback
-import pwd
 from pathlib import Path
 from io import BytesIO
 from typing import Optional, List, Union

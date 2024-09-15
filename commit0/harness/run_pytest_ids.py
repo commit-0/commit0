@@ -4,7 +4,12 @@ from pathlib import Path
 
 from typing import Iterator
 from git import Repo
-from commit0.harness.constants import Files, RUN_PYTEST_LOG_DIR, RepoInstance
+from commit0.harness.constants import (
+    EVAL_BACKENDS,
+    Files,
+    RUN_PYTEST_LOG_DIR,
+    RepoInstance,
+)
 from commit0.harness.docker_build import (
     setup_logger,
 )
@@ -76,6 +81,10 @@ def main(
         execution_context = Modal
     elif ExecutionBackend(backend) == ExecutionBackend.LOCAL:
         execution_context = Docker
+    else:
+        raise ValueError(
+            f"Evaluation must be from {', '.join(EVAL_BACKENDS)}, but {backend} is provided."
+        )
 
     files_to_copy = Files(eval_script={"src": eval_file, "dest": Path("/eval.sh")})
 

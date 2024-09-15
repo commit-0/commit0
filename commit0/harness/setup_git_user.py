@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import traceback
 
 from datasets import load_dataset
 
@@ -22,11 +21,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main(dataset_name: str, dataset_split: str, repo_split: str, base_dir: str, git_user: str, key_path: str) -> None:
+def main(
+    dataset_name: str,
+    dataset_split: str,
+    repo_split: str,
+    base_dir: str,
+    git_user: str,
+    key_path: str,
+) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     setup_user(git_user, logger)
     setup_ssh_directory(git_user, logger)
-    with open(key_path, 'r') as f:
+    with open(key_path, "r") as f:
         public_keys = json.load(f)
 
     for example in dataset:

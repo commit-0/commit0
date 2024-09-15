@@ -31,7 +31,14 @@ def main() -> None:
     # after hydra gets all configs, put command-line arguments back
     sys.argv = sys_argv
     # repo_split: split from command line has a higher priority than split in hydra
-    if command in ["clone", "build", "setup-git-user", "evaluate", "evaluate-reference", "save"]:
+    if command in [
+        "clone",
+        "build",
+        "setup-git-user",
+        "evaluate",
+        "evaluate-reference",
+        "save",
+    ]:
         if len(sys.argv) >= 3:
             if sys.argv[2] not in SPLIT:
                 raise ValueError(

@@ -7,7 +7,6 @@ and HTTP servers.
 from abc import ABC, abstractmethod
 import docker
 import logging
-import os
 import modal
 import modal.io_streams
 from enum import StrEnum, auto
@@ -90,7 +89,9 @@ class ExecutionContext(ABC):
         """Delete"""
         raise NotImplementedError
 
-    def write_test_output(self, log_dir: Path, test_output: str, timed_out: bool) -> None:
+    def write_test_output(
+        self, log_dir: Path, test_output: str, timed_out: bool
+    ) -> None:
         """Write test output"""
         test_output_path = log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
@@ -145,9 +146,9 @@ class Docker(ExecutionContext):
         self.container.start()
         if files_to_copy:
             for _, f in files_to_copy.items():
-                copy_to_container(self.container, f['src'], Path(f['dest']))
+                copy_to_container(self.container, f["src"], f["dest"])  # type: ignore
 
-    def get_ssh_pubkey_from_remote(self, user: str) -> None:
+    def get_ssh_pubkey_from_remote(self, user: str) -> str:
         """Copy"""
         return get_ssh_pubkey_from_container(self.container, user)
 
@@ -195,7 +196,7 @@ class Modal(ExecutionContext):
         image = modal.Image.from_registry(image_name)
         if files_to_copy:
             for _, f in files_to_copy.items():
-                image = image.copy_local_file(f['src'], f['dest'])
+                image = image.copy_local_file(f["src"], f["dest"])  # type: ignore
 
         self.sandbox = modal.Sandbox.create(
             "sleep",
@@ -205,7 +206,7 @@ class Modal(ExecutionContext):
             timeout=timeout,
         )
 
-    def get_ssh_pubkey_from_remote(self, user: str) -> None:
+    def get_ssh_pubkey_from_remote(self, user: str) -> str:
         """Copy ssh pubkey"""
         process = self.sandbox.exec("bash", "-c", f"cat /{user}/.ssh/id_rsa.pub")
         public_key = "".join([line for line in process.stdout]).strip()

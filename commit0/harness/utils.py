@@ -114,36 +114,42 @@ def setup_user(user: str, logger: logging.Logger) -> None:
 
 
 def chmod(path: str, mode: int, logger: logging.Logger) -> None:
-    """
-    A Python wrapper for the chmod command to change file or directory permissions.
+    """A Python wrapper for the chmod command to change file or directory permissions.
 
     Args:
+    ----
         path (str): The path to the file or directory.
         mode (int): The permission mode (octal), e.g., 0o755, 0o644, etc.
         logger (logging.Logger): The logger object.
+
     """
     try:
         os.chmod(path, mode)
         logger.info(f"Permissions for '{path}' changed to {oct(mode)}")
     except FileNotFoundError:
-        raise FileNotFoundError(f"Error: The file or directory '{path}' does not exist.")
+        raise FileNotFoundError(
+            f"Error: The file or directory '{path}' does not exist."
+        )
     except PermissionError:
-        raise PermissionError(f"Error: Permission denied when changing permissions for '{path}'")
+        raise PermissionError(
+            f"Error: Permission denied when changing permissions for '{path}'"
+        )
     except Exception as e:
         raise Exception(f"An error occurred: {e}")
 
 
 def setup_ssh_directory(user: str, logger: logging.Logger) -> None:
-    """
-    Sets up the .ssh directory for the user and sets appropriate permissions.
+    """Sets up the .ssh directory for the user and sets appropriate permissions.
 
     Args:
+    ----
         user (str): The name of the user.
         logger (logging.Logger): The logger object.
+
     """
     home = get_home_directory(user)
-    ssh_dir = os.path.join(home, '.ssh')
-    authorized_keys_file = os.path.join(ssh_dir, 'authorized_keys')
+    ssh_dir = os.path.join(home, ".ssh")
+    authorized_keys_file = os.path.join(ssh_dir, "authorized_keys")
 
     try:
         # Create the .ssh directory if it doesn't exist
@@ -156,19 +162,23 @@ def setup_ssh_directory(user: str, logger: logging.Logger) -> None:
 
         # Create the authorized_keys file if it doesn't exist
         if not os.path.exists(authorized_keys_file):
-            open(authorized_keys_file, 'a').close()
+            open(authorized_keys_file, "a").close()
             logger.info(f"Created file: {authorized_keys_file}")
     except Exception as e:
         raise e
 
 
 def add_key(user: str, public_key: str) -> None:
-    public_key = f"no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {public_key}"
+    public_key = (
+        f"no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {public_key}"
+    )
 
     home_directory = get_home_directory(user)
     authorized_keys_path = os.path.join(home_directory, ".ssh", "authorized_keys")
     if not os.path.exists(authorized_keys_path):
-        raise FileNotFoundError(f"f{authorized_keys_path} does not exists, please call setup_ssh_directory() before adding keys")
+        raise FileNotFoundError(
+            f"f{authorized_keys_path} does not exists, please call setup_ssh_directory() before adding keys"
+        )
     else:
         with open(authorized_keys_path, "r") as authorized_keys_file:
             content = authorized_keys_file.read()
