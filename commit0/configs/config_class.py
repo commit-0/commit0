@@ -15,6 +15,8 @@ class Commit0Config:
     # build related
     # which repo to build, all or one repo
     num_workers: int
+    # path to store public keys from docker images
+    key_path: str
 
     # test related
     backend: str

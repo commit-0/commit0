@@ -141,17 +141,21 @@ def delete_file_from_container(container: Container, file_path: str) -> None:
         raise Exception(f"General Error: {str(e)}")
 
 
-def copy_ssh_pubkey_from_container(container: Container) -> None:
+def get_ssh_pubkey_from_container(container: Container, user: str) -> str:
     """Copy the SSH public key from a Docker container to the local authorized_keys file.
 
     Args:
     ----
     container (Container): Docker container to copy the key from.
+    user (str): to get public key of which user
+
+    Returns:
+    -------
+    public_key (str): public key from docker container
 
     Raises:
     ------
     docker.errors.APIError: If there is an error calling the Docker API.
-    Exception: If the file reading or writing process fails.
 
     """
     try:
@@ -159,32 +163,9 @@ def copy_ssh_pubkey_from_container(container: Container) -> None:
         if exit_code != 0:
             raise Exception(f"Error reading file: {output.decode('utf-8').strip()}")
         public_key = output.decode("utf-8").strip()
-        public_key = f"no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {public_key}"
-
-        user_info = pwd.getpwnam("git")
-        home_directory = user_info.pw_dir
-        authorized_keys_path = os.path.join(home_directory, ".ssh", "authorized_keys")
-        os.makedirs(os.path.dirname(authorized_keys_path), exist_ok=True)
-        if not os.path.exists(authorized_keys_path):
-            # Since the file does not exist, create it
-            open(authorized_keys_path, "a").close()
-            write = True
-        else:
-            with open(authorized_keys_path, "r") as authorized_keys_file:
-                content = authorized_keys_file.read()
-                if public_key not in content:
-                    write = True
-                else:
-                    write = False
-
-        if write:
-            with open(authorized_keys_path, "a") as authorized_keys_file:
-                authorized_keys_file.write(public_key + "\n")
-
+        return public_key
     except docker.errors.APIError as e:
         raise docker.errors.APIError(f"Docker API Error: {str(e)}")
-    except Exception as e:
-        raise Exception(f"General Error: {str(e)}")
 
 
 def write_to_container(container: Container, data: str, dst: Path) -> None:

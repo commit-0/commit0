@@ -11,6 +11,10 @@ class RepoInstance(TypedDict):
     test: Dict[str, str]
 
 
+class Files(TypedDict):
+    eval_script: Dict[str, Path]
+
+
 # Constants - Evaluation Log Directories
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")
 REPO_IMAGE_BUILD_DIR = Path("logs/build_images/repo")
@@ -27,8 +31,9 @@ EVAL_BACKENDS = ["local", "modal"]
 
 # available commands
 COMMANDS = [
-    "setup",
+    "clone",
     "build",
+    "setup-git-user",
     "test",
     "test-reference",
     "get-tests",

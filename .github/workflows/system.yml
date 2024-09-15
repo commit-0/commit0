@@ -22,6 +22,8 @@ jobs:
         run: uv run commit0 setup simpy
       - name: Build docker images
         run: uv run commit0 build simpy
+      - name: Set up git user
+        run: sudo uv run commit0 setup-git-user simpy
       - name: Get tests
         run: uv run commit0 get-tests simpy
       - name: Test
