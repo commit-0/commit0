@@ -1,13 +1,10 @@
-import json
 import logging
-import traceback
 
 import docker
 from datasets import load_dataset
-from tqdm import tqdm
 from typing import Iterator
 
-from commit0.harness.constants import EVAL_BACKENDS, RepoInstance, SPLIT
+from commit0.harness.constants import RepoInstance, SPLIT
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 
@@ -36,5 +33,6 @@ def main(
     if backend == "local":
         client = docker.from_env()
         build_repo_images(client, specs, num_workers)
+
 
 __all__ = []
