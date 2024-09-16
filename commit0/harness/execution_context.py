@@ -126,7 +126,8 @@ class Docker(ExecutionContext):
         report_file = Path(self.spec.repo_directory) / "report.json"
         # Run the test command inside the container to check if the file exists
         exit_code, test_output = self.container.exec_run(
-            f"test -e {report_file}", demux=True)
+            f"test -e {report_file}", demux=True
+        )
         # Check the exit code of the command
         if exit_code == 0:
             copy_from_container(
