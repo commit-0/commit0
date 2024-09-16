@@ -157,7 +157,13 @@ def get_message_to_aider(
 ) -> str:
     """Get the message to Aider."""
     # support context for aider
-    prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
+    if aider_config.use_user_prompt:
+        assert (
+            aider_config.user_prompt != ""
+        ), "You choose to use custom user prompt, but it is empty"
+        prompt = f"{PROMPT_HEADER} " + aider_config.user_prompt
+    else:
+        prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
 
     if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
         unit_tests_info = (

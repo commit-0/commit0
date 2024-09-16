@@ -4,15 +4,18 @@ import subprocess
 
 import hydra
 from datasets import load_dataset
-from omegaconf import OmegaConf
-import tarfile
+import traceback
 from baselines.baseline_utils import (
     get_message_to_aider,
     get_target_edit_files_cmd_args,
 )
-from baselines.class_types import AiderConfig, BaselineConfig, Commit0Config
+from hydra.core.config_store import ConfigStore
+from baselines.class_types import AiderConfig, Commit0Config
 from commit0.harness.constants import SPLIT
-# from aider.run_aider import get_aider_cmd
+from commit0.harness.get_pytest_ids import main as get_tests
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -51,16 +54,11 @@ def run_aider_for_repo(
 
     repo_name = repo_name.lower()
     repo_name = repo_name.replace(".", "-")
-    with tarfile.open(f"commit0/data/test_ids/{repo_name}.tar.bz2", "r:bz2") as tar:
-        for member in tar.getmembers():
-            if member.isfile():
-                file = tar.extractfile(member)
-                if file:
-                    test_files_str = file.read().decode("utf-8")
-                    # print(content.decode("utf-8"))
 
-    test_files = test_files_str.split("\n") if isinstance(test_files_str, str) else []
-    test_files = sorted(list(set([i.split(":")[0] for i in test_files])))
+    # Call the commit0 get-tests command to retrieve test files
+    test_files_str = get_tests(repo_name, stdout=True)
+
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
 
@@ -112,30 +110,73 @@ def run_aider_for_repo(
                 logger.error(f"OSError occurred: {e}")
 
 
-@hydra.main(version_base=None, config_path="config", config_name="aider")
-def main(config: BaselineConfig) -> None:
+def pre_aider_processing(aider_config: AiderConfig) -> None:
+    """Pre-process the Aider config."""
+    if aider_config.use_user_prompt:
+        # get user prompt from input
+        aider_config.user_prompt = input("Enter the user prompt: ")
+
+
+def main() -> None:
     """Main function to run Aider for a given repository.
 
     Will run in parallel for each repo.
     """
-    config = BaselineConfig(config=OmegaConf.to_object(config))
-    commit0_config = config.commit0_config
-    aider_config = config.aider_config
+    cs = ConfigStore.instance()
+    cs.store(name="user", node=Commit0Config)
+    cs.store(name="user", node=AiderConfig)
+
+    hydra.initialize(version_base=None, config_path="configs")
+    config = hydra.compose(config_name="aider")
+
+    commit0_config = Commit0Config(**config.commit0_config)
+    aider_config = AiderConfig(**config.aider_config)
 
     if commit0_config is None or aider_config is None:
         raise ValueError("Invalid input")
 
-    dataset = load_dataset(commit0_config.dataset_name, split="test")
+    dataset = load_dataset(
+        commit0_config.dataset_name, split=commit0_config.dataset_split
+    )
 
     filtered_dataset = [
         example
         for example in dataset
         if commit0_config.repo_split == "all"
-        or example["repo"].split("/")[-1] in SPLIT.get(commit0_config.repo_split, [])
-    ]
+        or (
+            isinstance(example, dict)
+            and "repo" in example
+            and isinstance(example["repo"], str)
+            and example["repo"].split("/")[-1]
+            in SPLIT.get(commit0_config.repo_split, [])
+        )
+    ][:1]
 
-    for example in filtered_dataset:
-        run_aider_for_repo(commit0_config, aider_config, example)
+    pre_aider_processing(aider_config)
+
+    with tqdm(
+        total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
+    ) as pbar:
+        with ThreadPoolExecutor(max_workers=commit0_config.num_workers) as executor:
+            # Create a future for running Aider for each repo
+            futures = {
+                executor.submit(
+                    run_aider_for_repo,
+                    commit0_config,
+                    aider_config,
+                    example if isinstance(example, dict) else {},
+                ): example
+                for example in filtered_dataset
+            }
+            # Wait for each future to complete
+            for future in as_completed(futures):
+                pbar.update(1)
+                try:
+                    # Update progress bar, check if Aider ran successfully
+                    future.result()
+                except Exception:
+                    traceback.print_exc()
+                    continue
 
 
 if __name__ == "__main__":

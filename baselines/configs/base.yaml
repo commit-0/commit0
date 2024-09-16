@@ -6,10 +6,14 @@ defaults:
 commit0_config:
   base_dir: /Users/willjiang/Desktop/ai2dev/commit0/repos
   dataset_name: "wentingzhao/commit0_docstring"
+  dataset_split: "test"
   repo_split: "lite"
+  num_workers: 10
 
 aider_config:
   llm_name: "claude-3-5-sonnet-20240620"
+  use_user_prompt: false
+  user_prompt: ""
   use_repo_info: false
   max_repo_info_length: 10000
   use_unit_tests_info: false
