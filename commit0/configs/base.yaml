@@ -16,6 +16,7 @@ num_workers: 8
 backend: local
 branch: ai
 timeout: 1_800
+num_cpus: 1
 
 # save related
 github_token: null

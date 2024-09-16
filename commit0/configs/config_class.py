@@ -22,6 +22,7 @@ class Commit0Config:
     branch: str
     # timeout for running pytest
     timeout: int
+    num_cpus: int
 
     # save related
     github_token: Optional[str]

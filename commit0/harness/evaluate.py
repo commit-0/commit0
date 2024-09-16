@@ -26,6 +26,7 @@ def main(
     branch: str,
     backend: str,
     timeout: int,
+    num_cpus: int,
     num_workers: int,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
@@ -52,6 +53,7 @@ def main(
                     test_dir,
                     backend,
                     timeout,
+                    num_cpus,
                     stdout=False,
                 ): None
                 for repo, test_dir in pairs

@@ -116,30 +116,6 @@ def copy_from_container(container: Container, src: Path, dst: Path) -> None:
         extracted_file_path.rename(dst)
 
 
-def delete_file_from_container(container: Container, file_path: str) -> None:
-    """Delete a file from a docker container.
-
-    Args:
-    ----
-        container (Container): Docker container to delete the file from
-        file_path (str): Path to the file in the container to be deleted
-
-    Raises:
-    ------
-        docker.errors.APIError: If there is an error calling the Docker API.
-        Exception: If the file deletion command fails with a non-zero exit code.
-
-    """
-    try:
-        exit_code, output = container.exec_run(f"rm -f {file_path}")
-        if exit_code != 0:
-            raise Exception(f"Error deleting file: {output.decode('utf-8').strip()}")
-    except docker.errors.APIError as e:
-        raise docker.errors.APIError(f"Docker API Error: {str(e)}")
-    except Exception as e:
-        raise Exception(f"General Error: {str(e)}")
-
-
 def write_to_container(container: Container, data: str, dst: Path) -> None:
     """Write a string to a file in a docker container"""
     # echo with heredoc to file
@@ -247,7 +223,7 @@ def create_container(
     image_name: str,
     container_name: Optional[str] = None,
     user: Optional[str] = None,
-    command: Optional[str] = None,
+    command: Optional[str] = "tail -f /dev/null",
     nano_cpus: Optional[int] = None,
     logger: Optional[Union[str, logging.Logger]] = None,
 ) -> Container:
@@ -312,7 +288,7 @@ def create_container(
             image=image_name,
             name=container_name,
             user=user,
-            command="tail -f /dev/null",
+            command=command,
             nano_cpus=nano_cpus,
             detach=True,
         )
