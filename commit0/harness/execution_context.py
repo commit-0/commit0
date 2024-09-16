@@ -27,7 +27,6 @@ from commit0.harness.docker_utils import (
     create_container,
     copy_from_container,
     copy_to_container,
-    get_ssh_pubkey_from_container,
     delete_file_from_container,
     exec_run_with_timeout,
 )
@@ -61,11 +60,6 @@ class ExecutionContext(ABC):
         self.spec = spec
         self.logger = logger
         self.timeout = timeout
-
-    @abstractmethod
-    def get_ssh_pubkey_from_remote(self) -> None:
-        """Copy"""
-        raise NotImplementedError
 
     @abstractmethod
     def exec_run_with_timeout(
@@ -148,10 +142,6 @@ class Docker(ExecutionContext):
             for _, f in files_to_copy.items():
                 copy_to_container(self.container, f["src"], f["dest"])  # type: ignore
 
-    def get_ssh_pubkey_from_remote(self, user: str) -> str:
-        """Copy"""
-        return get_ssh_pubkey_from_container(self.container, user)
-
     def exec_run_with_timeout(
         self, command: str, timeout: int
     ) -> tuple[str, bool, float]:
@@ -205,12 +195,6 @@ class Modal(ExecutionContext):
             cpu=4.0,
             timeout=timeout,
         )
-
-    def get_ssh_pubkey_from_remote(self, user: str) -> str:
-        """Copy ssh pubkey"""
-        process = self.sandbox.exec("bash", "-c", f"cat /{user}/.ssh/id_rsa.pub")
-        public_key = "".join([line for line in process.stdout]).strip()
-        return public_key
 
     def exec_run_with_timeout(
         self, command: str, timeout: int

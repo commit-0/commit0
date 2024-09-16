@@ -11,10 +11,6 @@ repo_split: all
 
 # build related
 num_workers: 8
-key_path: commit0/configs/public_keys.json
-
-# set up git user
-git_user: git  # by default, git user is called git
 
 # test related
 backend: local

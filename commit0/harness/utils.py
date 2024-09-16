@@ -2,17 +2,12 @@ import git
 import git.exc
 import hashlib
 import logging
-import socket
 import os
 import time
-import requests
-import subprocess
-import pwd
-from typing import Optional, Tuple
+from typing import Optional
 
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
 from ghapi.core import GhApi
-from commit0.harness.constants import EVAL_BACKENDS
 
 
 class EvaluationError(Exception):
@@ -28,195 +23,6 @@ class EvaluationError(Exception):
             f"Evaluation error for {self.repo}: {self.super_str}\n"
             f"Check ({self.log_file}) for more information."
         )
-
-
-def get_ip(backend: str) -> str:
-    ip = ""
-    if backend not in EVAL_BACKENDS:
-        raise ValueError(
-            f"We only support evaluation backends = {EVAL_BACKENDS}, but you provided {backend}"
-        )
-    if backend == "modal":
-        try:
-            response = requests.get("https://api.ipify.org?format=json")
-            response.raise_for_status()
-            ip = response.json()["ip"]
-        except requests.RequestException as e:
-            raise Exception(f"Cannot get the public IP address.\n{e}")
-    elif backend == "local":
-        s = None
-        try:
-            # Connect to a public DNS server, then get the local socket name
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(0)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-        except Exception:
-            ip = "127.0.0.1"  # Fallback to localhost IP
-        finally:
-            if s is not None:
-                s.close()
-    return ip
-
-
-def run_command(command: str) -> Tuple[str, str, int]:
-    """Runs a shell command and returns the output, error message, and exit code."""
-    try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        return (
-            result.stdout.decode("utf-8"),
-            result.stderr.decode("utf-8"),
-            result.returncode,
-        )
-    except subprocess.CalledProcessError as e:
-        return e.stdout.decode("utf-8"), e.stderr.decode("utf-8"), e.returncode
-
-
-def handle_command(command: str, description: str, logger: logging.Logger) -> None:
-    """Runs a command and handles success or failure with appropriate messages."""
-    stdout, stderr, exit_code = run_command(command)
-    if exit_code != 0:
-        logger.error(f"Error running '{command}' which {description}:\n{stderr}")
-    else:
-        logger.info(f"Succeeded in running '{command}' which {description}")
-
-
-def get_home_directory(user: str) -> str:
-    user_info = pwd.getpwnam(user)
-    return user_info.pw_dir
-
-
-def setup_user(user: str, logger: logging.Logger) -> None:
-    """Sets up a new user with appropriate shell settings and git-shell as login shell."""
-    commands = [
-        (f'adduser --disabled-password --gecos "" {user}', f"adds {user}"),
-        ("touch /etc/shells", "creates /etc/shells if it doesn't exist yet"),
-        ("cat /etc/shells", "views available shells"),
-        (
-            "sh -c 'which git-shell >> /etc/shells'",
-            "adds git-shell to /etc/shells",
-        ),
-        (
-            f"chsh {user} -s $(which git-shell)",
-            "changes shell for {user} to git-shell",
-        ),
-    ]
-
-    # Execute each command
-    for command, description in commands:
-        handle_command(command, description, logger)
-
-
-def chmod(path: str, mode: int, logger: logging.Logger) -> None:
-    """A Python wrapper for the chmod command to change file or directory permissions.
-
-    Args:
-    ----
-        path (str): The path to the file or directory.
-        mode (int): The permission mode (octal), e.g., 0o755, 0o644, etc.
-        logger (logging.Logger): The logger object.
-
-    """
-    try:
-        os.chmod(path, mode)
-        logger.info(f"Permissions for '{path}' changed to {oct(mode)}")
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f"Error: The file or directory '{path}' does not exist."
-        )
-    except PermissionError:
-        raise PermissionError(
-            f"Error: Permission denied when changing permissions for '{path}'"
-        )
-    except Exception as e:
-        raise Exception(f"An error occurred: {e}")
-
-
-def setup_ssh_directory(user: str, logger: logging.Logger) -> None:
-    """Sets up the .ssh directory for the user and sets appropriate permissions.
-
-    Args:
-    ----
-        user (str): The name of the user.
-        logger (logging.Logger): The logger object.
-
-    """
-    home = get_home_directory(user)
-    ssh_dir = os.path.join(home, ".ssh")
-    authorized_keys_file = os.path.join(ssh_dir, "authorized_keys")
-
-    try:
-        # Create the .ssh directory if it doesn't exist
-        if not os.path.exists(ssh_dir):
-            os.makedirs(ssh_dir)
-            logger.info(f"Created directory: {ssh_dir}")
-
-        # Set directory permissions to 755
-        os.chmod(ssh_dir, 0o755)
-
-        # Create the authorized_keys file if it doesn't exist
-        if not os.path.exists(authorized_keys_file):
-            open(authorized_keys_file, "a").close()
-            logger.info(f"Created file: {authorized_keys_file}")
-    except Exception as e:
-        raise e
-
-
-def add_key(user: str, public_key: str) -> None:
-    public_key = (
-        f"no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {public_key}"
-    )
-
-    home_directory = get_home_directory(user)
-    authorized_keys_path = os.path.join(home_directory, ".ssh", "authorized_keys")
-    if not os.path.exists(authorized_keys_path):
-        raise FileNotFoundError(
-            f"f{authorized_keys_path} does not exists, please call setup_ssh_directory() before adding keys"
-        )
-    else:
-        with open(authorized_keys_path, "r") as authorized_keys_file:
-            content = authorized_keys_file.read()
-            if public_key not in content:
-                write = True
-            else:
-                write = False
-        if write:
-            with open(authorized_keys_path, "a") as authorized_keys_file:
-                authorized_keys_file.write(public_key + "\n")
-
-
-def is_safe_directory_added(safe_directory: str) -> bool:
-    # Run command to get all safe directories
-    command = "git config --system --get-all safe.directory"
-    stdout, stderr, exit_code = run_command(command)
-
-    # Check if the directory is listed
-    if exit_code == 0 and safe_directory in stdout.splitlines():
-        return True
-    else:
-        return False
-
-
-def add_safe_directory(safe_directory: str, logger: logging.Logger) -> None:
-    safe_directory = os.path.join(safe_directory, ".git")
-    # Check if the directory is already added
-    if not is_safe_directory_added(safe_directory):
-        # Command to add the directory to safe.directory
-        command = f"git config --system --add safe.directory {safe_directory}"
-        stdout, stderr, exit_code = run_command(command)
-
-        if exit_code == 0:
-            logger.info(f"Directory '{safe_directory}' added to safe.directory.")
-        else:
-            logger.error(f"Error adding directory: {stderr}")
-    else:
-        logger.info(f"Directory '{safe_directory}' is already in the list.")
 
 
 def get_hash_string(input_string: str) -> str:
@@ -355,6 +161,33 @@ def create_repo_on_github(
             api.repos.create_in_org(org=organization, name=repo)  # type: ignore
             logger.info(f"Created {organization}/{repo} on GitHub")
             break
+
+
+def generate_patch_between_commits(
+    repo: git.Repo, old_commit: str, new_commit: str
+) -> str:
+    """Generate a patch string by comparing two specified commits.
+
+    Args:
+    ----
+        repo (git.Repo): An instance of the git.Repo object representing the repository.
+        old_commit (str): The hash or reference to the old commit.
+        new_commit (str): The hash or reference to the new commit.
+
+    Returns:
+    -------
+        patch (str): A string containing the patch in the diff format between the two commits
+
+    Raises:
+    ------
+        git.GitCommandError: If there is an error while running git commands.
+
+    """
+    try:
+        patch = repo.git.diff(old_commit, new_commit, "--", ".", ":(exclude)spec.pdf")
+        return patch + "\n\n"
+    except git.GitCommandError as e:
+        raise Exception(f"Error generating patch: {e}")
 
 
 __all__ = []

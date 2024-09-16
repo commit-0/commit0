@@ -13,6 +13,7 @@ class RepoInstance(TypedDict):
 
 class Files(TypedDict):
     eval_script: Dict[str, Path]
+    patch: Dict[str, Path]
 
 
 # Constants - Evaluation Log Directories
@@ -33,7 +34,6 @@ EVAL_BACKENDS = ["local", "modal"]
 COMMANDS = [
     "clone",
     "build",
-    "setup-git-user",
     "test",
     "test-reference",
     "get-tests",
