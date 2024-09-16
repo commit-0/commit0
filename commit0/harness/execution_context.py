@@ -128,21 +128,13 @@ class Docker(ExecutionContext):
         exit_code, test_output = self._exec_run(f"test -e {report_file}")
         # Check the exit code of the command
         if exit_code == 0:
-            self._copy_from_remote(report_file, self.log_dir / "report.json")
-            self._delete_file_from_remote(report_file)
+            copy_from_container(self.container, report_file, self.log_dir / "report.json")
+            delete_file_from_container(self.container, str(report_file))
         return output
 
     def _exec_run(self, command: str) -> tuple[int, str]:
         """Exec"""
         return self.container.exec_run(command, demux=True)
-
-    def _copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
-        """Copy"""
-        copy_from_container(self.container, remote_path, local_path)
-
-    def _delete_file_from_remote(self, remote_path: Path) -> None:
-        """Delete"""
-        delete_file_from_container(self.container, str(remote_path))
 
     def __exit__(
         self,
