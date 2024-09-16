@@ -15,15 +15,15 @@ aider_config:
   use_user_prompt: false
   user_prompt: ""
   use_repo_info: false
-  max_repo_info_length: 10000
   use_unit_tests_info: false
-  max_unit_tests_info_length: 10000
   use_reference_info: false
-  max_reference_info_length: 10000
   use_lint_info: false
-  max_lint_info_length: 10000
   pre_commit_config_path: .pre-commit-config.yaml
   run_tests: True
+  max_repo_info_length: 10000
+  max_unit_tests_info_length: 10000
+  max_reference_info_length: 10000
+  max_lint_info_length: 10000
 
 hydra:
   run:
