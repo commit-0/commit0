@@ -1,12 +1,13 @@
-import getpass
 import git
 import git.exc
 import hashlib
 import logging
-import socket
 import os
-import requests
-from commit0.harness.constants import EVAL_BACKENDS
+import time
+from typing import Optional
+
+from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
+from ghapi.core import GhApi
 
 
 class EvaluationError(Exception):
@@ -22,39 +23,6 @@ class EvaluationError(Exception):
             f"Evaluation error for {self.repo}: {self.super_str}\n"
             f"Check ({self.log_file}) for more information."
         )
-
-
-def get_ip(backend: str) -> str:
-    ip = ""
-    if backend not in EVAL_BACKENDS:
-        raise ValueError(
-            f"We only support evaluation backends = {EVAL_BACKENDS}, but you provided {backend}"
-        )
-    if backend == "modal":
-        try:
-            response = requests.get("https://api.ipify.org?format=json")
-            response.raise_for_status()
-            ip = response.json()["ip"]
-        except requests.RequestException as e:
-            raise Exception(f"Cannot get the public IP address.\n{e}")
-    elif backend == "local":
-        s = None
-        try:
-            # Connect to a public DNS server, then get the local socket name
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.settimeout(0)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-        except Exception:
-            ip = "127.0.0.1"  # Fallback to localhost IP
-        finally:
-            if s is not None:
-                s.close()
-    return ip
-
-
-def get_user() -> str:
-    return getpass.getuser()
 
 
 def get_hash_string(input_string: str) -> str:
@@ -168,6 +136,58 @@ def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
             repo.git.checkout("-b", branch)
     except git.exc.GitCommandError as e:
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
+
+
+def create_repo_on_github(
+    organization: str, repo: str, logger: logging.Logger, token: Optional[str] = None
+) -> None:
+    api = GhApi(token=token)
+    while True:
+        try:
+            api.repos.get(owner=organization, repo=repo)  # type: ignore
+            logger.info(f"{organization}/{repo} already exists")
+            break
+        except HTTP403ForbiddenError:
+            while True:
+                rl = api.rate_limit.get()  # type: ignore
+                logger.info(
+                    f"Rate limit exceeded for the current GitHub token,"
+                    f"waiting for 5 minutes, remaining calls: {rl.resources.core.remaining}"
+                )
+                if rl.resources.core.remaining > 0:
+                    break
+                time.sleep(60 * 5)
+        except HTTP404NotFoundError:
+            api.repos.create_in_org(org=organization, name=repo)  # type: ignore
+            logger.info(f"Created {organization}/{repo} on GitHub")
+            break
+
+
+def generate_patch_between_commits(
+    repo: git.Repo, old_commit: str, new_commit: str
+) -> str:
+    """Generate a patch string by comparing two specified commits.
+
+    Args:
+    ----
+        repo (git.Repo): An instance of the git.Repo object representing the repository.
+        old_commit (str): The hash or reference to the old commit.
+        new_commit (str): The hash or reference to the new commit.
+
+    Returns:
+    -------
+        patch (str): A string containing the patch in the diff format between the two commits
+
+    Raises:
+    ------
+        git.GitCommandError: If there is an error while running git commands.
+
+    """
+    try:
+        patch = repo.git.diff(old_commit, new_commit, "--", ".", ":(exclude)spec.pdf")
+        return patch + "\n\n"
+    except git.GitCommandError as e:
+        raise Exception(f"Error generating patch: {e}")
 
 
 __all__ = []

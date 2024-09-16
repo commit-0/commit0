@@ -140,49 +140,6 @@ def delete_file_from_container(container: Container, file_path: str) -> None:
         raise Exception(f"General Error: {str(e)}")
 
 
-def copy_ssh_pubkey_from_container(container: Container) -> None:
-    """Copy the SSH public key from a Docker container to the local authorized_keys file.
-
-    Args:
-    ----
-    container (Container): Docker container to copy the key from.
-
-    Raises:
-    ------
-    docker.errors.APIError: If there is an error calling the Docker API.
-    Exception: If the file reading or writing process fails.
-
-    """
-    try:
-        exit_code, output = container.exec_run("cat /root/.ssh/id_rsa.pub")
-        if exit_code != 0:
-            raise Exception(f"Error reading file: {output.decode('utf-8').strip()}")
-        public_key = output.decode("utf-8").strip()
-
-        local_authorized_keys_path = os.path.expanduser("~/.ssh/authorized_keys")
-        os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
-        if not os.path.exists(local_authorized_keys_path):
-            # Since the file does not exist, create it
-            open(local_authorized_keys_path, "a").close()
-            write = True
-        else:
-            with open(local_authorized_keys_path, "r") as authorized_keys_file:
-                content = authorized_keys_file.read()
-                if public_key not in content:
-                    write = True
-                else:
-                    write = False
-
-        if write:
-            with open(local_authorized_keys_path, "a") as authorized_keys_file:
-                authorized_keys_file.write(public_key + "\n")
-
-    except docker.errors.APIError as e:
-        raise docker.errors.APIError(f"Docker API Error: {str(e)}")
-    except Exception as e:
-        raise Exception(f"General Error: {str(e)}")
-
-
 def write_to_container(container: Container, data: str, dst: Path) -> None:
     """Write a string to a file in a docker container"""
     # echo with heredoc to file

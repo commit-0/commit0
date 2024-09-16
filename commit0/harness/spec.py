@@ -147,18 +147,14 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
 
 def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[str]:
     """Run the tests."""
-    origin_name = "tmp-test"
     eval_script_list = [
-        "ssh-keyscan {ip} >> ~/.ssh/known_hosts",
         f"cd {repo_directory}",
         "source .venv/bin/activate",
-        f"git remote add {origin_name} ssh://{{user}}@{{ip}}:{{local_repo}}",
-        f"git fetch {origin_name}",
-        "git checkout {commit_id}",
+        f"git reset --hard {instance['base_commit']}",
+        "git apply --allow-empty -v /patch.diff",
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
-        f"git checkout {instance['base_commit']}",
-        f"git remote remove {origin_name}",
+        f"git reset --hard {instance['base_commit']}",
         "git status",
     ]
     return eval_script_list

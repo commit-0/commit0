@@ -11,6 +11,11 @@ class RepoInstance(TypedDict):
     test: Dict[str, str]
 
 
+class Files(TypedDict):
+    eval_script: Dict[str, Path]
+    patch: Dict[str, Path]
+
+
 # Constants - Evaluation Log Directories
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")
 REPO_IMAGE_BUILD_DIR = Path("logs/build_images/repo")
@@ -34,6 +39,7 @@ COMMANDS = [
     "get-tests",
     "evaluate",
     "evaluate-reference",
+    "save",
 ]
 # repo splits
 SPLIT_MINITORCH = ["minitorch"]

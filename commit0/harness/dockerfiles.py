@@ -7,7 +7,6 @@ ENV TZ=Etc/UTC
 
 RUN apt update && apt install -y \
 wget \
-git \
 build-essential \
 libffi-dev \
 libtiff-dev \
@@ -21,16 +20,10 @@ locales-all \
 tzdata \
 && rm -rf /var/lib/apt/lists/*
 
-# Define arguments for SSH key parameters
-ARG SSH_KEY_PATH="/root/.ssh"
-ARG SSH_KEY_NAME="id_rsa"
-ARG SSH_KEY_PASSPHRASE=""
-
-# Create the .ssh directory
-RUN mkdir -p ${{SSH_KEY_PATH}}
-
-# Generate SSH keys
-RUN ssh-keygen -t rsa -b 4096 -f ${{SSH_KEY_PATH}}/${{SSH_KEY_NAME}} -N "${{SSH_KEY_PASSPHRASE}}"
+# Install the latest version of Git
+RUN apt-get update && apt-get install software-properties-common -y
+RUN add-apt-repository ppa:git-core/ppa -y
+RUN apt-get update && apt-get install git -y
 
 # Set up uv
 # The installer requires curl (and certificates) to download the release archive
