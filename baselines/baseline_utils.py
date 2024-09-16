@@ -116,17 +116,6 @@ def get_file_info(file_path: Path, prefix: str = "") -> str:
     return "\n".join(filter(None, tree_string))
 
 
-def get_prompt(file_list: str) -> str:
-    """Get the prompt for the Aider model."""
-    return """Here is the Task:\n Your task is to iteratively implement the each function that is 'NotImplementedError('IMPLEMENT ME HERE')' in these files until there are no more 'NotImplementedError('IMPLEMENT ME HERE')' and pass the unit tests.
-Make sure you read the files carefully.
-Your output should be the edited code files.
-Use the above instructions to modify the supplied files: {file_list}
-Do not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.
-Only use standard python libraries, do not suggest installing any packages.
-""".format(file_list=file_list)
-
-
 def get_target_edit_files_cmd_args(target_dir: str) -> str:
     """Find the files with the error 'NotImplementedError('IMPLEMENT ME
     HERE')'.
@@ -156,14 +145,7 @@ def get_message_to_aider(
     ds: Dict[str, Any],
 ) -> str:
     """Get the message to Aider."""
-    # support context for aider
-    if aider_config.use_user_prompt:
-        assert (
-            aider_config.user_prompt != ""
-        ), "You choose to use custom user prompt, but it is empty"
-        prompt = f"{PROMPT_HEADER} " + aider_config.user_prompt
-    else:
-        prompt = f"{PROMPT_HEADER} " + get_prompt(target_edit_files_cmd_args)
+    prompt = f"{PROMPT_HEADER} " + aider_config.user_prompt
 
     if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
         unit_tests_info = (
