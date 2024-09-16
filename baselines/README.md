@@ -5,7 +5,7 @@ Step 1: Go to `config/aider.yaml` and change the config
 Step 2: Run the following command
 
 ```bash
-python baselines/run_aider.py --config-name aider
+python baselines/run_aider.py
 ```
 
 ## Config
