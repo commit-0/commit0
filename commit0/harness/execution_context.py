@@ -209,9 +209,6 @@ class Modal(ExecutionContext):
                     f.write(data)
 
             self.sandbox.terminate()
-            import pdb
-
-            pdb.set_trace()
 
             # TODO: add timing
             return stdout, False, 1.0
