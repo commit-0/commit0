@@ -13,7 +13,13 @@ commit0_config:
 aider_config:
   llm_name: "claude-3-5-sonnet-20240620"
   use_user_prompt: false
-  user_prompt: ""
+  user_prompt: """Here is the Task:\n Your task is to iteratively implement the each function that is 'NotImplementedError('IMPLEMENT ME HERE')' in these files until there are no more 'NotImplementedError('IMPLEMENT ME HERE')' and pass the unit tests.
+Make sure you read the files carefully.
+Your output should be the edited code files.
+Use the above instructions to modify the supplied files.
+Do not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.
+Only use standard python libraries, do not suggest installing any packages.
+"""
   use_repo_info: false
   use_unit_tests_info: false
   use_reference_info: false

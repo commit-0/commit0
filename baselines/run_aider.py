@@ -108,6 +108,10 @@ def run_aider_for_repo(
     else:
         lint_cmd = ""
 
+    print(
+        f"Aider logs for {repo_name} can be found in: {RUN_AIDER_LOG_DIR / repo_name / 'ai'}"
+    )
+
     if aider_config.run_tests:
         for test_file in test_files:
             test_cmd = f"python -m commit0 test {repo_name} {test_file}"
