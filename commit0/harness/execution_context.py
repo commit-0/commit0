@@ -28,7 +28,6 @@ from commit0.harness.docker_utils import (
     create_container,
     copy_from_container,
     copy_to_container,
-    delete_file_from_container,
     exec_run_with_timeout,
 )
 
@@ -138,7 +137,6 @@ class Docker(ExecutionContext):
             copy_from_container(
                 self.container, report_file, self.log_dir / "report.json"
             )
-            delete_file_from_container(self.container, str(report_file))
         return output
 
     def __exit__(
