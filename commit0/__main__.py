@@ -2,7 +2,6 @@ import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
 import commit0.harness.build
 import commit0.harness.setup
-import commit0.harness.setup_git_user
 import commit0.harness.evaluate
 import commit0.harness.save
 import copy
@@ -34,7 +33,6 @@ def main() -> None:
     if command in [
         "clone",
         "build",
-        "setup-git-user",
         "evaluate",
         "evaluate-reference",
         "save",
@@ -62,15 +60,6 @@ def main() -> None:
             config.repo_split,
             config.num_workers,
             config.backend,
-            config.key_path,
-        )
-    elif command == "setup-git-user":
-        commit0.harness.setup_git_user.main(
-            config.dataset_name,
-            config.dataset_split,
-            config.repo_split,
-            config.base_dir,
-            config.git_user,
             config.key_path,
         )
     elif command == "get-tests":

@@ -140,33 +140,6 @@ def delete_file_from_container(container: Container, file_path: str) -> None:
         raise Exception(f"General Error: {str(e)}")
 
 
-def get_ssh_pubkey_from_container(container: Container, user: str) -> str:
-    """Copy the SSH public key from a Docker container to the local authorized_keys file.
-
-    Args:
-    ----
-    container (Container): Docker container to copy the key from.
-    user (str): to get public key of which user
-
-    Returns:
-    -------
-    public_key (str): public key from docker container
-
-    Raises:
-    ------
-    docker.errors.APIError: If there is an error calling the Docker API.
-
-    """
-    try:
-        exit_code, output = container.exec_run("cat /root/.ssh/id_rsa.pub")
-        if exit_code != 0:
-            raise Exception(f"Error reading file: {output.decode('utf-8').strip()}")
-        public_key = output.decode("utf-8").strip()
-        return public_key
-    except docker.errors.APIError as e:
-        raise docker.errors.APIError(f"Docker API Error: {str(e)}")
-
-
 def write_to_container(container: Container, data: str, dst: Path) -> None:
     """Write a string to a file in a docker container"""
     # echo with heredoc to file

@@ -33,7 +33,6 @@ EVAL_BACKENDS = ["local", "modal"]
 COMMANDS = [
     "clone",
     "build",
-    "setup-git-user",
     "test",
     "test-reference",
     "get-tests",
