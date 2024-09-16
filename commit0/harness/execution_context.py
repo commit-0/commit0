@@ -71,21 +71,6 @@ class ExecutionContext(ABC):
         """Exec"""
         raise NotImplementedError
 
-    @abstractmethod
-    def exec_run(self, command: str) -> tuple[int, str]:
-        """Exec"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
-        """Copy"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def delete_file_from_remote(self, remote_path: Path) -> None:
-        """Delete"""
-        raise NotImplementedError
-
     def write_test_output(
         self, log_dir: Path, test_output: str, timed_out: bool
     ) -> None:
@@ -101,16 +86,6 @@ class ExecutionContext(ABC):
                     self.logger,
                 )
 
-        """
-        # copy back report.json if there is any
-        report_file = Path(self.spec.repo_directory) / "report.json"
-        # Run the test command inside the container to check if the file exists
-        exit_code, output = self.exec_run(f"test -e {report_file}")
-        # Check the exit code of the command
-        if exit_code == 0:
-            self.copy_from_remote(report_file, log_dir / "report.json")
-            self.delete_file_from_remote(report_file)
-        """
 
     def __enter__(self):
         return self
@@ -134,7 +109,7 @@ class Docker(ExecutionContext):
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, timeout)
+        super().__init__(spec, logger, timeout, log_dir)
 
         self.client = docker.from_env()
         self.container = create_container(
@@ -149,20 +124,30 @@ class Docker(ExecutionContext):
                 copy_to_container(self.container, f["src"], f["dest"])  # type: ignore
 
     def exec_run_with_timeout(
-        self, command: str, timeout: int
+        self, command: str, timeout: int, log_dir: Path,
     ) -> tuple[str, bool, float]:
         """Exec"""
-        return exec_run_with_timeout(self.container, command, timeout)
+        output = exec_run_with_timeout(self.container, command, timeout)
 
-    def exec_run(self, command: str) -> tuple[int, str]:
+        # copy back report.json if there is any
+        report_file = Path(self.spec.repo_directory) / "report.json"
+        # Run the test command inside the container to check if the file exists
+        exit_code, test_output = self._exec_run(f"test -e {report_file}")
+        # Check the exit code of the command
+        if exit_code == 0:
+            self._copy_from_remote(report_file, log_dir / "report.json")
+            self._delete_file_from_remote(report_file)
+        return output
+
+    def _exec_run(self, command: str) -> tuple[int, str]:
         """Exec"""
         return self.container.exec_run(command, demux=True)
 
-    def copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
+    def _copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
         """Copy"""
         copy_from_container(self.container, remote_path, local_path)
 
-    def delete_file_from_remote(self, remote_path: Path) -> None:
+    def _delete_file_from_remote(self, remote_path: Path) -> None:
         """Delete"""
         delete_file_from_container(self.container, str(remote_path))
 
@@ -222,6 +207,7 @@ class Modal(ExecutionContext):
 
             print("stdout")
             stdout = read_stream(self.sandbox.stdout)
+            print(stdout)
             print("stderr")
             stderr = read_stream(self.sandbox.stderr)
             print(stderr)
@@ -233,28 +219,10 @@ class Modal(ExecutionContext):
                     f.write(data)
 
             self.sandbox.terminate()
+            import pdb; pdb.set_trace()
 
             # TODO: add timing
             return stdout, False, 1.0
-
-    def exec_run(self, command: str) -> tuple[int, str]:
-        """Execute command on modal sandbox"""
-        process = self.sandbox.exec("bash", "-c", command)
-        stdout = read_stream(process.stdout)
-        stderr = read_stream(process.stderr)
-        print(stderr)
-        return 1, stdout
-
-    def copy_from_remote(self, remote_path: Path, local_path: Path) -> None:
-        """Copy file from modal sandbox"""
-        process = self.sandbox.exec("bash", "-c", f"cat {str(remote_path)}")
-        output = "".join([line for line in process.stdout]).strip()
-        with local_path.open("w") as f:
-            f.write(output)
-
-    def delete_file_from_remote(self, remote_path: Path) -> None:
-        """Delete"""
-        self.sandbox.exec("bash", "-c", f"rm {str(remote_path)}")
 
     def __exit__(
         self,
