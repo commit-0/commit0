@@ -196,6 +196,7 @@ class Modal(ExecutionContext):
             # return_code = self.sandbox.returncode
             # maybe use return_code for timeout info?
 
+            # copy over report.json from mount
             with (self.log_dir / "report.json").open("wb") as f:
                 for data in vol.read_file("report.json"):
                     f.write(data)
