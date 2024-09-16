@@ -11,6 +11,7 @@ import modal
 import modal.io_streams
 from enum import StrEnum, auto
 from pathlib import Path
+import time
 from typing import Optional, Type
 from types import TracebackType
 
@@ -170,6 +171,7 @@ class Modal(ExecutionContext):
 
     def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
         """Execute command on modal sandbox"""
+        start_time = time.time()
         with modal.Volume.ephemeral() as vol:
             # copy back report.json if there is any
             report_file = Path(self.spec.repo_directory) / "report.json"
@@ -186,15 +188,12 @@ class Modal(ExecutionContext):
             )
             self.sandbox.wait()
 
-            print("stdout")
             stdout = read_stream(self.sandbox.stdout)
-            print(stdout)
-            print("stderr")
-            stderr = read_stream(self.sandbox.stderr)
-            print(stderr)
+            # stderr = read_stream(self.sandbox.stderr)
 
             # return_code = self.sandbox.returncode
             # maybe use return_code for timeout info?
+            # i dont know if sandboxes throw modal.TimeoutError
 
             # copy over report.json from mount
             with (self.log_dir / "report.json").open("wb") as f:
@@ -203,8 +202,10 @@ class Modal(ExecutionContext):
 
             self.sandbox.terminate()
 
-            # TODO: add timing
-            return stdout, False, 1.0
+            end_time = time.time()
+
+            # TODO: add check for timeout
+            return stdout, False, end_time - start_time
 
     def __exit__(
         self,
