@@ -51,6 +51,8 @@ class ExecutionContext(ABC):
         spec: Spec,
         logger: logging.Logger,
         timeout: int,
+        log_dir: Path,
+        files_to_copy: Optional[Files] = None,
     ):
         """Create the remote execution context
 
@@ -60,6 +62,7 @@ class ExecutionContext(ABC):
         self.spec = spec
         self.logger = logger
         self.timeout = timeout
+        self.log_dir = log_dir
 
     @abstractmethod
     def exec_run_with_timeout(
@@ -98,6 +101,7 @@ class ExecutionContext(ABC):
                     self.logger,
                 )
 
+        """
         # copy back report.json if there is any
         report_file = Path(self.spec.repo_directory) / "report.json"
         # Run the test command inside the container to check if the file exists
@@ -106,6 +110,7 @@ class ExecutionContext(ABC):
         if exit_code == 0:
             self.copy_from_remote(report_file, log_dir / "report.json")
             self.delete_file_from_remote(report_file)
+        """
 
     def __enter__(self):
         return self
@@ -126,6 +131,7 @@ class Docker(ExecutionContext):
         spec: Spec,
         logger: logging.Logger,
         timeout: int,
+        log_dir: Path,
         files_to_copy: Optional[Files] = None,
     ):
         super().__init__(spec, logger, timeout)
@@ -176,39 +182,60 @@ class Modal(ExecutionContext):
         spec: Spec,
         logger: logging.Logger,
         timeout: int,
+        log_dir: Path,
         files_to_copy: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, timeout)
+        super().__init__(spec, logger, timeout, log_dir)
+
+        self.app = modal.App()
 
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
-        image_name = f"wentingzhao/{reponame}"
+        image_name = f"wentingzhao/{reponame}:latest"
         image = modal.Image.from_registry(image_name)
         if files_to_copy:
             for _, f in files_to_copy.items():
                 image = image.copy_local_file(f["src"], f["dest"])  # type: ignore
+        self.image = image
 
-        self.sandbox = modal.Sandbox.create(
-            "sleep",
-            "infinity",
-            image=image,
-            cpu=4.0,
-            timeout=timeout,
-        )
 
     def exec_run_with_timeout(
-        self, command: str, timeout: int
+        self, command: str, timeout: int, log_dir: Path,
     ) -> tuple[str, bool, float]:
         """Execute command on modal sandbox"""
-        print("Executing:", command)
-        process = self.sandbox.exec("bash", "-c", command)
-        print("stdout")
-        stdout = read_stream(process.stdout)
-        print("stderr")
-        stderr = read_stream(process.stderr)
-        print(stderr)
-        return stdout, False, 1.0
-        return stdout, stderr
+
+        with modal.Volume.ephemeral() as vol:
+            # copy back report.json if there is any
+            report_file = Path(self.spec.repo_directory) / "report.json"
+
+            self.sandbox = modal.Sandbox.create(
+                "bash",
+                "-c",
+                f"{command} && cp {str(report_file)} /vol/report.json",
+                image=self.image,
+                cpu=4.0,
+                timeout=timeout,
+                app=self.app,
+                volumes={"/vol": vol},
+            )
+            self.sandbox.wait()
+
+            print("stdout")
+            stdout = read_stream(self.sandbox.stdout)
+            print("stderr")
+            stderr = read_stream(self.sandbox.stderr)
+            print(stderr)
+
+            return_code = self.sandbox.returncode
+
+            with (self.log_dir / "report.json").open("wb") as f:
+                for data in vol.read_file("report.json"):
+                    f.write(data)
+
+            self.sandbox.terminate()
+
+            # TODO: add timing
+            return stdout, False, 1.0
 
     def exec_run(self, command: str) -> tuple[int, str]:
         """Execute command on modal sandbox"""
@@ -235,5 +262,4 @@ class Modal(ExecutionContext):
         excinst: Optional[BaseException],
         exctb: Optional[TracebackType],
     ) -> None:
-        self.sandbox.terminate()
         close_logger(self.logger)
