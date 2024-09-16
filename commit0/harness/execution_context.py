@@ -56,8 +56,8 @@ class ExecutionContext(ABC):
     ):
         """Create the remote execution context
 
-        The execution context will persist for the lifetime of this object.
         The execution context can be a Docker container or Modal sandbox.
+        The execution context may not persist for the lifetime of this object.
         """
         self.spec = spec
         self.logger = logger
@@ -66,7 +66,7 @@ class ExecutionContext(ABC):
 
     @abstractmethod
     def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
-        """Exec"""
+        """Execute a test command"""
         raise NotImplementedError
 
     def write_test_output(self, test_output: str, timed_out: bool) -> None:
@@ -125,7 +125,8 @@ class Docker(ExecutionContext):
         # copy back report.json if there is any
         report_file = Path(self.spec.repo_directory) / "report.json"
         # Run the test command inside the container to check if the file exists
-        exit_code, test_output = self._exec_run(f"test -e {report_file}")
+        exit_code, test_output = self.container.exec_run(
+            f"test -e {report_file}", demux=True)
         # Check the exit code of the command
         if exit_code == 0:
             copy_from_container(
@@ -133,10 +134,6 @@ class Docker(ExecutionContext):
             )
             delete_file_from_container(self.container, str(report_file))
         return output
-
-    def _exec_run(self, command: str) -> tuple[int, str]:
-        """Exec"""
-        return self.container.exec_run(command, demux=True)
 
     def __exit__(
         self,
