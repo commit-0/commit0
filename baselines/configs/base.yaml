@@ -4,7 +4,7 @@ defaults:
 
 
 commit0_config:
-  base_dir: /Users/willjiang/Desktop/ai2dev/commit0/repos
+  base_dir: repos
   dataset_name: "wentingzhao/commit0_docstring"
   dataset_split: "test"
   repo_split: "simpy"
