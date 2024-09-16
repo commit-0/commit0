@@ -94,13 +94,13 @@ def main(
     try:
         with execution_context(spec, logger, timeout, log_dir, files_to_copy) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
-                "/bin/bash /eval.sh", timeout, log_dir,
+                "/bin/bash /eval.sh"
             )
             logger.info(output)
             test_output = extract_test_output(
                 output, "--json-report --json-report-file=report.json"
             )
-            context.write_test_output(log_dir, test_output, timed_out)
+            context.write_test_output(test_output, timed_out)
             print(test_output)
     except EvaluationError as e:
         error_msg = (

@@ -65,17 +65,13 @@ class ExecutionContext(ABC):
         self.log_dir = log_dir
 
     @abstractmethod
-    def exec_run_with_timeout(
-        self, command: str, timeout: int
-    ) -> tuple[str, bool, float]:
+    def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
         """Exec"""
         raise NotImplementedError
 
-    def write_test_output(
-        self, log_dir: Path, test_output: str, timed_out: bool
-    ) -> None:
+    def write_test_output(self, test_output: str, timed_out: bool) -> None:
         """Write test output"""
-        test_output_path = log_dir / "test_output.txt"
+        test_output_path = self.log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
             f.write(test_output)
             if timed_out:
@@ -85,7 +81,6 @@ class ExecutionContext(ABC):
                     f"Test timed out after {self.timeout} seconds.",
                     self.logger,
                 )
-
 
     def __enter__(self):
         return self
@@ -123,11 +118,9 @@ class Docker(ExecutionContext):
             for _, f in files_to_copy.items():
                 copy_to_container(self.container, f["src"], f["dest"])  # type: ignore
 
-    def exec_run_with_timeout(
-        self, command: str, timeout: int, log_dir: Path,
-    ) -> tuple[str, bool, float]:
+    def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
         """Exec"""
-        output = exec_run_with_timeout(self.container, command, timeout)
+        output = exec_run_with_timeout(self.container, command, self.timeout)
 
         # copy back report.json if there is any
         report_file = Path(self.spec.repo_directory) / "report.json"
@@ -135,7 +128,7 @@ class Docker(ExecutionContext):
         exit_code, test_output = self._exec_run(f"test -e {report_file}")
         # Check the exit code of the command
         if exit_code == 0:
-            self._copy_from_remote(report_file, log_dir / "report.json")
+            self._copy_from_remote(report_file, self.log_dir / "report.json")
             self._delete_file_from_remote(report_file)
         return output
 
@@ -183,10 +176,7 @@ class Modal(ExecutionContext):
                 image = image.copy_local_file(f["src"], f["dest"])  # type: ignore
         self.image = image
 
-
-    def exec_run_with_timeout(
-        self, command: str, timeout: int, log_dir: Path,
-    ) -> tuple[str, bool, float]:
+    def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
         """Execute command on modal sandbox"""
 
         with modal.Volume.ephemeral() as vol:
@@ -199,7 +189,7 @@ class Modal(ExecutionContext):
                 f"{command} && cp {str(report_file)} /vol/report.json",
                 image=self.image,
                 cpu=4.0,
-                timeout=timeout,
+                timeout=self.timeout,
                 app=self.app,
                 volumes={"/vol": vol},
             )
@@ -219,7 +209,9 @@ class Modal(ExecutionContext):
                     f.write(data)
 
             self.sandbox.terminate()
-            import pdb; pdb.set_trace()
+            import pdb
+
+            pdb.set_trace()
 
             # TODO: add timing
             return stdout, False, 1.0
