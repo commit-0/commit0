@@ -18,7 +18,7 @@ from commit0.harness.utils import (
     EvaluationError,
     extract_test_output,
     get_hash_string,
-    get_ip,
+    generate_patch_between_commits,
 )
 from commit0.harness.execution_context import (
     ExecutionBackend,
@@ -60,20 +60,18 @@ def main(
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo, log_file)
 
+    local_repo = Repo(f"{base_dir}/{repo}")
     if branch == "reference":
         commit_id = example["reference_commit"]
     else:
-        local_repo = Repo(f"{base_dir}/{repo}")
         local_branch = local_repo.branches[branch]
         commit_id = local_branch.commit.hexsha
+    patch = generate_patch_between_commits(local_repo, example["base_commit"], commit_id)
+    patch_file = Path(log_dir / "patch.diff")
+    patch_file.write_text(patch)
 
     # make eval file
-    eval_script = spec.eval_script.format(
-        local_repo=f"{base_dir}/{repo}",
-        commit_id=commit_id,
-        test_ids=test_ids,
-        ip=get_ip(backend),
-    )
+    eval_script = spec.eval_script.format(test_ids=test_ids)
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
@@ -86,7 +84,7 @@ def main(
             f"Evaluation must be from {', '.join(EVAL_BACKENDS)}, but {backend} is provided."
         )
 
-    files_to_copy = Files(eval_script={"src": eval_file, "dest": Path("/eval.sh")})
+    files_to_copy = Files(eval_script={"src": eval_file, "dest": Path("/eval.sh")}, patch={"src": patch_file, "dest": Path("/patch.diff")})
 
     try:
         with execution_context(spec, logger, timeout, files_to_copy) as context:

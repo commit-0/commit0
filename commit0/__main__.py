@@ -60,7 +60,6 @@ def main() -> None:
             config.repo_split,
             config.num_workers,
             config.backend,
-            config.key_path,
         )
     elif command == "get-tests":
         repo = sys.argv[2]

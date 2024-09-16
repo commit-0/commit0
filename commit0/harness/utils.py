@@ -168,4 +168,25 @@ def create_repo_on_github(
             break
 
 
+def generate_patch_between_commits(repo: git.Repo, old_commit: str, new_commit: str) -> str:
+    """
+    Generate a patch string by comparing two specified commits.
+
+    Args:
+        repo (git.Repo): An instance of the git.Repo object representing the repository.
+        old_commit (str): The hash or reference to the old commit.
+        new_commit (str): The hash or reference to the new commit.
+
+    Returns:
+        patch (str): A string containing the patch in the diff format between the two commits
+
+    Raises:
+        git.GitCommandError: If there is an error while running git commands.
+    """
+    try:
+        patch = repo.git.diff(old_commit, new_commit, '--', '.', ':(exclude)spec.pdf')
+        return patch+'\n\n'
+    except git.GitCommandError as e:
+        raise Exception(f"Error generating patch: {e}")
+
 __all__ = []
