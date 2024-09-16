@@ -7,7 +7,7 @@ commit0_config:
   base_dir: /Users/willjiang/Desktop/ai2dev/commit0/repos
   dataset_name: "wentingzhao/commit0_docstring"
   dataset_split: "test"
-  repo_split: "lite"
+  repo_split: "simpy"
   num_workers: 10
 
 aider_config:
@@ -23,6 +23,7 @@ aider_config:
   use_lint_info: false
   max_lint_info_length: 10000
   pre_commit_config_path: .pre-commit-config.yaml
+  run_tests: True
 
 hydra:
   run:

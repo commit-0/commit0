@@ -20,6 +20,7 @@ class Files(TypedDict):
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")
 REPO_IMAGE_BUILD_DIR = Path("logs/build_images/repo")
 RUN_PYTEST_LOG_DIR = Path("logs/pytest")
+RUN_AIDER_LOG_DIR = Path("logs/aider")
 
 # Constants - Test Types, Statuses, Commands
 FAIL_TO_PASS = "FAIL_TO_PASS"
