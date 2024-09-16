@@ -7,13 +7,14 @@ and HTTP servers.
 from abc import ABC, abstractmethod
 import docker
 import logging
-import os
 import modal
 import modal.io_streams
+from enum import StrEnum, auto
 from pathlib import Path
 from typing import Optional, Type
 from types import TracebackType
 
+from commit0.harness.constants import Files
 from commit0.harness.spec import Spec
 from commit0.harness.utils import (
     EvaluationError,
@@ -26,7 +27,7 @@ from commit0.harness.docker_utils import (
     create_container,
     copy_from_container,
     copy_to_container,
-    copy_ssh_pubkey_from_container,
+    get_ssh_pubkey_from_container,
     delete_file_from_container,
     exec_run_with_timeout,
 )
@@ -40,14 +41,17 @@ def read_stream(stream: modal.io_streams.StreamReader) -> str:
     return "\n".join(strings)
 
 
+class ExecutionBackend(StrEnum):
+    LOCAL = auto()
+    MODAL = auto()
+
+
 class ExecutionContext(ABC):
     def __init__(
         self,
         spec: Spec,
         logger: logging.Logger,
-        eval_file: Path,
         timeout: int,
-        log_dir: Path,
     ):
         """Create the remote execution context
 
@@ -56,17 +60,10 @@ class ExecutionContext(ABC):
         """
         self.spec = spec
         self.logger = logger
-        self.eval_file = eval_file
         self.timeout = timeout
-        self.log_dir = log_dir
 
     @abstractmethod
-    def copy_ssh_pubkey_from_remote(self) -> None:
-        """Copy"""
-        raise NotImplementedError
-
-    @abstractmethod
-    def copy_to_remote(self, local_path: Path, remote_path: Path) -> None:
+    def get_ssh_pubkey_from_remote(self) -> None:
         """Copy"""
         raise NotImplementedError
 
@@ -92,9 +89,11 @@ class ExecutionContext(ABC):
         """Delete"""
         raise NotImplementedError
 
-    def write_test_output(self, test_output: str, timed_out: bool) -> None:
+    def write_test_output(
+        self, log_dir: Path, test_output: str, timed_out: bool
+    ) -> None:
         """Write test output"""
-        test_output_path = self.log_dir / "test_output.txt"
+        test_output_path = log_dir / "test_output.txt"
         with open(test_output_path, "w") as f:
             f.write(test_output)
             if timed_out:
@@ -111,7 +110,7 @@ class ExecutionContext(ABC):
         exit_code, output = self.exec_run(f"test -e {report_file}")
         # Check the exit code of the command
         if exit_code == 0:
-            self.copy_from_remote(report_file, self.log_dir / "report.json")
+            self.copy_from_remote(report_file, log_dir / "report.json")
             self.delete_file_from_remote(report_file)
 
     def __enter__(self):
@@ -132,11 +131,10 @@ class Docker(ExecutionContext):
         self,
         spec: Spec,
         logger: logging.Logger,
-        eval_file: Path,
         timeout: int,
-        log_dir: Path,
+        files_to_copy: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, eval_file, timeout, log_dir)
+        super().__init__(spec, logger, timeout)
 
         self.client = docker.from_env()
         self.container = create_container(
@@ -146,16 +144,13 @@ class Docker(ExecutionContext):
             logger=logger,
         )
         self.container.start()
-        self.copy_ssh_pubkey_from_remote()
-        copy_to_container(self.container, eval_file, Path("/eval.sh"))
+        if files_to_copy:
+            for _, f in files_to_copy.items():
+                copy_to_container(self.container, f["src"], f["dest"])  # type: ignore
 
-    def copy_ssh_pubkey_from_remote(self) -> None:
+    def get_ssh_pubkey_from_remote(self, user: str) -> str:
         """Copy"""
-        copy_ssh_pubkey_from_container(self.container)
-
-    def copy_to_remote(self, local_file: Path, remote_path: Path) -> None:
-        """Copy"""
-        copy_to_container(self.container, local_file, remote_path)
+        return get_ssh_pubkey_from_container(self.container, user)
 
     def exec_run_with_timeout(
         self, command: str, timeout: int
@@ -190,18 +185,18 @@ class Modal(ExecutionContext):
         self,
         spec: Spec,
         logger: logging.Logger,
-        eval_file: Path,
         timeout: int,
-        log_dir: Path,
+        files_to_copy: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, eval_file, timeout, log_dir)
+        super().__init__(spec, logger, timeout)
 
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
         image_name = f"wentingzhao/{reponame}"
-        image = modal.Image.from_registry(image_name).copy_local_file(
-            eval_file, "/eval.sh"
-        )
+        image = modal.Image.from_registry(image_name)
+        if files_to_copy:
+            for _, f in files_to_copy.items():
+                image = image.copy_local_file(f["src"], f["dest"])  # type: ignore
 
         self.sandbox = modal.Sandbox.create(
             "sleep",
@@ -211,38 +206,11 @@ class Modal(ExecutionContext):
             timeout=timeout,
         )
 
-        self.copy_ssh_pubkey_from_remote()
-
-    def copy_ssh_pubkey_from_remote(self) -> None:
+    def get_ssh_pubkey_from_remote(self, user: str) -> str:
         """Copy ssh pubkey"""
-        process = self.sandbox.exec("bash", "-c", "cat /root/.ssh/id_rsa.pub")
+        process = self.sandbox.exec("bash", "-c", f"cat /{user}/.ssh/id_rsa.pub")
         public_key = "".join([line for line in process.stdout]).strip()
-
-        # add to authorized keys locally. copy-pasted from utils
-        local_authorized_keys_path = os.path.expanduser("~/.ssh/authorized_keys")
-        os.makedirs(os.path.dirname(local_authorized_keys_path), exist_ok=True)
-        if not os.path.exists(local_authorized_keys_path):
-            # Since the file does not exist, create it
-            open(local_authorized_keys_path, "a").close()
-            write = True
-        else:
-            with open(local_authorized_keys_path, "r") as authorized_keys_file:
-                content = authorized_keys_file.read()
-                if public_key not in content:
-                    write = True
-                else:
-                    write = False
-        if write:
-            with open(local_authorized_keys_path, "a") as authorized_keys_file:
-                authorized_keys_file.write(public_key + "\n")
-
-    def copy_to_remote(self, local_path: Path, remote_path: Path) -> None:
-        """Copy"""
-        raise NotImplementedError
-        # tempname = "tmpfile"
-        # with local_path.open("rb") as f:
-        #    self.nfs.write_file(tempname, f)
-        # self.sandbox.exec("bash", "-c", f"cp /vol/{tempname} {str(remote_path)}")
+        return public_key
 
     def exec_run_with_timeout(
         self, command: str, timeout: int

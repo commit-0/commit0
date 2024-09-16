@@ -1,11 +1,15 @@
 from datasets import load_dataset
-from enum import StrEnum, auto
 import traceback
 from pathlib import Path
 
 from typing import Iterator
 from git import Repo
-from commit0.harness.constants import RUN_PYTEST_LOG_DIR, RepoInstance
+from commit0.harness.constants import (
+    EVAL_BACKENDS,
+    Files,
+    RUN_PYTEST_LOG_DIR,
+    RepoInstance,
+)
 from commit0.harness.docker_build import (
     setup_logger,
 )
@@ -17,14 +21,10 @@ from commit0.harness.utils import (
     get_ip,
 )
 from commit0.harness.execution_context import (
+    ExecutionBackend,
     Docker,
     Modal,
 )
-
-
-class ExecutionBackend(StrEnum):
-    LOCAL = auto()
-    MODAL = auto()
 
 
 def main(
@@ -77,15 +77,19 @@ def main(
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
-    # Not sure how to appease typechecker
-    execution_context = Docker
     if ExecutionBackend(backend) == ExecutionBackend.MODAL:
         execution_context = Modal
     elif ExecutionBackend(backend) == ExecutionBackend.LOCAL:
         execution_context = Docker
+    else:
+        raise ValueError(
+            f"Evaluation must be from {', '.join(EVAL_BACKENDS)}, but {backend} is provided."
+        )
+
+    files_to_copy = Files(eval_script={"src": eval_file, "dest": Path("/eval.sh")})
 
     try:
-        with execution_context(spec, logger, eval_file, timeout, log_dir) as context:
+        with execution_context(spec, logger, timeout, files_to_copy) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh", timeout
             )
@@ -93,7 +97,7 @@ def main(
             test_output = extract_test_output(
                 output, "--json-report --json-report-file=report.json"
             )
-            context.write_test_output(test_output, timed_out)
+            context.write_test_output(log_dir, test_output, timed_out)
             print(test_output)
     except EvaluationError as e:
         error_msg = (

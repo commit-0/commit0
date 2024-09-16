@@ -2,6 +2,7 @@ import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
 import commit0.harness.build
 import commit0.harness.setup
+import commit0.harness.setup_git_user
 import commit0.harness.evaluate
 import commit0.harness.save
 import copy
@@ -30,7 +31,14 @@ def main() -> None:
     # after hydra gets all configs, put command-line arguments back
     sys.argv = sys_argv
     # repo_split: split from command line has a higher priority than split in hydra
-    if command in ["setup", "build", "evaluate", "evaluate-reference", "save"]:
+    if command in [
+        "clone",
+        "build",
+        "setup-git-user",
+        "evaluate",
+        "evaluate-reference",
+        "save",
+    ]:
         if len(sys.argv) >= 3:
             if sys.argv[2] not in SPLIT:
                 raise ValueError(
@@ -39,7 +47,7 @@ def main() -> None:
             config.repo_split = sys.argv[2]
     config.base_dir = os.path.abspath(config.base_dir)
 
-    if command == "setup":
+    if command == "clone":
         commit0.harness.setup.main(
             config.dataset_name,
             config.dataset_split,
@@ -53,6 +61,17 @@ def main() -> None:
             config.dataset_split,
             config.repo_split,
             config.num_workers,
+            config.backend,
+            config.key_path,
+        )
+    elif command == "setup-git-user":
+        commit0.harness.setup_git_user.main(
+            config.dataset_name,
+            config.dataset_split,
+            config.repo_split,
+            config.base_dir,
+            config.git_user,
+            config.key_path,
         )
     elif command == "get-tests":
         repo = sys.argv[2]

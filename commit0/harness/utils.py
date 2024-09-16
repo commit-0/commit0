@@ -7,6 +7,7 @@ import os
 import time
 import requests
 import subprocess
+import pwd
 from typing import Optional, Tuple
 
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
@@ -86,35 +87,24 @@ def handle_command(command: str, description: str, logger: logging.Logger) -> No
         logger.info(f"Succeeded in running '{command}' which {description}")
 
 
-def setup_git(logger: logging.Logger) -> None:
-    """Sets up the 'git' user with appropriate shell settings, .ssh directory, and git-shell as login shell."""
-    handle_command(
-        'sudo adduser --disabled-password --gecos "" git', "adds git user", logger
-    )
+def get_home_directory(user: str) -> str:
+    user_info = pwd.getpwnam(user)
+    return user_info.pw_dir
 
-    # Get git user's home directory dynamically
-    git_home_command = "getent passwd git | cut -d: -f6"
-    stdout, stderr, exit_code = run_command(git_home_command)
-    if exit_code != 0:
-        raise RuntimeError(f"Error getting git user's home directory: {stderr}")
-    git_home = stdout.strip()  # Extract and trim the home directory
 
-    # Commands to be executed
+def setup_user(user: str, logger: logging.Logger) -> None:
+    """Sets up a new user with appropriate shell settings and git-shell as login shell."""
     commands = [
-        (f"sudo chmod 755 {git_home}", "make home of git viewable by others"),
-        (
-            f"sudo sh -c 'mkdir -p {git_home}/.ssh && chmod 755 {git_home}/.ssh && touch {git_home}/.ssh/authorized_keys && chmod 666 {git_home}/.ssh/authorized_keys'",
-            "sets up .ssh directory for git",
-        ),
-        ("sudo touch /etc/shells", "creates /etc/shells if it doesn't exist yet"),
+        (f'adduser --disabled-password --gecos "" {user}', f"adds {user}"),
+        ("touch /etc/shells", "creates /etc/shells if it doesn't exist yet"),
         ("cat /etc/shells", "views available shells"),
         (
-            "sudo sh -c 'which git-shell >> /etc/shells'",
+            "sh -c 'which git-shell >> /etc/shells'",
             "adds git-shell to /etc/shells",
         ),
         (
-            "sudo chsh git -s $(which git-shell)",
-            "changes shell for git user to git-shell",
+            f"chsh {user} -s $(which git-shell)",
+            "changes shell for {user} to git-shell",
         ),
     ]
 
@@ -123,9 +113,87 @@ def setup_git(logger: logging.Logger) -> None:
         handle_command(command, description, logger)
 
 
+def chmod(path: str, mode: int, logger: logging.Logger) -> None:
+    """A Python wrapper for the chmod command to change file or directory permissions.
+
+    Args:
+    ----
+        path (str): The path to the file or directory.
+        mode (int): The permission mode (octal), e.g., 0o755, 0o644, etc.
+        logger (logging.Logger): The logger object.
+
+    """
+    try:
+        os.chmod(path, mode)
+        logger.info(f"Permissions for '{path}' changed to {oct(mode)}")
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"Error: The file or directory '{path}' does not exist."
+        )
+    except PermissionError:
+        raise PermissionError(
+            f"Error: Permission denied when changing permissions for '{path}'"
+        )
+    except Exception as e:
+        raise Exception(f"An error occurred: {e}")
+
+
+def setup_ssh_directory(user: str, logger: logging.Logger) -> None:
+    """Sets up the .ssh directory for the user and sets appropriate permissions.
+
+    Args:
+    ----
+        user (str): The name of the user.
+        logger (logging.Logger): The logger object.
+
+    """
+    home = get_home_directory(user)
+    ssh_dir = os.path.join(home, ".ssh")
+    authorized_keys_file = os.path.join(ssh_dir, "authorized_keys")
+
+    try:
+        # Create the .ssh directory if it doesn't exist
+        if not os.path.exists(ssh_dir):
+            os.makedirs(ssh_dir)
+            logger.info(f"Created directory: {ssh_dir}")
+
+        # Set directory permissions to 755
+        os.chmod(ssh_dir, 0o755)
+
+        # Create the authorized_keys file if it doesn't exist
+        if not os.path.exists(authorized_keys_file):
+            open(authorized_keys_file, "a").close()
+            logger.info(f"Created file: {authorized_keys_file}")
+    except Exception as e:
+        raise e
+
+
+def add_key(user: str, public_key: str) -> None:
+    public_key = (
+        f"no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty {public_key}"
+    )
+
+    home_directory = get_home_directory(user)
+    authorized_keys_path = os.path.join(home_directory, ".ssh", "authorized_keys")
+    if not os.path.exists(authorized_keys_path):
+        raise FileNotFoundError(
+            f"f{authorized_keys_path} does not exists, please call setup_ssh_directory() before adding keys"
+        )
+    else:
+        with open(authorized_keys_path, "r") as authorized_keys_file:
+            content = authorized_keys_file.read()
+            if public_key not in content:
+                write = True
+            else:
+                write = False
+        if write:
+            with open(authorized_keys_path, "a") as authorized_keys_file:
+                authorized_keys_file.write(public_key + "\n")
+
+
 def is_safe_directory_added(safe_directory: str) -> bool:
     # Run command to get all safe directories
-    command = "sudo git config --system --get-all safe.directory"
+    command = "git config --system --get-all safe.directory"
     stdout, stderr, exit_code = run_command(command)
 
     # Check if the directory is listed
@@ -140,7 +208,7 @@ def add_safe_directory(safe_directory: str, logger: logging.Logger) -> None:
     # Check if the directory is already added
     if not is_safe_directory_added(safe_directory):
         # Command to add the directory to safe.directory
-        command = f"sudo git config --system --add safe.directory {safe_directory}"
+        command = f"git config --system --add safe.directory {safe_directory}"
         stdout, stderr, exit_code = run_command(command)
 
         if exit_code == 0:
