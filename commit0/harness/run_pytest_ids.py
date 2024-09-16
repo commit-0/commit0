@@ -92,7 +92,9 @@ def main(
     )
 
     try:
-        with execution_context(spec, logger, timeout, log_dir, files_to_copy) as context:
+        with execution_context(
+            spec, logger, timeout, log_dir, files_to_copy
+        ) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh"
             )

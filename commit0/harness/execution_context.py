@@ -128,7 +128,9 @@ class Docker(ExecutionContext):
         exit_code, test_output = self._exec_run(f"test -e {report_file}")
         # Check the exit code of the command
         if exit_code == 0:
-            copy_from_container(self.container, report_file, self.log_dir / "report.json")
+            copy_from_container(
+                self.container, report_file, self.log_dir / "report.json"
+            )
             delete_file_from_container(self.container, str(report_file))
         return output
 
@@ -170,7 +172,6 @@ class Modal(ExecutionContext):
 
     def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
         """Execute command on modal sandbox"""
-
         with modal.Volume.ephemeral() as vol:
             # copy back report.json if there is any
             report_file = Path(self.spec.repo_directory) / "report.json"
@@ -194,7 +195,8 @@ class Modal(ExecutionContext):
             stderr = read_stream(self.sandbox.stderr)
             print(stderr)
 
-            return_code = self.sandbox.returncode
+            # return_code = self.sandbox.returncode
+            # maybe use return_code for timeout info?
 
             with (self.log_dir / "report.json").open("wb") as f:
                 for data in vol.read_file("report.json"):
