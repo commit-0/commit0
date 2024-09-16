@@ -36,6 +36,7 @@ def main(
     test_ids: str,
     backend: str,
     timeout: int,
+    num_cpus: int,
     stdout: bool,
 ) -> str:
     """Runs the pytests for repos in a dataset.
@@ -93,7 +94,7 @@ def main(
 
     try:
         with execution_context(
-            spec, logger, timeout, log_dir, files_to_copy
+            spec, logger, timeout, num_cpus, log_dir, files_to_copy
         ) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh"
@@ -103,7 +104,8 @@ def main(
                 output, "--json-report --json-report-file=report.json"
             )
             context.write_test_output(test_output, timed_out)
-            print(test_output)
+            if stdout:
+                print(test_output)
     except EvaluationError as e:
         error_msg = (
             f"Error in running pytest for {repo}: {e}\n"

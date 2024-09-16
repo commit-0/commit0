@@ -52,6 +52,7 @@ class ExecutionContext(ABC):
         spec: Spec,
         logger: logging.Logger,
         timeout: int,
+        num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
     ):
@@ -63,6 +64,7 @@ class ExecutionContext(ABC):
         self.spec = spec
         self.logger = logger
         self.timeout = timeout
+        self.num_cpus = num_cpus
         self.log_dir = log_dir
 
     @abstractmethod
@@ -102,16 +104,18 @@ class Docker(ExecutionContext):
         spec: Spec,
         logger: logging.Logger,
         timeout: int,
+        num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, timeout, log_dir)
+        super().__init__(spec, logger, timeout, num_cpus, log_dir)
 
         self.client = docker.from_env()
         self.container = create_container(
             client=self.client,
             image_name=spec.repo_image_key,
             container_name=spec.get_container_name(),
+            nano_cpus=num_cpus,
             logger=logger,
         )
         self.container.start()
@@ -153,10 +157,11 @@ class Modal(ExecutionContext):
         spec: Spec,
         logger: logging.Logger,
         timeout: int,
+        num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, timeout, log_dir)
+        super().__init__(spec, logger, timeout, num_cpus, log_dir)
 
         self.app = modal.App()
 
@@ -181,19 +186,22 @@ class Modal(ExecutionContext):
                 "-c",
                 f"{command} && cp {str(report_file)} /vol/report.json",
                 image=self.image,
-                cpu=4.0,
+                cpu=self.num_cpus,
                 timeout=self.timeout,
                 app=self.app,
                 volumes={"/vol": vol},
             )
             self.sandbox.wait()
 
-            stdout = read_stream(self.sandbox.stdout)
-            # stderr = read_stream(self.sandbox.stderr)
+            # stdout has been redirected to stderr
+            stdout = read_stream(self.sandbox.stderr)
 
-            # return_code = self.sandbox.returncode
-            # maybe use return_code for timeout info?
-            # i dont know if sandboxes throw modal.TimeoutError
+            return_code = self.sandbox.returncode
+            # https://github.com/modal-labs/modal-client/blob/d577b2916b5c3bf4ebbcb58fadced84d85e1cf8c/modal/sandbox.py#L413
+            if return_code == 124:
+                timed_out = True
+            else:
+                timed_out = False
 
             # copy over report.json from mount
             with (self.log_dir / "report.json").open("wb") as f:
@@ -204,8 +212,7 @@ class Modal(ExecutionContext):
 
             end_time = time.time()
 
-            # TODO: add check for timeout
-            return stdout, False, end_time - start_time
+            return stdout, timed_out, end_time - start_time
 
     def __exit__(
         self,

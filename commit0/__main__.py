@@ -78,6 +78,7 @@ def main() -> None:
             test_ids,
             config.backend,
             config.timeout,
+            config.num_cpus,
             stdout=True,
         )
     elif command == "evaluate" or command == "evaluate-reference":
@@ -91,6 +92,7 @@ def main() -> None:
             config.branch,
             config.backend,
             config.timeout,
+            config.num_cpus,
             config.num_workers,
         )
     elif command == "save":

@@ -247,7 +247,7 @@ def create_container(
     image_name: str,
     container_name: Optional[str] = None,
     user: Optional[str] = None,
-    command: Optional[str] = None,
+    command: Optional[str] = "tail -f /dev/null",
     nano_cpus: Optional[int] = None,
     logger: Optional[Union[str, logging.Logger]] = None,
 ) -> Container:
@@ -312,7 +312,7 @@ def create_container(
             image=image_name,
             name=container_name,
             user=user,
-            command="tail -f /dev/null",
+            command=command,
             nano_cpus=nano_cpus,
             detach=True,
         )
