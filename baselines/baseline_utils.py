@@ -116,7 +116,7 @@ def get_file_info(file_path: Path, prefix: str = "") -> str:
     return "\n".join(filter(None, tree_string))
 
 
-def get_target_edit_files_cmd_args(target_dir: str) -> str:
+def get_target_edit_files(target_dir: str) -> list[str]:
     """Find the files with the error 'NotImplementedError('IMPLEMENT ME
     HERE')'.
     """
@@ -135,7 +135,7 @@ def get_target_edit_files_cmd_args(target_dir: str) -> str:
     # Only keep python files
     files = [file for file in files if file.endswith(".py")]
 
-    return " ".join(files)
+    return files
 
 
 def get_message_to_aider(
