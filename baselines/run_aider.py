@@ -7,8 +7,10 @@ from datasets import load_dataset
 import traceback
 from baselines.baseline_utils import (
     get_message_to_aider,
-    get_target_edit_files_cmd_args,
+    get_target_edit_files,
 )
+from typing import Optional, Type
+from types import TracebackType
 from hydra.core.config_store import ConfigStore
 from baselines.class_types import AiderConfig, Commit0Config
 from commit0.harness.constants import SPLIT
@@ -18,21 +20,38 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from commit0.harness.constants import RUN_AIDER_LOG_DIR
 from commit0.harness.docker_build import setup_logger
 
+class DirContext:
+    def __init__(self, d):
+        self.dir = d
+        self.cwd = os.getcwd()
+    def __enter__(self):
+        os.chdir(self.dir)
+    def __exit__(
+        self,
+        exctype: Optional[Type[BaseException]],
+        excinst: Optional[BaseException],
+        exctb: Optional[TracebackType],
+    ) -> None:
+        os.chdir(self.cwd)
+
 
 def get_aider_cmd(
     model: str,
-    files: str,
+    files: list[str],
     message_to_aider: str,
     test_cmd: str,
     lint_cmd: str,
     log_dir: Path,
 ) -> str:
     """Get the Aider command based on the given context."""
-    base_cmd = f'aider --model {model} --file {files} --message "{message_to_aider}"'
+    base_cmd = f'aider --model {model} --message "{message_to_aider}"'
+    if len(files) > 0:
+        files = " ".join(files)
+        base_cmd += f" --file {files}"
     if lint_cmd:
         base_cmd += f" --auto-lint --lint-cmd '{lint_cmd}'"
     if test_cmd:
-        base_cmd += f" --auto-test --test --test-cmd '{test_cmd}'"
+        base_cmd += f" --auto-test --test-cmd '{test_cmd}'"
     base_cmd += " --yes"
 
     # Store Aider input and chat history in log directory
@@ -79,9 +98,6 @@ def run_aider_for_repo(
     ds: dict,
 ) -> None:
     """Run Aider for a given repository."""
-    if commit0_config is None or aider_config is None:
-        raise ValueError("Invalid input")
-
     # get repo info
     _, repo_name = ds["repo"].split("/")
 
@@ -94,72 +110,78 @@ def run_aider_for_repo(
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
+    repo_path = os.path.abspath(repo_path)
 
-    target_edit_files_cmd_args = get_target_edit_files_cmd_args(repo_path)
+    target_edit_files = get_target_edit_files(repo_path)
 
-    os.chdir(repo_path)
+    with DirContext(repo_path):
+        if commit0_config is None or aider_config is None:
+            raise ValueError("Invalid input")
 
-    message_to_aider = get_message_to_aider(
-        aider_config, target_edit_files_cmd_args, repo_path, ds
-    )
-
-    if aider_config.use_lint_info:
-        lint_cmd = "pre-commit run --config ../../.pre-commit-config.yaml --files"
-    else:
-        lint_cmd = ""
-
-    print(
-        f"Aider logs for {repo_name} can be found in: {Path.cwd() /RUN_AIDER_LOG_DIR}"
-    )
-
-    if aider_config.run_tests:
-        for test_file in test_files:
-            test_cmd = f"python -m commit0 test {repo_name} {test_file}"
-            # set up logging
-            test_file_name = test_file.replace(".py", "").replace("/", "__")
-            log_dir = RUN_AIDER_LOG_DIR / test_file_name
-            log_dir.mkdir(parents=True, exist_ok=True)
-            log_file = log_dir / "run_aider.log"
-            logger = setup_logger(repo_name, log_file)
-
-            aider_cmd = get_aider_cmd(
-                aider_config.llm_name,
-                target_edit_files_cmd_args,
-                message_to_aider,
-                test_cmd,
-                lint_cmd,
-                log_dir,
-            )
-
-            # write aider command to log file
-            aider_cmd_file = Path(log_dir / "aider_cmd.sh")
-            aider_cmd_file.write_text(aider_cmd)
-
-            # write test command to log file
-            test_cmd_file = Path(log_dir / "test_cmd.sh")
-            test_cmd_file.write_text(test_cmd)
-
-            execute_aider_cmd(aider_cmd, logger)
-    else:
-        # set up logging
-        log_dir = RUN_AIDER_LOG_DIR / "no_test"
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "run_aider.log"
-        logger = setup_logger(repo_name, log_file)
-
-        aider_cmd = get_aider_cmd(
-            aider_config.llm_name,
-            target_edit_files_cmd_args,
-            message_to_aider,
-            "",
-            lint_cmd,
-            log_dir,
+        message_to_aider = get_message_to_aider(
+            aider_config, target_edit_files, repo_path, ds
         )
-        # write aider command to log file
-        aider_cmd_file = Path(log_dir / "aider_cmd.sh")
-        aider_cmd_file.write_text(aider_cmd)
 
-        execute_aider_cmd(aider_cmd, logger)
+        if aider_config.use_lint_info:
+            lint_cmd = "pre-commit run --config ../../.pre-commit-config.yaml --files"
+        else:
+            lint_cmd = ""
+
+        print(
+            f"Aider logs for {repo_name} can be found in: {Path.cwd() /RUN_AIDER_LOG_DIR}"
+        )
+
+        if aider_config.run_tests:
+            for test_file in test_files:
+                test_cmd = f"python -m commit0 test {repo_path} {test_file}"
+                # set up logging
+                test_file_name = test_file.replace(".py", "").replace("/", "__")
+                log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
+                log_dir.mkdir(parents=True, exist_ok=True)
+                log_file = log_dir / "run_aider.log"
+                logger = setup_logger(repo_name, log_file)
+
+                aider_cmd = get_aider_cmd(
+                    aider_config.llm_name,
+                    [],
+                    message_to_aider,
+                    test_cmd,
+                    lint_cmd,
+                    log_dir,
+                )
+
+                # write aider command to log file
+                aider_cmd_file = Path(log_dir / "aider_cmd.sh")
+                aider_cmd_file.write_text(aider_cmd)
+
+                # write test command to log file
+                test_cmd_file = Path(log_dir / "test_cmd.sh")
+                test_cmd_file.write_text(test_cmd)
+
+                execute_aider_cmd(aider_cmd, logger)
+        else:
+            test_cmd = ""
+            for f in target_edit_files:
+                # set up logging
+                file_name = f.replace(".py", "").replace("/", "__")
+                log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
+                log_dir.mkdir(parents=True, exist_ok=True)
+                log_file = log_dir / "run_aider.log"
+                logger = setup_logger(repo_name, log_file)
+
+                aider_cmd = get_aider_cmd(
+                    aider_config.llm_name,
+                    [f],
+                    message_to_aider,
+                    test_cmd,
+                    lint_cmd,
+                    log_dir,
+                )
+                # write aider command to log file
+                aider_cmd_file = Path(log_dir / "aider_cmd.sh")
+                aider_cmd_file.write_text(aider_cmd)
+
+                execute_aider_cmd(aider_cmd, logger)
 
 
 def pre_aider_processing(aider_config: AiderConfig) -> None:
