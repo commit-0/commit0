@@ -49,6 +49,7 @@ def main(
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     spec = None
     example = None
+    repo_name = None
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         if repo_name in os.path.basename(repo_or_repo_dir):
@@ -56,6 +57,7 @@ def main(
             break
     assert spec is not None, "No spec available"
     assert example is not None, "No example available"
+    assert repo_name is not None, "No repo available"
 
     hashed_test_ids = get_hash_string(test_ids)
     # set up logging
@@ -66,13 +68,15 @@ def main(
 
     try:
         local_repo = git.Repo(repo_or_repo_dir)
-    except git.exc.NoSuchPathError:
+    except git.exc.NoSuchPathError:  # type: ignore
         repo_dir = os.path.join(base_dir, repo_name)
         logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
         try:
             local_repo = git.Repo(repo_dir)
-        except git.exc.NoSuchPathError:
-            raise Exception(f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {test_ids}")
+        except git.exc.NoSuchPathError:  # type: ignore
+            raise Exception(
+                f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {test_ids}"
+            )
         except Exception as e:
             raise e
     if branch == "reference":
@@ -123,7 +127,9 @@ def main(
             try:
                 pytest_exit_code = int(pytest_exit_code)
             except Exception:
-                raise Exception(f"Fail to convert pytest_exit_code {pytest_exit_code} into an integer.")
+                raise Exception(
+                    f"Fail to convert pytest_exit_code {pytest_exit_code} into an integer."
+                )
         sys.exit(pytest_exit_code)
     except EvaluationError as e:
         error_msg = (

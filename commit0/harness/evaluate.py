@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 from collections import Counter
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -42,7 +41,6 @@ def main(
         hashed_test_ids = get_hash_string(example["test"]["test_dir"])
         log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
         log_dirs.append(str(log_dir))
-
 
     with tqdm(total=len(repos), smoothing=0, desc="Evaluating repos") as pbar:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
