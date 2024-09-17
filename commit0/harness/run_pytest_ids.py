@@ -1,9 +1,10 @@
-from datasets import load_dataset
+import git
+import os
 import traceback
+from datasets import load_dataset
 from pathlib import Path
 
 from typing import Iterator
-from git import Repo
 from commit0.harness.constants import (
     EVAL_BACKENDS,
     Files,
@@ -31,7 +32,7 @@ def main(
     dataset_name: str,
     dataset_split: str,
     base_dir: str,
-    repo: str,
+    repo_or_repo_dir: str,
     branch: str,
     test_ids: str,
     backend: str,
@@ -48,7 +49,8 @@ def main(
     spec = None
     example = None
     for example in dataset:
-        if example["repo"].endswith(repo):
+        repo_name = example["repo"].split("/")[-1]
+        if repo_name in os.path.basename(repo_or_repo_dir):
             spec = make_spec(example)
             break
     assert spec is not None, "No spec available"
@@ -56,12 +58,22 @@ def main(
 
     hashed_test_ids = get_hash_string(test_ids)
     # set up logging
-    log_dir = RUN_PYTEST_LOG_DIR / repo / branch / hashed_test_ids
+    log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
-    logger = setup_logger(repo, log_file)
+    logger = setup_logger(repo_name, log_file)
 
-    local_repo = Repo(f"{base_dir}/{repo}")
+    try:
+        local_repo = git.Repo(repo_or_repo_dir)
+    except git.exc.NoSuchPathError:
+        repo_dir = os.path.join(base_dir, repo_name)
+        logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
+        try:
+            local_repo = git.Repo(repo_dir)
+        except git.exc.NoSuchPathError:
+            raise Exception(f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {test_ids}")
+        except Exception as e:
+            raise e
     if branch == "reference":
         commit_id = example["reference_commit"]
     else:
@@ -108,11 +120,11 @@ def main(
                 print(test_output)
     except EvaluationError as e:
         error_msg = (
-            f"Error in running pytest for {repo}: {e}\n"
+            f"Error in running pytest for {repo_name}: {e}\n"
             f"{traceback.format_exc()}\n"
             f"Check ({log_file}) for more information."
         )
-        raise EvaluationError(repo, error_msg, logger)
+        raise EvaluationError(repo_name, error_msg, logger)
     except Exception as e:
         error_msg = (
             f"General error: {e}\n"
