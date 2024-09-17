@@ -165,7 +165,7 @@ class Modal(ExecutionContext):
 
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
-        image_name = f"wentingzhao/{reponame}:latest"
+        image_name = f"wentingzhao/{reponame}:latest".lower()
         image = modal.Image.from_registry(image_name)
         if files_to_copy:
             for _, f in files_to_copy.items():
