@@ -65,7 +65,8 @@ def main() -> None:
         repo = sys.argv[2]
         commit0.harness.get_pytest_ids.main(repo, stdout=True)
     elif command == "test" or command == "test-reference":
-        repo = sys.argv[2]
+        # this command assume execution in arbitrary working directory
+        repo_or_repo_path = sys.argv[2]
         test_ids = sys.argv[3]
         if command == "test-reference":
             config.branch = "reference"
@@ -73,7 +74,7 @@ def main() -> None:
             config.dataset_name,
             config.dataset_split,
             config.base_dir,
-            repo,
+            repo_or_repo_path,
             config.branch,
             test_ids,
             config.backend,

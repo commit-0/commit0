@@ -44,7 +44,9 @@ def extract_test_output(ss: str, pattern: str) -> str:
             append = True
         # the next command started here, so we finished reading test output
         elif append and one.startswith("+"):
-            return "\n".join(out)
+            # remove the first element "+ {command}"
+            out = out[1:]
+            return "\n".join(out).strip()
         if append:
             out.append(one)
     return ""

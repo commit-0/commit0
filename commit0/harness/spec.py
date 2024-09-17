@@ -154,6 +154,7 @@ def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         "git apply --allow-empty -v /patch.diff",
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json {{test_ids}}",
+        "echo $?",
         f"git reset --hard {instance['base_commit']}",
         "git status",
     ]
