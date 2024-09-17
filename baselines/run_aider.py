@@ -95,9 +95,9 @@ def run_aider_for_repo(
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
 
-    os.chdir(repo_path)
-
     target_edit_files_cmd_args = get_target_edit_files_cmd_args(repo_path)
+
+    os.chdir(repo_path)
 
     message_to_aider = get_message_to_aider(
         aider_config, target_edit_files_cmd_args, repo_path, ds
@@ -109,7 +109,7 @@ def run_aider_for_repo(
         lint_cmd = ""
 
     print(
-        f"Aider logs for {repo_name} can be found in: {RUN_AIDER_LOG_DIR / repo_name / 'ai'}"
+        f"Aider logs for {repo_name} can be found in: {Path.cwd() /RUN_AIDER_LOG_DIR}"
     )
 
     if aider_config.run_tests:
@@ -117,7 +117,7 @@ def run_aider_for_repo(
             test_cmd = f"python -m commit0 test {repo_name} {test_file}"
             # set up logging
             test_file_name = test_file.replace(".py", "").replace("/", "__")
-            log_dir = RUN_AIDER_LOG_DIR / repo_name / "ai" / test_file_name
+            log_dir = RUN_AIDER_LOG_DIR / test_file_name
             log_dir.mkdir(parents=True, exist_ok=True)
             log_file = log_dir / "run_aider.log"
             logger = setup_logger(repo_name, log_file)
@@ -140,10 +140,9 @@ def run_aider_for_repo(
             test_cmd_file.write_text(test_cmd)
 
             execute_aider_cmd(aider_cmd, logger)
-
     else:
         # set up logging
-        log_dir = RUN_AIDER_LOG_DIR / repo_name / "ai" / "no_test"
+        log_dir = RUN_AIDER_LOG_DIR / "no_test"
         log_dir.mkdir(parents=True, exist_ok=True)
         log_file = log_dir / "run_aider.log"
         logger = setup_logger(repo_name, log_file)
