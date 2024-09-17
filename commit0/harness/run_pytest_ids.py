@@ -1,5 +1,6 @@
 import git
 import os
+import sys
 import traceback
 from datasets import load_dataset
 from pathlib import Path
@@ -39,7 +40,7 @@ def main(
     timeout: int,
     num_cpus: int,
     stdout: bool,
-) -> str:
+) -> None:
     """Runs the pytests for repos in a dataset.
 
     Tests are run either locally through docker
@@ -118,6 +119,12 @@ def main(
             context.write_test_output(test_output, timed_out)
             if stdout:
                 print(test_output)
+            pytest_exit_code = extract_test_output(output, "echo ")
+            try:
+                pytest_exit_code = int(pytest_exit_code)
+            except Exception:
+                raise Exception(f"Fail to convert pytest_exit_code {pytest_exit_code} into an integer.")
+        sys.exit(pytest_exit_code)
     except EvaluationError as e:
         error_msg = (
             f"Error in running pytest for {repo_name}: {e}\n"
@@ -132,7 +139,6 @@ def main(
             f"Check ({log_file}) for more information."
         )
         raise RuntimeError(error_msg)
-    return str(log_dir)
 
 
 __all__ = []
