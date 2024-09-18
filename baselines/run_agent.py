@@ -1,9 +1,12 @@
 import os
 import sys
 import hydra
-from datasets import load_dataset
 import traceback
+from datasets import load_dataset
+from git import Repo
 from baselines.commit0_utils import (
+    args2string,
+    create_branch,
     get_message,
     get_target_edit_files,
 )
@@ -54,6 +57,10 @@ def run_agent_for_repo(
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
+    try:
+        local_repo = Repo(repo_path)
+    except Exception as e:
+        raise Exception(f"{repo_path} is not a git repo. Check if base_dir is correctly specified.")
 
     target_edit_files = get_target_edit_files(repo_path)
 
@@ -63,6 +70,16 @@ def run_agent_for_repo(
         raise NotImplementedError(
             f"{agent_config.agent_name} is not implemented; please add your implementations in baselines/agents.py."
         )
+
+    run_id = args2string(agent_config)
+    print(run_id, file=sys.stderr)
+    create_branch(local_repo, run_id, example["base_commit"])
+    latest_commit = local_repo.commit(run_id)
+    # in cases where the latest commit of branch is not commit 0
+    # set it back to commit 0
+    # TODO: ask user for permission
+    if latest_commit.hexsha != example["base_commit"]:
+        local_repo.git.reset('--hard', example["base_commit"])
 
     with DirContext(repo_path):
         if commit0_config is None or agent_config is None:
@@ -78,7 +95,7 @@ def run_agent_for_repo(
         if agent_config.run_tests:
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
-                test_cmd = f"python -m commit0 test {repo_path} {test_file}"
+                test_cmd = f"python -m commit0 test {repo_path} {run_id} {test_file}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
 

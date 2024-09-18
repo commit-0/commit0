@@ -17,13 +17,13 @@ agent_config:
   user_prompt: "Here is your task:\nYou need to implement all functions with 'NotImplementedError('IMPLEMENT ME HERE')' and pass the unit tests.\nDo not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.\nWhen you generate code, you must maintain the original formatting of the function stubs (such as whitespaces), otherwise we will not able to search/replace blocks for code modifications, and therefore you will receive a score of 0 for your generated code."
   use_repo_info: false
   use_unit_tests_info: false
-  use_reference_info: false
+  use_spec_info: false
   use_lint_info: false
   pre_commit_config_path: .pre-commit-config.yaml
   run_tests: True
   max_repo_info_length: 10000
   max_unit_tests_info_length: 10000
-  max_reference_info_length: 10000
+  max_spec_info_length: 10000
   max_lint_info_length: 10000
   max_iteration: 3
 
