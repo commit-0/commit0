@@ -40,6 +40,7 @@ class AiderAgents(Agents):
             auto_lint = True
         else:
             auto_lint = False
+        log_dir = log_dir.resolve()
         log_dir.mkdir(parents=True, exist_ok=True)
         input_history_file = log_dir / ".aider.input.history"
         chat_history_file = log_dir / ".aider.chat.history.md"
