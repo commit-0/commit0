@@ -20,7 +20,7 @@ def main(
     dataset_split: str,
     repo_split: str,
     base_dir: str,
-    organization: str,
+    owner: str,
     branch: str,
     github_token: str,
 ) -> None:
@@ -33,7 +33,7 @@ def main(
         if repo_split != "all" and repo_name not in SPLIT[repo_split]:
             continue
         local_repo_path = f"{base_dir}/{repo_name}"
-        github_repo_url = f"https://github.com/{organization}/{repo_name}.git"
+        github_repo_url = f"https://github.com/{owner}/{repo_name}.git"
         github_repo_url = github_repo_url.replace(
             "https://", f"https://x-access-token:{github_token}@"
         )
@@ -46,7 +46,7 @@ def main(
 
         # create Github repo
         create_repo_on_github(
-            organization=organization, repo=repo_name, logger=logger, token=github_token
+            organization=owner, repo=repo_name, logger=logger, token=github_token
         )
         # Add your remote repository URL
         remote_name = "progress-tracker"
@@ -75,9 +75,7 @@ def main(
             origin.push(refspec=f"{branch}:{branch}")
             logger.info(f"Pushed to {github_repo_url} on branch {branch}")
         except Exception as e:
-            raise Exception(
-                f"Push {branch} to {organization}/{repo_name} fails.\n{str(e)}"
-            )
+            raise Exception(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
 
 
 __all__ = []
