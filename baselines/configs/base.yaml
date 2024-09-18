@@ -10,10 +10,11 @@ commit0_config:
   repo_split: "simpy"
   num_workers: 10
 
-aider_config:
-  llm_name: "claude-3-5-sonnet-20240620"
+agent_config:
+  agent_name: "aider"
+  model_name: "claude-3-5-sonnet-20240620"
   use_user_prompt: false
-  user_prompt: "Here is the Task:\n Your task is to iteratively implement the each function that is 'NotImplementedError('IMPLEMENT ME HERE')' in these files until there are no more 'NotImplementedError('IMPLEMENT ME HERE')' and pass the unit tests.\nMake sure you read the files carefully.\nYour output should be the edited code files.\nUse the above instructions to modify the supplied files.\nDo not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.\nOnly use standard python libraries, do not suggest installing any packages."
+  user_prompt: "Here is your task:\nYou need to implement all functions with 'NotImplementedError('IMPLEMENT ME HERE')' and pass the unit tests.\nDo not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.\nWhen you generate code, you must maintain the original formatting of the function stubs (such as whitespaces), otherwise we will not able to search/replace blocks for code modifications, and therefore you will receive a score of 0 for your generated code."
   use_repo_info: false
   use_unit_tests_info: false
   use_reference_info: false
