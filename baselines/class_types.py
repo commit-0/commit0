@@ -26,3 +26,4 @@ class AgentConfig:
     max_lint_info_length: int
     pre_commit_config_path: str
     run_tests: bool
+    max_iteration: int

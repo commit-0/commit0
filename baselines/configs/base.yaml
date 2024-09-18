@@ -25,6 +25,7 @@ agent_config:
   max_unit_tests_info_length: 10000
   max_reference_info_length: 10000
   max_lint_info_length: 10000
+  max_iteration: 3
 
 hydra:
   run:
