@@ -17,10 +17,11 @@ from commit0.harness.get_pytest_ids import main as get_tests
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from commit0.harness.constants import RUN_AIDER_LOG_DIR
-from commit0.harness.docker_build import setup_logger
 
 from aider.coders import Coder
 from aider.models import Model
+from aider.io import InputOutput
+
 
 class DirContext:
     def __init__(self, d):
@@ -57,7 +58,7 @@ def run_aider(
     input_history_file = log_dir / ".aider.input.history"
     chat_history_file = log_dir / ".aider.chat.history.md"
     io = InputOutput(yes=True, input_history_file=input_history_file, chat_history_file=chat_history_file)
-    coder = Coder.create(main_model=model, fnames=fnames, auto_lint=auto_lint, lint_cmds=[lint_cmd], io=io)
+    coder = Coder.create(main_model=model, fnames=fnames, auto_lint=auto_lint, lint_cmds=lint_cmd, io=io)
     coder.run(message)
 
 
@@ -75,7 +76,6 @@ def run_aider_for_repo(
 
     # Call the commit0 get-tests command to retrieve test files
     test_files_str = get_tests(repo_name, stdout=False)
-
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
@@ -96,10 +96,6 @@ def run_aider_for_repo(
         else:
             lint_cmd = ""
 
-        print(
-            f"Aider logs for {repo_name} can be found in: {Path.cwd() /RUN_AIDER_LOG_DIR}"
-        )
-
         if aider_config.run_tests:
             for test_file in test_files:
                 test_cmd = f"python -m commit0 test {repo_path} {test_file}"
@@ -108,7 +104,6 @@ def run_aider_for_repo(
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
                 log_dir.mkdir(parents=True, exist_ok=True)
                 log_file = log_dir / "run_aider.log"
-                logger = setup_logger(repo_name, log_file)
 
                 aider_cmd = run_aider(
                     aider_config.llm_name,
@@ -126,17 +121,13 @@ def run_aider_for_repo(
                 # write test command to log file
                 test_cmd_file = Path(log_dir / "test_cmd.sh")
                 test_cmd_file.write_text(test_cmd)
-
-                execute_aider_cmd(aider_cmd, logger)
         else:
             test_cmd = ""
             for f in target_edit_files:
-                # set up logging
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
                 log_dir.mkdir(parents=True, exist_ok=True)
                 log_file = log_dir / "run_aider.log"
-                logger = setup_logger(repo_name, log_file)
 
                 aider_cmd = run_aider(
                     aider_config.llm_name,
@@ -146,11 +137,6 @@ def run_aider_for_repo(
                     lint_cmd,
                     log_dir,
                 )
-                # write aider command to log file
-                aider_cmd_file = Path(log_dir / "aider_cmd.sh")
-                aider_cmd_file.write_text(aider_cmd)
-
-                execute_aider_cmd(aider_cmd, logger)
 
 
 def main() -> None:
