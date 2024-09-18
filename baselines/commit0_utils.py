@@ -2,7 +2,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import List
 
 from baselines.class_types import AgentConfig
 
@@ -140,18 +140,17 @@ def get_target_edit_files(target_dir: str) -> list[str]:
 
 def get_message(
     agent_config: AgentConfig,
-    target_edit_files_cmd_args: str,
     repo_path: str,
-    ds: Dict[str, Any],
+    test_dir: str,
 ) -> str:
     """Get the message to Aider."""
     prompt = f"{PROMPT_HEADER}" + agent_config.user_prompt
 
-    if agent_config.use_unit_tests_info and ds["test"]["test_dir"]:
+    if agent_config.use_unit_tests_info and test_dir:
         unit_tests_info = (
             f"\n{UNIT_TESTS_INFO_HEADER} "
             + get_dir_info(
-                dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
+                dir_path=Path(os.path.join(repo_path, test_dir)),
                 prefix="",
                 include_stubs=True,
             )[: agent_config.max_unit_tests_info_length]
@@ -160,16 +159,6 @@ def get_message(
         unit_tests_info = ""
 
     # TODO: assuming we have specification, which we currently do not have
-    if agent_config.use_reference_info and ds["specification"]:
-        reference = (
-            f"\n{REFERENCE_HEADER} "
-            + get_reference(ds["specification"])[
-                : agent_config.max_reference_info_length
-            ]
-        )
-    else:
-        reference = ""
-
     if agent_config.use_repo_info:
         repo_info = (
             f"\n{REPO_INFO_HEADER} "
@@ -180,7 +169,7 @@ def get_message(
     else:
         repo_info = ""
 
-    message_to_agent = prompt + reference + repo_info + unit_tests_info
+    message_to_agent = prompt + repo_info + unit_tests_info
 
     return message_to_agent
 
