@@ -83,7 +83,7 @@ def main(
             )
             continue
         report = load_dataset("json", data_files=report_file, split="train")  # type: ignore
-        tests = {x["nodeid"]: x["call"] for x in report["tests"][0]}  # type: ignore
+        tests = {x["nodeid"]: x["call"] for x in report["tests"][0] if "call" in x}  # type: ignore
         status = []
         runtimes = []
         no_runs = 0
