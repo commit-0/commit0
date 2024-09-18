@@ -124,6 +124,8 @@ def main() -> None:
                     "Too many arguments are passed to commit0 evaluate.\nUsage: commit0 evaluate {repo_split} {branch}"
                 )
             branch = sys.argv[3]
+        if branch.startswith("branch="):
+            branch = branch[len("branch=") :]
         commit0.harness.evaluate.main(
             config.dataset_name,
             config.dataset_split,
