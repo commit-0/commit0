@@ -1,7 +1,6 @@
 import os
 import sys
 import hydra
-import traceback
 import multiprocessing
 from datasets import load_dataset
 from git import Repo
@@ -20,7 +19,6 @@ from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AIDER_LOG_DIR, RepoInstance
 from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 class DirContext:
@@ -151,7 +149,9 @@ def main() -> None:
     if len(filtered_dataset) > 1:
         sys.stdout = open(os.devnull, "w")
 
-    with tqdm(total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos") as pbar:
+    with tqdm(
+        total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
+    ) as pbar:
         with multiprocessing.Pool(processes=commit0_config.num_workers) as pool:
             results = []
 
@@ -160,7 +160,9 @@ def main() -> None:
                 result = pool.apply_async(
                     run_agent_for_repo,
                     args=(commit0_config, agent_config, example),
-                    callback=lambda _: pbar.update(1)  # Update progress bar on task completion
+                    callback=lambda _: pbar.update(
+                        1
+                    ),  # Update progress bar on task completion
                 )
                 results.append(result)
 
