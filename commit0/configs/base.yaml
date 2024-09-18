@@ -14,7 +14,6 @@ num_workers: 8
 
 # test related
 backend: local
-branch: ai
 timeout: 1_800
 num_cpus: 1
 

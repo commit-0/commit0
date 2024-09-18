@@ -1,3 +1,4 @@
+import git
 import os
 import re
 import subprocess
@@ -178,3 +179,53 @@ def get_reference(specification_pdf_path: str) -> str:
     """Get the reference for a given specification PDF path."""
     # TODO: after pdf_to_text is available, use it to extract the text from the PDF
     return f"/pdf {specification_pdf_path}"
+
+
+def create_branch(repo: git.Repo, branch: str, from_commit: str) -> None:
+    """Create a new branch or switch to an existing branch.
+
+    Parameters
+    ----------
+    repo : git.Repo
+        The repository object.
+    branch : str
+        The name of the branch to create or switch to.
+    from_commit : str
+        from which commit to create the branch
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    RuntimeError
+        If creating or switching to the branch fails.
+
+    """
+    try:
+        # Check if the branch already exists
+        if branch in repo.heads:
+            repo.git.checkout(branch)
+        else:
+            repo.git.checkout(from_commit)
+            repo.git.checkout("-b", branch)
+    except git.exc.GitCommandError as e:
+        raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
+
+
+def args2string(agent_config: AgentConfig) -> str:
+    from dataclasses import asdict
+    arg_dict = asdict(agent_config)
+    result_list = []
+    keys_to_collect = ["model_name", "run_tests", "use_lint_info", "use_spec_info"]
+    for key in keys_to_collect:
+        value = arg_dict[key]
+        if isinstance(value, bool):
+            if value:
+                value = "1"
+            else:
+                value = "0"
+        result_list.append(f"{key}-{value}")
+    concatenated_string = '__'.join(result_list)
+    return concatenated_string

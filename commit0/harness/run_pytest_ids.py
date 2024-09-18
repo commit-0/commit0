@@ -77,13 +77,15 @@ def main(
             local_repo = git.Repo(repo_dir)
         except git.exc.NoSuchPathError:  # type: ignore
             raise Exception(
-                f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {test_ids}"
+                f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}"
             )
         except Exception as e:
             raise e
     if branch == "reference":
         commit_id = example["reference_commit"]
     else:
+        if branch not in local_repo.branches:
+            raise Exception(f"Branch {branch} does not exist.")
         local_branch = local_repo.branches[branch]
         commit_id = local_branch.commit.hexsha
     patch = generate_patch_between_commits(

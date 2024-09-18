@@ -18,8 +18,6 @@ class Commit0Config:
 
     # test related
     backend: str
-    # which branch to work on
-    branch: str
     # timeout for running pytest
     timeout: int
     num_cpus: int
