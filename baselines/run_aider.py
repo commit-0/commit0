@@ -1,6 +1,5 @@
 import logging
 import os
-import subprocess
 from pathlib import Path
 import hydra
 from datasets import load_dataset
@@ -20,6 +19,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from commit0.harness.constants import RUN_AIDER_LOG_DIR
 from commit0.harness.docker_build import setup_logger
 
+from aider.coders import Coder
+from aider.models import Model
+
 class DirContext:
     def __init__(self, d):
         self.dir = d
@@ -35,61 +37,28 @@ class DirContext:
         os.chdir(self.cwd)
 
 
-def get_aider_cmd(
-    model: str,
-    files: list[str],
-    message_to_aider: str,
+def run_aider(
+    model_name: str,
+    fnames: list[str],
+    message: str,
     test_cmd: str,
     lint_cmd: str,
     log_dir: Path,
-) -> str:
-    """Get the Aider command based on the given context."""
-    base_cmd = f'aider --model {model} --message "{message_to_aider}"'
-    if len(files) > 0:
-        files = " ".join(files)
-        base_cmd += f" --file {files}"
-    if lint_cmd:
-        base_cmd += f" --auto-lint --lint-cmd '{lint_cmd}'"
+) -> None:
     if test_cmd:
-        base_cmd += f" --auto-test --test-cmd '{test_cmd}'"
-    base_cmd += " --yes"
-
-    # Store Aider input and chat history in log directory
+        auto_test = True
+    else:
+        auto_test = False
+    if lint_cmd:
+        auto_lint = True
+    else:
+        auto_lint = False
+    model = Model(model_name)
     input_history_file = log_dir / ".aider.input.history"
     chat_history_file = log_dir / ".aider.chat.history.md"
-
-    base_cmd += f" --input-history-file {input_history_file}"
-    base_cmd += f" --chat-history-file {chat_history_file}"
-    return base_cmd
-
-
-def execute_aider_cmd(
-    aider_cmd: str,
-    logger: logging.Logger,
-) -> None:
-    """Execute the Aider command."""
-    try:
-        process = subprocess.Popen(
-            aider_cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-        )
-        stdout, stderr = process.communicate()
-        logger.info(f"STDOUT: {stdout}")
-        logger.info(f"STDERR: {stderr}")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command failed with exit code {e.returncode}")
-        logger.error(f"STDOUT: {e.stdout}")
-        logger.error(f"STDERR: {e.stderr}")
-
-    except OSError as e:
-        if e.errno == 63:  # File name too long error
-            logger.error("Command failed due to file name being too long")
-            logger.error(f"Command: {''.join(aider_cmd)}")
-        else:
-            logger.error(f"OSError occurred: {e}")
+    io = InputOutput(yes=True, input_history_file=input_history_file, chat_history_file=chat_history_file)
+    coder = Coder.create(main_model=model, fnames=fnames, auto_lint=auto_lint, lint_cmds=[lint_cmd], io=io)
+    coder.run(message)
 
 
 def run_aider_for_repo(
@@ -141,9 +110,9 @@ def run_aider_for_repo(
                 log_file = log_dir / "run_aider.log"
                 logger = setup_logger(repo_name, log_file)
 
-                aider_cmd = get_aider_cmd(
+                aider_cmd = run_aider(
                     aider_config.llm_name,
-                    [],
+                    target_edit_files,
                     message_to_aider,
                     test_cmd,
                     lint_cmd,
@@ -169,7 +138,7 @@ def run_aider_for_repo(
                 log_file = log_dir / "run_aider.log"
                 logger = setup_logger(repo_name, log_file)
 
-                aider_cmd = get_aider_cmd(
+                aider_cmd = run_aider(
                     aider_config.llm_name,
                     [f],
                     message_to_aider,
@@ -182,13 +151,6 @@ def run_aider_for_repo(
                 aider_cmd_file.write_text(aider_cmd)
 
                 execute_aider_cmd(aider_cmd, logger)
-
-
-def pre_aider_processing(aider_config: AiderConfig) -> None:
-    """Pre-process the Aider config."""
-    if aider_config.use_user_prompt:
-        # get user prompt from input
-        aider_config.user_prompt = input("Enter the user prompt: ")
 
 
 def main() -> None:
@@ -225,8 +187,6 @@ def main() -> None:
             in SPLIT.get(commit0_config.repo_split, [])
         )
     ]
-
-    pre_aider_processing(aider_config)
 
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
