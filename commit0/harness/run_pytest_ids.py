@@ -52,6 +52,8 @@ def main(
     repo_name = None
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
+        if repo_or_repo_dir.endswith("/"):
+            repo_or_repo_dir = repo_or_repo_dir[:-1]
         if repo_name in os.path.basename(repo_or_repo_dir):
             spec = make_spec(example)
             break

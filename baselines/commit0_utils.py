@@ -4,7 +4,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List
 
-from baselines.class_types import AiderConfig
+from baselines.class_types import AgentConfig
 
 PROMPT_HEADER = ">>> Here is the Task:\n"
 REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"
@@ -138,51 +138,51 @@ def get_target_edit_files(target_dir: str) -> list[str]:
     return files
 
 
-def get_message_to_aider(
-    aider_config: AiderConfig,
+def get_message(
+    agent_config: AgentConfig,
     target_edit_files_cmd_args: str,
     repo_path: str,
     ds: Dict[str, Any],
 ) -> str:
     """Get the message to Aider."""
-    prompt = f"{PROMPT_HEADER} " + aider_config.user_prompt
+    prompt = f"{PROMPT_HEADER}" + agent_config.user_prompt
 
-    if aider_config.use_unit_tests_info and ds["test"]["test_dir"]:
+    if agent_config.use_unit_tests_info and ds["test"]["test_dir"]:
         unit_tests_info = (
             f"\n{UNIT_TESTS_INFO_HEADER} "
             + get_dir_info(
                 dir_path=Path(os.path.join(repo_path, ds["test"]["test_dir"])),
                 prefix="",
                 include_stubs=True,
-            )[: aider_config.max_unit_tests_info_length]
+            )[: agent_config.max_unit_tests_info_length]
         )
     else:
         unit_tests_info = ""
 
     # TODO: assuming we have specification, which we currently do not have
-    if aider_config.use_reference_info and ds["specification"]:
+    if agent_config.use_reference_info and ds["specification"]:
         reference = (
             f"\n{REFERENCE_HEADER} "
             + get_reference(ds["specification"])[
-                : aider_config.max_reference_info_length
+                : agent_config.max_reference_info_length
             ]
         )
     else:
         reference = ""
 
-    if aider_config.use_repo_info:
+    if agent_config.use_repo_info:
         repo_info = (
             f"\n{REPO_INFO_HEADER} "
             + get_dir_info(
                 dir_path=Path(repo_path), prefix="", max_depth=2, include_stubs=False
-            )[: aider_config.max_repo_info_length]
+            )[: agent_config.max_repo_info_length]
         )
     else:
         repo_info = ""
 
-    message_to_aider = prompt + reference + repo_info + unit_tests_info
+    message_to_agent = prompt + reference + repo_info + unit_tests_info
 
-    return message_to_aider
+    return message_to_agent
 
 
 def get_reference(specification_pdf_path: str) -> str:

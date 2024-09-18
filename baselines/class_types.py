@@ -11,8 +11,9 @@ class Commit0Config:
 
 
 @dataclass
-class AiderConfig:
-    llm_name: str
+class AgentConfig:
+    agent_name: str
+    model_name: str
     use_user_prompt: bool
     user_prompt: str
     use_repo_info: bool

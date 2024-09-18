@@ -4,23 +4,20 @@ from pathlib import Path
 import hydra
 from datasets import load_dataset
 import traceback
-from baselines.baseline_utils import (
-    get_message_to_aider,
+from baselines.commit0_utils import (
+    get_message,
     get_target_edit_files,
 )
+from baselines.agents import AiderAgents
 from typing import Optional, Type
 from types import TracebackType
 from hydra.core.config_store import ConfigStore
-from baselines.class_types import AiderConfig, Commit0Config
+from baselines.class_types import AgentConfig, Commit0Config
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from commit0.harness.constants import RUN_AIDER_LOG_DIR
-
-from aider.coders import Coder
-from aider.models import Model
-from aider.io import InputOutput
 
 
 class DirContext:
@@ -38,33 +35,9 @@ class DirContext:
         os.chdir(self.cwd)
 
 
-def run_aider(
-    model_name: str,
-    fnames: list[str],
-    message: str,
-    test_cmd: str,
-    lint_cmd: str,
-    log_dir: Path,
-) -> None:
-    if test_cmd:
-        auto_test = True
-    else:
-        auto_test = False
-    if lint_cmd:
-        auto_lint = True
-    else:
-        auto_lint = False
-    model = Model(model_name)
-    input_history_file = log_dir / ".aider.input.history"
-    chat_history_file = log_dir / ".aider.chat.history.md"
-    io = InputOutput(yes=True, input_history_file=input_history_file, chat_history_file=chat_history_file)
-    coder = Coder.create(main_model=model, fnames=fnames, auto_lint=auto_lint, lint_cmds=lint_cmd, io=io)
-    coder.run(message)
-
-
-def run_aider_for_repo(
+def run_agent_for_repo(
     commit0_config: Commit0Config | None,
-    aider_config: AiderConfig | None,
+    agent_config: AgentConfig | None,
     ds: dict,
 ) -> None:
     """Run Aider for a given repository."""
@@ -83,59 +56,42 @@ def run_aider_for_repo(
 
     target_edit_files = get_target_edit_files(repo_path)
 
+    if agent_config.agent_name == "aider":
+        agent = AiderAgents(agent_config.model_name)
+    else:
+        raise NotImplementedError(f"{agent_config.agent} is not implemented; please add your implementations in baselines/agents.py.")
+
     with DirContext(repo_path):
-        if commit0_config is None or aider_config is None:
+        if commit0_config is None or agent_config is None:
             raise ValueError("Invalid input")
 
-        message_to_aider = get_message_to_aider(
-            aider_config, target_edit_files, repo_path, ds
+        message = get_message(
+            agent_config, target_edit_files, repo_path, ds
         )
 
-        if aider_config.use_lint_info:
+        if agent_config.use_lint_info:
             lint_cmd = "pre-commit run --config ../../.pre-commit-config.yaml --files"
         else:
             lint_cmd = ""
 
-        if aider_config.run_tests:
+        if agent_config.run_tests:
+            # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 test_cmd = f"python -m commit0 test {repo_path} {test_file}"
-                # set up logging
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
-                log_dir.mkdir(parents=True, exist_ok=True)
-                log_file = log_dir / "run_aider.log"
 
-                aider_cmd = run_aider(
-                    aider_config.llm_name,
-                    target_edit_files,
-                    message_to_aider,
-                    test_cmd,
-                    lint_cmd,
-                    log_dir,
+                agent.run(
+                    message, test_cmd, lint_cmd, target_edit_files, log_dir,
                 )
-
-                # write aider command to log file
-                aider_cmd_file = Path(log_dir / "aider_cmd.sh")
-                aider_cmd_file.write_text(aider_cmd)
-
-                # write test command to log file
-                test_cmd_file = Path(log_dir / "test_cmd.sh")
-                test_cmd_file.write_text(test_cmd)
         else:
-            test_cmd = ""
+            # when unit test feedback is not available, iterate over target files to edit
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
-                log_dir.mkdir(parents=True, exist_ok=True)
-                log_file = log_dir / "run_aider.log"
 
-                aider_cmd = run_aider(
-                    aider_config.llm_name,
-                    [f],
-                    message_to_aider,
-                    test_cmd,
-                    lint_cmd,
-                    log_dir,
+                agent.run(
+                    message, "", lint_cmd, [f], log_dir
                 )
 
 
@@ -146,15 +102,15 @@ def main() -> None:
     """
     cs = ConfigStore.instance()
     cs.store(name="user", node=Commit0Config)
-    cs.store(name="user", node=AiderConfig)
+    cs.store(name="user", node=AgentConfig)
 
     hydra.initialize(version_base=None, config_path="configs")
-    config = hydra.compose(config_name="aider")
+    config = hydra.compose(config_name="agent")
 
     commit0_config = Commit0Config(**config.commit0_config)
-    aider_config = AiderConfig(**config.aider_config)
+    agent_config = AgentConfig(**config.agent_config)
 
-    if commit0_config is None or aider_config is None:
+    if commit0_config is None or agent_config is None:
         raise ValueError("Invalid input")
 
     dataset = load_dataset(
@@ -173,6 +129,7 @@ def main() -> None:
             in SPLIT.get(commit0_config.repo_split, [])
         )
     ]
+    assert len(filtered_dataset) > 0, "No examples available"
 
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
@@ -181,10 +138,10 @@ def main() -> None:
             # Create a future for running Aider for each repo
             futures = {
                 executor.submit(
-                    run_aider_for_repo,
+                    run_agent_for_repo,
                     commit0_config,
-                    aider_config,
-                    example if isinstance(example, dict) else {},
+                    agent_config,
+                    example
                 ): example
                 for example in filtered_dataset
             }
