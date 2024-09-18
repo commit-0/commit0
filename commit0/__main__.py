@@ -46,14 +46,21 @@ def main() -> None:
     config.base_dir = os.path.abspath(config.base_dir)
 
     if command == "clone":
+        if len(sys.argv) != 3:
+            raise ValueError(
+                "You provided an incorrect number of arguments.\nUsage: commit0 clone {repo_split}"
+            )
         commit0.harness.setup.main(
             config.dataset_name,
             config.dataset_split,
             config.repo_split,
             config.base_dir,
-            config.branch,
         )
     elif command == "build":
+        if len(sys.argv) != 3:
+            raise ValueError(
+                "You provided an incorrect number of arguments.\nUsage: commit0 build {repo_split}"
+            )
         commit0.harness.build.main(
             config.dataset_name,
             config.dataset_split,
@@ -62,20 +69,37 @@ def main() -> None:
             config.backend,
         )
     elif command == "get-tests":
+        if len(sys.argv) != 3:
+            raise ValueError(
+                "You provided an incorrect number of arguments.\nUsage: commit0 get-tests {repo_name}"
+            )
         repo = sys.argv[2]
         commit0.harness.get_pytest_ids.main(repo, stdout=True)
     elif command == "test" or command == "test-reference":
         # this command assume execution in arbitrary working directory
         repo_or_repo_path = sys.argv[2]
-        test_ids = sys.argv[3]
         if command == "test-reference":
-            config.branch = "reference"
+            if len(sys.argv) != 4:
+                raise ValueError(
+                    "You provided an incorrect number of arguments.\nUsage: commit0 test-reference {repo_dir} {test_ids}"
+                )
+            branch = "reference"
+            test_ids = sys.argv[3]
+        else:
+            if len(sys.argv) != 5:
+                raise ValueError(
+                    "You provided an incorrect number of arguments.\nUsage: commit0 test {repo_dir} {branch} {test_ids}"
+                )
+            branch = sys.argv[3]
+            test_ids = sys.argv[4]
+        if branch.startswith("branch="):
+            branch = branch[len("branch=") :]
         commit0.harness.run_pytest_ids.main(
             config.dataset_name,
             config.dataset_split,
             config.base_dir,
             repo_or_repo_path,
-            config.branch,
+            branch,
             test_ids,
             config.backend,
             config.timeout,
@@ -84,27 +108,46 @@ def main() -> None:
         )
     elif command == "evaluate" or command == "evaluate-reference":
         if command == "evaluate-reference":
-            config.branch = "reference"
+            if len(sys.argv) != 3:
+                raise ValueError(
+                    "You provided an incorrect number of arguments.\nUsage: commit0 evaluate-reference {repo_split}"
+                )
+            branch = "reference"
+        else:
+            if len(sys.argv) != 4:
+                raise ValueError(
+                    "You provided an incorrect number of arguments.\nUsage: commit0 evaluate {repo_split} {branch}"
+                )
+            branch = sys.argv[3]
+        if branch.startswith("branch="):
+            branch = branch[len("branch=") :]
         commit0.harness.evaluate.main(
             config.dataset_name,
             config.dataset_split,
             config.repo_split,
             config.base_dir,
-            config.branch,
+            branch,
             config.backend,
             config.timeout,
             config.num_cpus,
             config.num_workers,
         )
     elif command == "save":
-        organization = sys.argv[3]
+        if len(sys.argv) != 5:
+            raise ValueError(
+                "You provided an incorrect number of arguments.\nUsage: commit0 save {repo_split} {owner} {branch}"
+            )
+        owner = sys.argv[3]
+        branch = sys.argv[4]
+        if branch.startswith("branch="):
+            branch = branch[len("branch=") :]
         commit0.harness.save.main(
             config.dataset_name,
             config.dataset_split,
             config.repo_split,
             config.base_dir,
-            organization,
-            config.branch,
+            owner,
+            branch,
             config.github_token,
         )
 

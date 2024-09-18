@@ -106,40 +106,6 @@ def clone_repo(
     return repo
 
 
-def create_branch(repo: git.Repo, branch: str, logger: logging.Logger) -> None:
-    """Create a new branch or switch to an existing branch.
-
-    Parameters
-    ----------
-    repo : git.Repo
-        The repository object.
-    branch : str
-        The name of the branch to create or switch to.
-    logger : logging.Logger
-        The logger object.
-
-    Returns
-    -------
-    None
-
-    Raises
-    ------
-    RuntimeError
-        If creating or switching to the branch fails.
-
-    """
-    try:
-        # Check if the branch already exists
-        if branch in repo.heads:
-            logger.info(f"Branch '{branch}' already exists. Checking out the branch.")
-            repo.git.checkout(branch)
-        else:
-            logger.info(f"Creating new branch '{branch}' and checking out the branch.")
-            repo.git.checkout("-b", branch)
-    except git.exc.GitCommandError as e:
-        raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
-
-
 def create_repo_on_github(
     organization: str, repo: str, logger: logging.Logger, token: Optional[str] = None
 ) -> None:
