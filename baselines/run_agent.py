@@ -59,8 +59,10 @@ def run_agent_for_repo(
     repo_path = os.path.abspath(repo_path)
     try:
         local_repo = Repo(repo_path)
-    except Exception as e:
-        raise Exception(f"{repo_path} is not a git repo. Check if base_dir is correctly specified.")
+    except Exception:
+        raise Exception(
+            f"{repo_path} is not a git repo. Check if base_dir is correctly specified."
+        )
 
     target_edit_files = get_target_edit_files(repo_path)
 
@@ -79,7 +81,7 @@ def run_agent_for_repo(
     # set it back to commit 0
     # TODO: ask user for permission
     if latest_commit.hexsha != example["base_commit"]:
-        local_repo.git.reset('--hard', example["base_commit"])
+        local_repo.git.reset("--hard", example["base_commit"])
 
     with DirContext(repo_path):
         if commit0_config is None or agent_config is None:
