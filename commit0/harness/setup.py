@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 def main(
-    dataset_name: str, dataset_split: str, repo_split: str, base_dir: str,
+    dataset_name: str,
+    dataset_split: str,
+    repo_split: str,
+    base_dir: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     for example in dataset:
