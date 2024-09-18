@@ -6,7 +6,7 @@ defaults:
 commit0_config:
   repo_split: minitorch
 
-aider_config:
+agent_config:
   use_user_prompt: false
   use_repo_info: false
   use_unit_tests_info: false
@@ -14,4 +14,3 @@ aider_config:
   use_lint_info: false
   pre_commit_config_path: .pre-commit-config.yaml
   run_tests: false
-  llm_name: o1-preview
