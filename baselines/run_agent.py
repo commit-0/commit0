@@ -72,7 +72,7 @@ def run_agent_for_repo(
         )
 
     run_id = args2string(agent_config)
-    print(run_id, file=sys.stderr)
+    print(f"Agent is coding on branch: {run_id}", file=sys.stderr)
     create_branch(local_repo, run_id, example["base_commit"])
     latest_commit = local_repo.commit(run_id)
     # in cases where the latest commit of branch is not commit 0

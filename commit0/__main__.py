@@ -65,18 +65,24 @@ def main() -> None:
         repo = sys.argv[2]
         commit0.harness.get_pytest_ids.main(repo, stdout=True)
     elif command == "test" or command == "test-reference":
-        if command == "test" and len(sys.argv) < 5:
-            raise ValueError(f"An argument is missing for commit0 test.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}")
-        elif command == "test" and len(sys.argv) > 5:
-            raise ValueError(f"Too many arguments are passed to commit0 test.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}")
         # this command assume execution in arbitrary working directory
         repo_or_repo_path = sys.argv[2]
-        branch = sys.argv[3]
-        test_ids = sys.argv[4]
+        if command == "test-reference":
+            if len(sys.argv) < 4:
+                raise ValueError(f"An argument is missing for commit0 test-reference.\nUsage: commit0 test-reference {{repo_dir}} {{test_ids}}")
+            elif len(sys.argv) > 4:
+                raise ValueError(f"Too many arguments are passed to commit0 test-reference.\nUsage: commit0 test-reference {{repo_dir}} {{test_ids}}")
+            branch = "reference"
+            test_ids = sys.argv[3]
+        else:
+            if len(sys.argv) < 5:
+                raise ValueError(f"An argument is missing for commit0 test.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}")
+            elif len(sys.argv) > 5:
+                raise ValueError(f"Too many arguments are passed to commit0 test.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}")
+            branch = sys.argv[3]
+            test_ids = sys.argv[4]
         if branch.startswith("branch="):
             branch = branch[len("branch="):]
-        if command == "test-reference":
-            config.branch = "reference"
         commit0.harness.run_pytest_ids.main(
             config.dataset_name,
             config.dataset_split,
@@ -90,13 +96,17 @@ def main() -> None:
             stdout=True,
         )
     elif command == "evaluate" or command == "evaluate-reference":
-        if command == "evaluate" and len(sys.argv) < 4:
-            raise ValueError(f"An argument is missing for commit0 test.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}")
-        elif command == "evaluate" and len(sys.argv) > 4:
-            raise ValueError(f"Too many arguments are passed to commit0 test.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}")
         if command == "evaluate-reference":
+            if len(sys.argv) < 3:
+                raise ValueError(f"An argument is missing for commit0 evaluate-reference.\nUsage: commit0 evaluate-reference {{repo_split}}")
+            elif len(sys.argv) > 3:
+                raise ValueError(f"Too many arguments are passed to commit0 evaluate-reference.\nUsage: commit0 evaluate-reference {{repo_split}}")
             branch = "reference"
         else:
+            if len(sys.argv) < 4:
+                raise ValueError(f"An argument is missing for commit0 evaluate.\nUsage: commit0 evaluate {{repo_split}} {{branch}}")
+            elif len(sys.argv) > 4:
+                raise ValueError(f"Too many arguments are passed to commit0 evaluate.\nUsage: commit0 evaluate {{repo_split}} {{branch}}")
             branch = sys.argv[3]
         commit0.harness.evaluate.main(
             config.dataset_name,
