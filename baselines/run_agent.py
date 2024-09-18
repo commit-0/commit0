@@ -2,6 +2,7 @@ import os
 import sys
 import hydra
 import traceback
+import multiprocessing
 from datasets import load_dataset
 from git import Repo
 from baselines.commit0_utils import (
@@ -150,29 +151,21 @@ def main() -> None:
     if len(filtered_dataset) > 1:
         sys.stdout = open(os.devnull, "w")
 
-    with tqdm(
-        total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
-    ) as pbar:
-        with ThreadPoolExecutor(max_workers=commit0_config.num_workers) as executor:
-            # Create a future for running Aider for each repo
-            futures = {
-                executor.submit(
+    with tqdm(total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos") as pbar:
+        with multiprocessing.Pool(processes=commit0_config.num_workers) as pool:
+            results = []
+
+            # Use apply_async to submit jobs and add progress bar updates
+            for example in filtered_dataset:
+                result = pool.apply_async(
                     run_agent_for_repo,
-                    commit0_config,
-                    agent_config,
-                    example,  # type: ignore
-                ): example
-                for example in filtered_dataset
-            }
-            # Wait for each future to complete
-            for future in as_completed(futures):
-                pbar.update(1)
-                try:
-                    # Update progress bar, check if Aider ran successfully
-                    future.result()
-                except Exception:
-                    traceback.print_exc()
-                    continue
+                    args=(commit0_config, agent_config, example),
+                    callback=lambda _: pbar.update(1)  # Update progress bar on task completion
+                )
+                results.append(result)
+
+            for result in results:
+                result.wait()
 
 
 if __name__ == "__main__":
