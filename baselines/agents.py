@@ -1,3 +1,5 @@
+import sys
+import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 
@@ -7,6 +9,9 @@ from aider.io import InputOutput
 
 
 class Agents(ABC):
+    def __init__(self, max_iteration: int):
+        self.max_iteration = max_iteration
+
     @abstractmethod
     def run(self) -> None:
         """Start agent"""
@@ -14,7 +19,8 @@ class Agents(ABC):
 
 
 class AiderAgents(Agents):
-    def __init__(self, model_name: str):
+    def __init__(self, max_iteration: int, model_name: str):
+        super().__init__(max_iteration)
         self.model = Model(model_name)
 
     def run(
@@ -37,6 +43,10 @@ class AiderAgents(Agents):
         log_dir.mkdir(parents=True, exist_ok=True)
         input_history_file = log_dir / ".aider.input.history"
         chat_history_file = log_dir / ".aider.chat.history.md"
+        print(
+            f"check {os.path.abspath(chat_history_file)} for prompts and lm generations",
+            file=sys.stderr,
+        )
         io = InputOutput(
             yes=True,
             input_history_file=input_history_file,
@@ -51,4 +61,6 @@ class AiderAgents(Agents):
             test_cmd=test_cmd,
             io=io,
         )
+        coder.max_reflection = self.max_iteration
+        coder.stream = False
         coder.run(message)

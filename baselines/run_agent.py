@@ -1,4 +1,5 @@
 import os
+import sys
 import hydra
 from datasets import load_dataset
 import traceback
@@ -57,7 +58,7 @@ def run_agent_for_repo(
     target_edit_files = get_target_edit_files(repo_path)
 
     if agent_config.agent_name == "aider":
-        agent = AiderAgents(agent_config.model_name)
+        agent = AiderAgents(agent_config.max_iteration, agent_config.model_name)
     else:
         raise NotImplementedError(
             f"{agent_config.agent_name} is not implemented; please add your implementations in baselines/agents.py."
@@ -126,6 +127,9 @@ def main() -> None:
         )
     ]
     assert len(filtered_dataset) > 0, "No examples available"
+
+    if len(filtered_dataset) > 1:
+        sys.stdout = open(os.devnull, "w")
 
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
