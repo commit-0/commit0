@@ -51,7 +51,6 @@ def main() -> None:
             config.dataset_split,
             config.repo_split,
             config.base_dir,
-            config.branch,
         )
     elif command == "build":
         commit0.harness.build.main(
