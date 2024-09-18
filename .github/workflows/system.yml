@@ -32,4 +32,4 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          uv run commit0 save simpy test-save-commit0
+          uv run commit0 save simpy test-save-commit0 master
