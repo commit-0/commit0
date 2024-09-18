@@ -2,6 +2,7 @@ import git
 import os
 import re
 import subprocess
+from dataclasses import asdict
 from pathlib import Path
 from typing import List
 
@@ -210,12 +211,24 @@ def create_branch(repo: git.Repo, branch: str, from_commit: str) -> None:
         else:
             repo.git.checkout(from_commit)
             repo.git.checkout("-b", branch)
-    except git.exc.GitCommandError as e:
+    except git.exc.GitCommandError as e:  # type: ignore
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
 
 
 def args2string(agent_config: AgentConfig) -> str:
-    from dataclasses import asdict
+    """Converts specific fields from an `AgentConfig` object into a formatted string.
+
+    Args:
+    ----
+        agent_config (AgentConfig): A dataclass object containing configuration
+        options for an agent.
+
+    Returns:
+    -------
+        str: A string representing the selected key-value pairs from the `AgentConfig`
+        object, joined by double underscores.
+
+    """
     arg_dict = asdict(agent_config)
     result_list = []
     keys_to_collect = ["model_name", "run_tests", "use_lint_info", "use_spec_info"]
@@ -227,5 +240,5 @@ def args2string(agent_config: AgentConfig) -> str:
             else:
                 value = "0"
         result_list.append(f"{key}-{value}")
-    concatenated_string = '__'.join(result_list)
+    concatenated_string = "__".join(result_list)
     return concatenated_string

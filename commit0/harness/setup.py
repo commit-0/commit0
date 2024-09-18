@@ -26,7 +26,7 @@ def main(
             continue
         clone_url = f"https://github.com/{example['repo']}.git"
         clone_dir = os.path.abspath(os.path.join(base_dir, repo_name))
-        local_repo = clone_repo(clone_url, clone_dir, example["base_commit"], logger)
+        clone_repo(clone_url, clone_dir, example["base_commit"], logger)
 
 
 __all__ = []
