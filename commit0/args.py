@@ -82,7 +82,7 @@ def validate_yaml_config(config: dict, required_fields: List[str]):
     if missing_fields:
         raise typer.BadParameter(f"Missing required fields in YAML: {', '.join(missing_fields)}")
 
-def load_yaml_config(ctx: typer.Context, param: typer.Option, value: str):
+def load_yaml_config(ctx: typer.Context, param: typer.CallbackParam, value: str):
     if value:
         with open(value, 'r') as file:
             config = yaml.safe_load(file)
