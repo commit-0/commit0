@@ -242,3 +242,38 @@ def args2string(agent_config: AgentConfig) -> str:
         result_list.append(f"{key}-{value}")
     concatenated_string = "__".join(result_list)
     return concatenated_string
+
+
+def get_changed_files(repo: git.Repo) -> list[str]:
+    """
+    Get a list of files that were changed in the latest commit of the provided Git repository.
+
+    Args:
+        repo (git.Repo): An instance of GitPython's Repo object representing the Git repository.
+
+    Returns:
+        list[str]: A list of filenames (as strings) that were changed in the latest commit.
+    """
+    latest_commit = repo.head.commit
+    # Get the list of files changed in the latest commit
+    files_changed = latest_commit.stats.files
+    return list(files_changed.keys())
+
+def get_lint_cmd(repo: git.Repo, use_lint_info: bool) -> str:
+    """
+    Generate a linting command based on whether to include files changed in the latest commit.
+
+    Args:
+        repo (git.Repo): An instance of GitPython's Repo object representing the Git repository.
+        use_lint_info (bool): A flag indicating whether to include changed files in the lint command.
+
+    Returns:
+        str: The generated linting command string. If `use_lint_info` is True, the command includes
+             the list of changed files. If False, returns an empty string.
+    """
+    lint_cmd = "python -m commit0 lint "
+    if use_lint_info:
+        lint_cmd += " ".join(get_changed_files(repo))
+    else:
+        lint_cmd = ""
+    return lint_cmd

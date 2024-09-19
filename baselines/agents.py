@@ -58,7 +58,7 @@ class AiderAgents(Agents):
             fnames=fnames,
             auto_lint=auto_lint,
             auto_test=auto_test,
-            lint_cmds=lint_cmd,
+            lint_cmds={"python": lint_cmd},
             test_cmd=test_cmd,
             io=io,
         )
