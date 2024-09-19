@@ -1,10 +1,10 @@
 import git
 import os
 import re
-import subprocess
 from dataclasses import asdict
 from pathlib import Path
 from typing import List
+import fitz
 
 from baselines.class_types import AgentConfig
 
@@ -13,7 +13,7 @@ REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"
 REPO_INFO_HEADER = "\n\n>>> Here is the Repository Information:\n"
 UNIT_TESTS_INFO_HEADER = "\n\n>>> Here are the Unit Tests Information:\n"
 LINT_INFO_HEADER = "\n\n>>> Here is the Lint Information:\n"
-
+SPEC_INFO_HEADER = "\n\n>>> Here is the Specification Information:\n"
 # prefix components:
 space = "    "
 branch = "│   "
@@ -122,14 +122,14 @@ def get_target_edit_files(target_dir: str) -> list[str]:
     """Find the files with the error 'NotImplementedError('IMPLEMENT ME
     HERE')'.
     """
-    # The grep command
-    command = f"grep -R -l \"NotImplementedError('IMPLEMENT ME HERE')\" {target_dir}"
-
-    # Run the command and capture the output
-    result = subprocess.run(command, shell=True, capture_output=True, text=True)
-
-    # Split the output into lines and remove the base_dir prefix
-    files = result.stdout.strip().split("\n")
+    files = []
+    for root, _, filenames in os.walk(target_dir):
+        for filename in filenames:
+            if filename.endswith(".py"):
+                file_path = os.path.join(root, filename)
+                with open(file_path, "r") as file:
+                    if "NotImplementedError('IMPLEMENT ME HERE')" in file.read():
+                        files.append(file_path)
 
     # Remove the base_dir prefix
     files = [file.replace(target_dir, "").lstrip("/") for file in files]
@@ -143,7 +143,8 @@ def get_target_edit_files(target_dir: str) -> list[str]:
 def get_message(
     agent_config: AgentConfig,
     repo_path: str,
-    test_dir: str,
+    test_dir: str | None = None,
+    test_file: str | None = None,
 ) -> str:
     """Get the message to Aider."""
     prompt = f"{PROMPT_HEADER}" + agent_config.user_prompt
@@ -155,6 +156,13 @@ def get_message(
                 dir_path=Path(os.path.join(repo_path, test_dir)),
                 prefix="",
                 include_stubs=True,
+            )[: agent_config.max_unit_tests_info_length]
+        )
+    elif agent_config.use_unit_tests_info and test_file:
+        unit_tests_info = (
+            f"\n{UNIT_TESTS_INFO_HEADER} "
+            + get_file_info(
+                file_path=Path(os.path.join(repo_path, test_file)), prefix=""
             )[: agent_config.max_unit_tests_info_length]
         )
     else:
@@ -171,15 +179,34 @@ def get_message(
     else:
         repo_info = ""
 
-    message_to_agent = prompt + repo_info + unit_tests_info
+    if agent_config.use_spec_info:
+        spec_info = (
+            f"\n{SPEC_INFO_HEADER} "
+            + get_specification(specification_pdf_path=Path(repo_path, "spec.pdf"))[
+                : agent_config.max_spec_info_length
+            ]
+        )
+    else:
+        spec_info = ""
+
+    message_to_agent = prompt + repo_info + unit_tests_info + spec_info
 
     return message_to_agent
 
 
-def get_reference(specification_pdf_path: str) -> str:
+def get_specification(specification_pdf_path: Path) -> str:
     """Get the reference for a given specification PDF path."""
     # TODO: after pdf_to_text is available, use it to extract the text from the PDF
-    return f"/pdf {specification_pdf_path}"
+    # Open the specified PDF file
+    document = fitz.open(specification_pdf_path)
+    text = ""
+
+    # Iterate through the pages
+    for page_num in range(len(document)):
+        page = document.load_page(page_num)  # loads the specified page
+        text += page.get_text()  # type: ignore
+
+    return text
 
 
 def create_branch(repo: git.Repo, branch: str, from_commit: str) -> None:
