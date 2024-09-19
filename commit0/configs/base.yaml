@@ -7,7 +7,7 @@ dataset_split: test
 
 # clone related
 base_dir: repos/
-repo_split: all
+repo_split: minitorch
 
 # build related
 num_workers: 8
@@ -19,3 +19,5 @@ num_cpus: 1
 
 # save related
 github_token: null
+
+files: [commit0/harness/run_pytest_ids.py]
