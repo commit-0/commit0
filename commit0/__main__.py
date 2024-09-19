@@ -26,10 +26,12 @@ def main() -> None:
     # have hydra to ignore all command-line arguments
     sys_argv = copy.deepcopy(sys.argv)
     cfg_arg = next((arg for arg in sys_argv if arg.startswith("--cfg=")), None)
+
     hydra.initialize(version_base=None, config_path="configs")
     config = hydra.compose(config_name="user")
 
     if cfg_arg:
+        sys_argv.remove(cfg_arg)
         config_name = cfg_arg.split("=")[1]
         user_config = OmegaConf.load(config_name)
         config = OmegaConf.merge(config, user_config)

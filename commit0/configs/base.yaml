@@ -13,12 +13,7 @@ repo_split: all
 num_workers: 8
 
 # test related
-<<<<<<< HEAD
 backend: local
-=======
-backend: modal
-branch: ai
->>>>>>> 22d3049 (update)
 timeout: 1_800
 num_cpus: 1
 
