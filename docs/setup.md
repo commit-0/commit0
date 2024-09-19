@@ -104,10 +104,3 @@ functions in one file of the minitorch library.
 
 For a full example baseline system that tries to solve
 all the tests in the library see the [baseline](baseline) documentation.
-
-
-
-## Distributed Environments
-
-
-...
