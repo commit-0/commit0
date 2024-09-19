@@ -100,8 +100,10 @@ def main(
     eval_file.write_text(eval_script)
 
     if ExecutionBackend(backend) == ExecutionBackend.MODAL:
+        logger.info("Runnning on Modal")
         execution_context = Modal
     elif ExecutionBackend(backend) == ExecutionBackend.LOCAL:
+        logger.info("Runnning locally")
         execution_context = Docker
     else:
         raise ValueError(

@@ -7,6 +7,7 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
+import sys
 
 from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
@@ -39,6 +40,8 @@ def setup_logger(repo: str, log_file: Path, mode: str = "w") -> logging.Logger:
     log_file.parent.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger(f"{repo}.{log_file.name}")
     handler = logging.FileHandler(log_file, mode=mode)
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(stdout_handler)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
