@@ -3,6 +3,7 @@ import commit0.harness.get_pytest_ids
 import commit0.harness.build
 import commit0.harness.setup
 import commit0.harness.evaluate
+import commit0.harness.lint
 import commit0.harness.save
 import copy
 import sys
@@ -141,6 +142,9 @@ def main() -> None:
             config.num_cpus,
             config.num_workers,
         )
+    elif command == "lint":
+        files = sys.argv[1:]
+        commit0.harness.lint.main(config.base_dir, files)
     elif command == "save":
         if len(sys.argv) != 5:
             raise ValueError(

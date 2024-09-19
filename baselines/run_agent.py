@@ -9,6 +9,7 @@ from baselines.commit0_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
+    get_lint_cmd,
 )
 from baselines.agents import AiderAgents
 from typing import Optional, Type
@@ -63,8 +64,6 @@ def run_agent_for_repo(
             f"{repo_path} is not a git repo. Check if base_dir is correctly specified."
         )
 
-    target_edit_files = get_target_edit_files(repo_path)
-
     if agent_config.agent_name == "aider":
         agent = AiderAgents(agent_config.max_iteration, agent_config.model_name)
     else:
@@ -81,24 +80,20 @@ def run_agent_for_repo(
     # TODO: ask user for permission
     if latest_commit.hexsha != example["base_commit"]:
         local_repo.git.reset("--hard", example["base_commit"])
+    target_edit_files = get_target_edit_files(repo_path)
 
     with DirContext(repo_path):
         if commit0_config is None or agent_config is None:
             raise ValueError("Invalid input")
 
         message = get_message(agent_config, repo_path, example["test"]["test_dir"])
-
-        if agent_config.use_lint_info:
-            lint_cmd = "pre-commit run --config ../../.pre-commit-config.yaml --files"
-        else:
-            lint_cmd = ""
-
         if agent_config.run_tests:
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 test_cmd = f"python -m commit0 test {repo_path} {run_id} {test_file}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
+                lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
 
                 agent.run(
                     message,
@@ -112,6 +107,7 @@ def run_agent_for_repo(
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
+                lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
 
                 agent.run(message, "", lint_cmd, [f], log_dir)
 

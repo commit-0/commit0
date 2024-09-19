@@ -40,6 +40,7 @@ COMMANDS = [
     "get-tests",
     "evaluate",
     "evaluate-reference",
+    "lint",
     "save",
 ]
 # repo splits
