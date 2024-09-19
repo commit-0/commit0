@@ -168,8 +168,9 @@ def build(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Commit0 build a repository.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = [
             "repo_split",
@@ -233,8 +234,9 @@ def get_tests(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Get tests for a Commit0 repository.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = ["repo_name"]
         type_map = {"repo_name": str}
@@ -280,8 +282,9 @@ def test(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Run tests on a Commit0 repository.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = [
             "repo_or_repo_path",
@@ -371,8 +374,9 @@ def test_reference(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Run tests on the reference commit of a Commit0 repository
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = [
             "repo_or_repo_path",
@@ -454,8 +458,9 @@ def evaluate(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Evaluate a Commit0 repository.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = [
             "repo_split",
@@ -550,8 +555,9 @@ def evaluate_reference(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Evaluate the reference commit of a Commit0 repository.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = [
             "repo_split",
@@ -622,8 +628,9 @@ def lint(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Lint given files if provided, otherwise lint all files in the base directory.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = ["files"]
         type_map = {"files": list}
@@ -661,8 +668,9 @@ def save(
     config_name: str = typer.Option(None, help="Path to the YAML configuration file"),
 ) -> None:
     """Save a Commit0 repository to GitHub.
-    
-    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file."""
+
+    If --config-name is provided, all other arguments will be ignored and should be specified in the YAML file.
+    """
     if config_name:
         required_keys = [
             "repo_split",
