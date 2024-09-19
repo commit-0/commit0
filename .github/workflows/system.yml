@@ -29,7 +29,7 @@ jobs:
       - name: Evaluate
         run: uv run commit0 evaluate-reference simpy
       - name: Lint
-        run: uv run commit0 lint repos/simpy/src/simpy/events.py
+        run: uv run commit0 lint commit0/harness/lint.py
       - name: Save
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
