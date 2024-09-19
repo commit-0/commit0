@@ -1,6 +1,7 @@
 import typer
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Any
+import yaml
 from enum import Enum
 import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
@@ -76,6 +77,15 @@ class RepoSplit(str, Enum):
     SIMPY = "simpy"
     LITE = "lite"
 
+def read_yaml_config(file_path: str) -> Dict[str, Any]:
+    with open(file_path, 'r') as file:
+        return yaml.safe_load(file)
+
+def validate_config(config: Dict[str, Any], required_keys: List[str]) -> None:
+    missing_keys = [key for key in required_keys if key not in config]
+    if missing_keys:
+        raise ValueError(f"Missing required keys in YAML config: {', '.join(missing_keys)}")
+    
 @app.command()
 def clone(
     repo_split: RepoSplit = typer.Argument(..., help="Split of the repository"),
