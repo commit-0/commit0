@@ -11,6 +11,7 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from commit0.configs.config_class import Commit0Config
 from commit0.harness.constants import COMMANDS, SPLIT
+from omegaconf import OmegaConf
 
 
 def main() -> None:
@@ -24,9 +25,15 @@ def main() -> None:
     cs.store(name="user", group="Commit0Config", node=Commit0Config)
     # have hydra to ignore all command-line arguments
     sys_argv = copy.deepcopy(sys.argv)
-    sys.argv = [sys.argv[0]]
+    cfg_arg = next((arg for arg in sys_argv if arg.startswith("--cfg=")), None)
     hydra.initialize(version_base=None, config_path="configs")
     config = hydra.compose(config_name="user")
+
+    if cfg_arg:
+        config_name = cfg_arg.split("=")[1]
+        user_config = OmegaConf.load(config_name)
+        config = OmegaConf.merge(config, user_config)
+
     # after hydra gets all configs, put command-line arguments back
     sys.argv = sys_argv
     # repo_split: split from command line has a higher priority than split in hydra
