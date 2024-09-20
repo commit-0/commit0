@@ -439,6 +439,7 @@ dependencies = [
     { name = "hydra-core" },
     { name = "modal" },
     { name = "pre-commit" },
+    { name = "pymupdf" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "typer" },
@@ -455,6 +456,7 @@ requires-dist = [
     { name = "hydra-core", specifier = ">=1.3.2" },
     { name = "modal", specifier = ">=0.64.95" },
     { name = "pre-commit", specifier = ">=3.8.0" },
+    { name = "pymupdf", specifier = ">=1.24.5" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "ruff", specifier = ">=0.6.4" },
     { name = "typer", specifier = ">=0.12.0" },
@@ -1604,6 +1606,53 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/8e/62/8336eff65bcbc8e4cb5d05b55faf041285951b6e80f33e2bff2024788f31/pygments-2.18.0.tar.gz", hash = "sha256:786ff802f32e91311bff3889f6e9a86e81505fe99f2735bb6d60ae0c5004f199", size = 4891905 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f7/3f/01c8b82017c199075f8f788d0d906b9ffbbc5a47dc9918a945e13d5a2bda/pygments-2.18.0-py3-none-any.whl", hash = "sha256:b8e6aca0523f3ab76fee51799c488e38782ac06eafcf95e7ba832985c8e7b13a", size = 1205513 },
+]
+
+[[package]]
+name = "pymupdf"
+version = "1.24.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pymupdfb" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/83/57/da06ca4886afc71a624e4b463d05f45c8a822596ede939957295e229eb4e/PyMuPDF-1.24.10.tar.gz", hash = "sha256:bd3ebd6d3fb8a845582098362f885bfb0a31ae4272587efc2c55c5e29fe7327a", size = 46988085 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f9/39/cc7dd8fa3a38c54473546f8185a766530ecca990f7622b4eba8f405b6125/PyMuPDF-1.24.10-cp310-none-macosx_10_9_x86_64.whl", hash = "sha256:a320d44a96f0cc69364c4d7384205fdae57a511edb07e68627108546cfd3ca7d", size = 3194012 },
+    { url = "https://files.pythonhosted.org/packages/34/3f/e6c6870143b5bb9ddcf977657738a2ea1d92fe593431188e015b17e6db83/PyMuPDF-1.24.10-cp310-none-macosx_11_0_arm64.whl", hash = "sha256:cd078bf6c5a016bb34dea0ed75030edaae1b00ca273f1fe41100c8c35a101abe", size = 2974781 },
+    { url = "https://files.pythonhosted.org/packages/73/cb/3c67a2bb69d6bad1d88a26afc566f3d910adde0eba3473774c098c1de107/PyMuPDF-1.24.10-cp310-none-manylinux2014_aarch64.whl", hash = "sha256:0edcd093db05991e9d32dd2687db408b40895214f9cecd50672cd6b79fee188f", size = 3210331 },
+    { url = "https://files.pythonhosted.org/packages/4b/da/b6d38e5cc5fc028742fbf76b56fba5a3c9ff707d913ffea9347d6e20f65b/PyMuPDF-1.24.10-cp310-none-manylinux2014_x86_64.whl", hash = "sha256:9b3188a6d47bb512f749e9612f81f7ddf01c70308de6bb81b77b3a76ac43f402", size = 3482648 },
+    { url = "https://files.pythonhosted.org/packages/22/6e/1ad2f0b66d8a3625864373b3bb196f58f3106d3339e5c98c33da71b6dc1b/PyMuPDF-1.24.10-cp310-none-musllinux_1_2_x86_64.whl", hash = "sha256:e52cc55055f08d9411cd991693fb1e6c7f665e92f7b79cdfa0c3d526b2e7f9bb", size = 3600583 },
+    { url = "https://files.pythonhosted.org/packages/14/64/30ebf345bfad0c828bd5f280f3094bd27ba4e3a3df0f9f8f8467e9413ac1/PyMuPDF-1.24.10-cp310-none-win32.whl", hash = "sha256:117b8a2220ec31142f6a5e4ac0235b56f239d88e57e5cef3aa047bc70e4cd1e9", size = 2694894 },
+    { url = "https://files.pythonhosted.org/packages/1c/46/fd0764b2195b02ccca0ae1617f3086d967dcb6b3dbc9e05b0be262d4e050/PyMuPDF-1.24.10-cp310-none-win_amd64.whl", hash = "sha256:98b846dd044bf7242dcea6900b16eb430adbc3f1cef58d80c83a15ca7a35ef8b", size = 3215039 },
+    { url = "https://files.pythonhosted.org/packages/dc/35/6af0bb4bafe9d54893a04d9639f73b1b754efe0235997052d75fb6b7edc1/PyMuPDF-1.24.10-cp311-none-macosx_10_9_x86_64.whl", hash = "sha256:5fbd67cce759fc0126902137409cf9da6313b776c4d5ff0d5200f336350f86a3", size = 3194012 },
+    { url = "https://files.pythonhosted.org/packages/bf/2b/c254cf49dfcf2469a674407a680f5b2b174b866e84d322f5767baf4d3ad3/PyMuPDF-1.24.10-cp311-none-macosx_11_0_arm64.whl", hash = "sha256:2b14dbdf7c415bb0fa849527abbe7b4f1f55ae23b9355d132951f634438c59ac", size = 2974781 },
+    { url = "https://files.pythonhosted.org/packages/1c/77/78800d3a711f92060f8e338a5df9330ffb5950f4fb3beeba01e15c03c4c6/PyMuPDF-1.24.10-cp311-none-manylinux2014_aarch64.whl", hash = "sha256:1a87440a6cbc0d5ad513425baa0f4747841898fca6e37350ca3e6b29e5f40c01", size = 3210393 },
+    { url = "https://files.pythonhosted.org/packages/c5/39/3aaa1e8822c55c71bb37911b5b1c3157ef38d731581224b29a682d80a17b/PyMuPDF-1.24.10-cp311-none-manylinux2014_x86_64.whl", hash = "sha256:c0d1ccdc062ea9961063790831e838bc43fcf9a8436a8b9f55898addf97c0f86", size = 3482650 },
+    { url = "https://files.pythonhosted.org/packages/5b/73/6b5c2dc59539b79cb9430ff946d7dff308af146f7c8bc7b96c963e12970d/PyMuPDF-1.24.10-cp311-none-musllinux_1_2_x86_64.whl", hash = "sha256:f68671363be5a2ba104ab7d3bad821d2994cbe3f3408538bbc27d32e6dc9f923", size = 3600588 },
+    { url = "https://files.pythonhosted.org/packages/71/e9/d3bf062325b4821726a2f9ce9d75b63f594ae24bc38c31f55b4285f1f5e1/PyMuPDF-1.24.10-cp311-none-win32.whl", hash = "sha256:49f83556cd1a7d05b36a54ccc01fce324da8a4e6854e36cc5cd94d321e428565", size = 2694768 },
+    { url = "https://files.pythonhosted.org/packages/30/3f/356a70c105d4410c29529f1ca8c53b5d176b448a4409238b4dcd133507a4/PyMuPDF-1.24.10-cp311-none-win_amd64.whl", hash = "sha256:05b8d360766b87f4abd186eba16a56b92bae513b2361b13f633fe6256329292e", size = 3214889 },
+    { url = "https://files.pythonhosted.org/packages/75/84/7231344d98355a40fb57c4025391dfb4116e2c3e9d98d5cc83f80c5ea942/PyMuPDF-1.24.10-cp312-none-macosx_10_9_x86_64.whl", hash = "sha256:f323aa7bb55e0214e632bfe24fa140bd5dcfeac2d3977bdce46e760385140513", size = 3230169 },
+    { url = "https://files.pythonhosted.org/packages/b2/bc/975b4fe4400b00c912dad1874c43d31486150e6f39d7dae758751c27e2dd/PyMuPDF-1.24.10-cp312-none-macosx_11_0_arm64.whl", hash = "sha256:50d2972558d25ce46a8634b58787b28dbeff9b3fe4299530fc9c8c9921061e83", size = 2980118 },
+    { url = "https://files.pythonhosted.org/packages/5b/dc/0f22c77ac4f8e6b8316072519513d5f0111fffe96d357051db0ddf043032/PyMuPDF-1.24.10-cp312-none-manylinux2014_aarch64.whl", hash = "sha256:0e3969c2fdff682b3b2c6a2b463adde068d6d8e20e2133ef6c8503469259646a", size = 3216830 },
+    { url = "https://files.pythonhosted.org/packages/a3/1b/1b41b27aab571b835f8d983492b80ed64548e3b5c4d169e23c639727d43b/PyMuPDF-1.24.10-cp312-none-manylinux2014_x86_64.whl", hash = "sha256:cd78ee1ebefdfe72bc36fd4b731cc8c694eb8ef5337d8ea956b0e94cd88751fc", size = 3491118 },
+    { url = "https://files.pythonhosted.org/packages/2d/3c/f1ffbc6e13ab37900c2aa71e434bbba922770091242e2b059acdb14f779e/PyMuPDF-1.24.10-cp312-none-musllinux_1_2_x86_64.whl", hash = "sha256:696eed91d2ee44e76277dfeb6bd904c84ae005378588949df6ed9be9e03b9817", size = 3612589 },
+    { url = "https://files.pythonhosted.org/packages/53/fb/158909af75c84968ea7e6659a75fd67bd462103c599033b23ffd6bc173be/PyMuPDF-1.24.10-cp312-none-win32.whl", hash = "sha256:1e5413e1aeab2f18e1ca1b3ff17057a4a7c5cbf4ff14abc93203da88fc1a1dd8", size = 2701190 },
+    { url = "https://files.pythonhosted.org/packages/91/4a/4a54d3f6a779ac5eed92e82fe3c1bb426bc40f9ea57c8656839198944a82/PyMuPDF-1.24.10-cp312-none-win_amd64.whl", hash = "sha256:227a4473fce8fa32b9268da68781048795503b67dc045867fc201e1334204bf1", size = 3228084 },
+]
+
+[[package]]
+name = "pymupdfb"
+version = "1.24.10"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c9/ff/ecfcb41414b51976974d74c8e35fef0a0e5b47c7046a11c860553f5dccf0/PyMuPDFb-1.24.10.tar.gz", hash = "sha256:007b91fa9b528c5c0eecea2e49c486ac02e878274f9e31522bdd948adc5f8327", size = 37502 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/48/94/b217dc987b4ac0e3793984427112d6032563b741e27763f7761c2231d022/PyMuPDFb-1.24.10-py3-none-macosx_10_9_x86_64.whl", hash = "sha256:cd6b24630d90dce9ab3e59d06c5e616686f8d7ec626be1311721fcb062aa0078", size = 15536229 },
+    { url = "https://files.pythonhosted.org/packages/16/7a/f634c76d8331cb8dedcfaced17424cc469ee20b7f53cf29c9ef17a01b461/PyMuPDFb-1.24.10-py3-none-macosx_11_0_arm64.whl", hash = "sha256:fda2c34b206f724b1b5685b67188e2a57bcaa5c99bc40a0a5bc62057514c5cdf", size = 15149482 },
+    { url = "https://files.pythonhosted.org/packages/62/97/67b5da2edd034e66dadd0ec530e277afb14fe866a3b3b01d9fad154bc6f8/PyMuPDFb-1.24.10-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:4f50a7472f9bb10cbc7a1cd589ee4626ca030b8a4a02749f9a29eb6f00c0e0db", size = 15711338 },
+    { url = "https://files.pythonhosted.org/packages/62/b9/ad3f076e86328880797fe7e98c43b2879df56cf6cb75ac3058da06d6e6cb/PyMuPDFb-1.24.10-py3-none-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:409f1270ef2e70d845e80149ff3db9cfed578274042316cba55cc3e3882421ea", size = 15921939 },
+    { url = "https://files.pythonhosted.org/packages/15/e7/02160ea905a7ba16d6e1ca51759ae1c1045785ebebae57ba30e82617f934/PyMuPDFb-1.24.10-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:aca96b6e9ee3096a26810592f4d899f4d3cf3cf0c902ae7e8cca09bce4d946c4", size = 17076991 },
+    { url = "https://files.pythonhosted.org/packages/d3/c0/e1ed840440131f71b068cdb3b620a69ec27543b1012a6bd855d8d05f1629/PyMuPDFb-1.24.10-py3-none-win32.whl", hash = "sha256:2d231b42fe3bf79837df235e7fbdf7ff8b46bf4ca1346d0f0124fb1cdd343ce8", size = 11731706 },
+    { url = "https://files.pythonhosted.org/packages/70/cb/8459d6c179befd7c6eee555334f054e9a6dcdd9f8671891e1da19e0ce526/PyMuPDFb-1.24.10-py3-none-win_amd64.whl", hash = "sha256:27ea65c701608b6b7632703339ca33ea6d513843b26dbe9bdefb2f56f7b9b196", size = 13186168 },
 ]
 
 [[package]]
