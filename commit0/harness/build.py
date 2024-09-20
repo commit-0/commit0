@@ -19,6 +19,7 @@ def main(
     dataset_split: str,
     repo_split: str,
     num_workers: int,
+    verbose: int,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
@@ -30,7 +31,11 @@ def main(
         specs.append(spec)
 
     client = docker.from_env()
-    build_repo_images(client, specs, num_workers)
+    build_repo_images(client, specs, num_workers, verbose)
+    for spec in specs:
+        image = client.images.get(spec.repo_image_key)
+        repository, tag = spec.repo_image_tag.split(":")
+        image.tag(repository, tag)
 
 
 __all__ = []

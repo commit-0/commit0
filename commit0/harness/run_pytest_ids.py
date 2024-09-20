@@ -37,7 +37,7 @@ def main(
     backend: str,
     timeout: int,
     num_cpus: int,
-    stdout: bool,
+    verbose: int,
 ) -> None:
     """Runs the pytests for repos in a dataset.
 
@@ -64,15 +64,17 @@ def main(
     log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "run_pytest.log"
-    logger = setup_logger(repo_name, log_file)
+    logger = setup_logger(repo_name, log_file, verbose=verbose)
 
     try:
         local_repo = git.Repo(repo_or_repo_dir)
+        logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
     except git.exc.NoSuchPathError:  # type: ignore
         repo_dir = os.path.join(base_dir, repo_name)
         logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
         try:
             local_repo = git.Repo(repo_dir)
+            logger.info(f"Retried succeeded. Loaded a git repo from {repo_dir}")
         except git.exc.NoSuchPathError:  # type: ignore
             raise Exception(
                 f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}"
@@ -133,6 +135,9 @@ def main(
                     logger,
                 )
         close_logger(logger)
+        if verbose > 0:
+            test_output = Path(log_dir / "test_output.txt")
+            print(test_output.read_text())
         pytest_exit_code = Path(log_dir / "pytest_exit_code.txt").read_text().strip()
         sys.exit(int(pytest_exit_code))
     except EvaluationError as e:
