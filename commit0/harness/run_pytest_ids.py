@@ -18,7 +18,6 @@ from commit0.harness.docker_build import (
 from commit0.harness.spec import make_spec
 from commit0.harness.utils import (
     EvaluationError,
-    extract_test_output,
     get_hash_string,
     generate_patch_between_commits,
 )
@@ -114,7 +113,12 @@ def main(
         eval_script={"src": eval_file, "dest": Path("/eval.sh")},
         patch={"src": patch_file, "dest": Path("/patch.diff")},
     )
-    files_to_collect = ["report.json", "coverage.json", "pytest_exit_code.txt", "test_output.txt"]
+    files_to_collect = [
+        "report.json",
+        "coverage.json",
+        "pytest_exit_code.txt",
+        "test_output.txt",
+    ]
 
     try:
         with execution_context(
@@ -125,9 +129,9 @@ def main(
             )
             if timed_out:
                 raise EvaluationError(
-                    self.spec.repo,
+                    repo_name,
                     f"Test timed out after {timeout} seconds.",
-                    self.logger,
+                    logger,
                 )
         pytest_exit_code = Path(log_dir / "pytest_exit_code.txt").read_text().strip()
         sys.exit(pytest_exit_code)

@@ -17,9 +17,6 @@ from types import TracebackType
 
 from commit0.harness.constants import Files
 from commit0.harness.spec import Spec
-from commit0.harness.utils import (
-    EvaluationError,
-)
 from commit0.harness.docker_build import (
     close_logger,
 )
@@ -46,7 +43,7 @@ class ExecutionContext(ABC):
         num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
-        files_to_collect: Optional[Files] = None,
+        files_to_collect: Optional[list[str]] = None,
     ):
         """Create the remote execution context
 
@@ -87,9 +84,17 @@ class Docker(ExecutionContext):
         num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
-        files_to_collect: Optional[Files] = None,
+        files_to_collect: Optional[list[str]] = None,
     ):
-        super().__init__(spec, logger, timeout, num_cpus, log_dir, files_to_copy=files_to_copy, files_to_collect=files_to_collect)
+        super().__init__(
+            spec,
+            logger,
+            timeout,
+            num_cpus,
+            log_dir,
+            files_to_copy=files_to_copy,
+            files_to_collect=files_to_collect,
+        )
 
         self.client = docker.from_env()
         self.container = create_container(
@@ -108,18 +113,16 @@ class Docker(ExecutionContext):
         """Exec"""
         output = exec_run_with_timeout(self.container, command, self.timeout)
 
-        for fname in self.files_to_collect:
-            # copy back report.json if there is any
-            file = Path(self.spec.repo_directory) / fname
-            # Run the test command inside the container to check if the file exists
-            exit_code, test_output = self.container.exec_run(
-                f"test -e {file}", demux=True
-            )
-            # Check the exit code of the command
-            if exit_code == 0:
-                copy_from_container(
-                    self.container, file, self.log_dir / fname
+        if self.files_to_collect:
+            for fname in self.files_to_collect:
+                file = Path(self.spec.repo_directory) / fname
+                # Run the test command inside the container to check if the file exists
+                exit_code, test_output = self.container.exec_run(
+                    f"test -e {file}", demux=True
                 )
+                # Check the exit code of the command
+                if exit_code == 0:
+                    copy_from_container(self.container, file, self.log_dir / fname)
         return output
 
     def __exit__(
@@ -141,9 +144,17 @@ class Modal(ExecutionContext):
         num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
-        files_to_collect: Optional[Files] = None,
+        files_to_collect: Optional[list[str]] = None,
     ):
-        super().__init__(spec, logger, timeout, num_cpus, log_dir, files_to_copy=files_to_copy, files_to_collect=files_to_collect)
+        super().__init__(
+            spec,
+            logger,
+            timeout,
+            num_cpus,
+            log_dir,
+            files_to_copy=files_to_copy,
+            files_to_collect=files_to_collect,
+        )
 
         self.app = modal.App()
 
@@ -161,10 +172,11 @@ class Modal(ExecutionContext):
         start_time = time.time()
         with modal.Volume.ephemeral() as vol:
             cp_cmd = ""
-            for fname in self.files_to_collect:
-                remote_file = Path(self.spec.repo_directory) / fname
-                curr_cp_cmd = f" && cp {str(remote_file)} /vol/{fname} 2>/dev/null"
-                cp_cmd += curr_cp_cmd
+            if self.files_to_collect:
+                for fname in self.files_to_collect:
+                    remote_file = Path(self.spec.repo_directory) / fname
+                    curr_cp_cmd = f" && cp {str(remote_file)} /vol/{fname} 2>/dev/null"
+                    cp_cmd += curr_cp_cmd
 
             command += cp_cmd
             self.sandbox = modal.Sandbox.create(
@@ -186,10 +198,11 @@ class Modal(ExecutionContext):
             else:
                 timed_out = False
 
-            for fname in self.files_to_collect:
-                with (self.log_dir / fname).open("wb") as f:
-                    for data in vol.read_file(fname):
-                        f.write(data)
+            if self.files_to_collect:
+                for fname in self.files_to_collect:
+                    with (self.log_dir / fname).open("wb") as f:
+                        for data in vol.read_file(fname):
+                            f.write(data)
 
             self.sandbox.terminate()
             end_time = time.time()
