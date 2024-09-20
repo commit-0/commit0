@@ -37,6 +37,7 @@ def main(
     backend: str,
     timeout: int,
     num_cpus: int,
+    rebuild_image: bool,
     verbose: int,
 ) -> None:
     """Runs the pytests for repos in a dataset.
@@ -125,7 +126,7 @@ def main(
 
     try:
         with execution_context(
-            spec, logger, timeout, num_cpus, log_dir, files_to_copy, files_to_collect
+            spec, logger, timeout, num_cpus, log_dir, files_to_copy, files_to_collect, rebuild_image
         ) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh"
