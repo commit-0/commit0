@@ -25,9 +25,9 @@ jobs:
       - name: Get tests
         run: uv run commit0 get-tests simpy
       - name: Test
-        run: uv run commit0 test-reference simpy tests/test_event.py::test_succeed
+        run: uv run commit0 test simpy tests/test_event.py::test_succeed --reference
       - name: Evaluate
-        run: uv run commit0 evaluate-reference simpy
+        run: uv run commit0 evaluate simpy --reference
       - name: Lint
         run: uv run commit0 lint commit0/harness/lint.py
       - name: Save
