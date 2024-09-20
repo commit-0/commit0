@@ -12,6 +12,7 @@ import commit0.harness.save
 from commit0.harness.constants import SPLIT, SPLIT_ALL
 import subprocess
 import yaml
+import os
 
 commit0_app = typer.Typer(
     no_args_is_help=True,
@@ -89,6 +90,11 @@ def write_commit0_dot_file(dot_file_path: str, config: dict) -> None:
 
 
 def read_commit0_dot_file(dot_file_path: str) -> dict:
+    # Check if the file exists before attempting to read it
+    if not os.path.exists(dot_file_path):
+        raise FileNotFoundError(
+            f"The commit0 dot file '{dot_file_path}' does not exist."
+        )
     with open(dot_file_path, "r") as f:
         return yaml.load(f, Loader=yaml.FullLoader)
 
