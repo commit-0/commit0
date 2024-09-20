@@ -167,7 +167,8 @@ def test(
 @app.command()
 def evaluate(
     repo_split: str = typer.Argument(
-        ..., help=f"Split of repositories, one of {SPLIT.keys()}"
+        ...,
+        help=f"Split of repositories, one of {', '.join(highlight(key, Colors.ORANGE) for key in SPLIT.keys())}",
     ),
     branch: Union[str, None] = typer.Option(
         None, help="Branch to evaluate (branch MUST be provided or use --reference)"
@@ -233,7 +234,8 @@ def lint(
 @app.command()
 def save(
     repo_split: str = typer.Argument(
-        ..., help=f"Split of the repository, one of {SPLIT.keys()}"
+        ...,
+        help=f"Split of the repository, one of {', '.join(highlight(key, Colors.ORANGE) for key in SPLIT.keys())}",
     ),
     owner: str = typer.Argument(..., help="Owner of the repository"),
     branch: str = typer.Argument(..., help="Branch to save"),
