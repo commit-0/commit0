@@ -106,7 +106,7 @@ def setup(
         help=f"Split of repositories, one of: {', '.join([highlight(key, Colors.ORANGE) for key in SPLIT.keys()])}",
     ),
     dataset_name: str = typer.Option(
-        "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
+        "wentingzhao/commit0_combined", help="Name of the Huggingface dataset"
     ),
     dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
     base_dir: str = typer.Option("repos/", help="Base directory to clone repos to"),
