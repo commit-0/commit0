@@ -57,7 +57,7 @@ def main(
                     backend,
                     timeout,
                     num_cpus,
-                    stdout=False,
+                    verbose=0,
                 ): None
                 for repo, test_dir in pairs
             }
@@ -70,7 +70,7 @@ def main(
     for name in tqdm(log_dirs):
         report_file = os.path.join(name, "report.json")
         name = name.split("/")[2]
-        test_ids = get_tests(name, stdout=False)
+        test_ids = get_tests(name, verbose=0)
         if not os.path.exists(report_file):
             out.append(
                 {

@@ -27,18 +27,22 @@ class EvaluationError(Exception):
         )
 
 
-def setup_logger(repo: str, log_file: Path, mode: str = "w") -> logging.Logger:
+def setup_logger(
+    repo: str, log_file: Path, mode: str = "w", verbose: int = 1
+) -> logging.Logger:
     """Used for logging the build process of images and running containers.
     It writes logs to the log file.
     """
     log_file.parent.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger(f"{repo}.{log_file.name}")
     handler = logging.FileHandler(log_file, mode=mode)
-    stdout_handler = logging.StreamHandler(sys.stdout)
-    logger.addHandler(stdout_handler)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+    if verbose == 2:
+        stdout_handler = logging.StreamHandler(sys.stdout)
+        stdout_handler.setFormatter(formatter)
+        logger.addHandler(stdout_handler)
     logger.setLevel(logging.INFO)
     logger.propagate = False
     setattr(logger, "log_file", log_file)

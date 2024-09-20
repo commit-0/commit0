@@ -77,6 +77,13 @@ def build(
     ),
     dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
     num_workers: int = typer.Option(8, help="Number of workers"),
+    verbose: int = typer.Option(
+        1,
+        "--verbose",
+        "-v",
+        help="Set this to 2 for more logging information",
+        count=True,
+    ),
 ) -> None:
     """Commit0 build a repository."""
     check_valid(repo_split, SPLIT)
@@ -91,6 +98,7 @@ def build(
         dataset_split,
         repo_split,
         num_workers,
+        verbose,
     )
 
 
@@ -106,7 +114,7 @@ def get_tests(
 
     typer.echo(f"Getting tests for repository: {repo_name}")
 
-    commit0.harness.get_pytest_ids.main(repo_name, stdout=True)
+    commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
 
 @app.command()
@@ -132,6 +140,13 @@ def test(
     reference: Annotated[
         bool, typer.Option("--reference", help="Test the reference commit.")
     ] = False,
+    verbose: int = typer.Option(
+        1,
+        "--verbose",
+        "-v",
+        help="Set this to 2 for more logging information",
+        count=True,
+    ),
 ) -> None:
     """Run tests on a Commit0 repository."""
     if repo_or_repo_path.endswith("/"):
@@ -160,7 +175,7 @@ def test(
         backend,
         timeout,
         num_cpus,
-        stdout=True,
+        verbose,
     )
 
 

@@ -52,7 +52,7 @@ def run_agent_for_repo(
     repo_name = repo_name.replace(".", "-")
 
     # Call the commit0 get-tests command to retrieve test files
-    test_files_str = get_tests(repo_name, stdout=False)
+    test_files_str = get_tests(repo_name, verbose=0)
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     repo_path = os.path.join(commit0_config.base_dir, repo_name)
