@@ -7,13 +7,13 @@ from tqdm import tqdm
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
-import sys
 
 from commit0.harness.constants import (
     BASE_IMAGE_BUILD_DIR,
     REPO_IMAGE_BUILD_DIR,
 )
 from commit0.harness.spec import get_specs_from_dataset
+from commit0.harness.utils import setup_logger, close_logger
 
 ansi_escape = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 
@@ -31,32 +31,6 @@ class BuildImageError(Exception):
             f"Error building image {self.image_name}: {self.super_str}\n"
             f"Check ({self.log_path}) for more information."
         )
-
-
-def setup_logger(repo: str, log_file: Path, mode: str = "w") -> logging.Logger:
-    """Used for logging the build process of images and running containers.
-    It writes logs to the log file.
-    """
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-    logger = logging.getLogger(f"{repo}.{log_file.name}")
-    handler = logging.FileHandler(log_file, mode=mode)
-    stdout_handler = logging.StreamHandler(sys.stdout)
-    logger.addHandler(stdout_handler)
-    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-    logger.propagate = False
-    setattr(logger, "log_file", log_file)
-    return logger
-
-
-def close_logger(logger: logging.Logger) -> None:
-    """Closes all handlers associated with the given logger to prevent too many open files."""
-    # To avoid too many open files
-    for handler in logger.handlers:
-        handler.close()
-        logger.removeHandler(handler)
 
 
 def build_image(

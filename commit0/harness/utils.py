@@ -4,6 +4,8 @@ import hashlib
 import logging
 import os
 import time
+import sys
+from pathlib import Path
 from typing import Optional
 
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
@@ -23,6 +25,32 @@ class EvaluationError(Exception):
             f"Evaluation error for {self.repo}: {self.super_str}\n"
             f"Check ({self.log_file}) for more information."
         )
+
+
+def setup_logger(repo: str, log_file: Path, mode: str = "w") -> logging.Logger:
+    """Used for logging the build process of images and running containers.
+    It writes logs to the log file.
+    """
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger(f"{repo}.{log_file.name}")
+    handler = logging.FileHandler(log_file, mode=mode)
+    stdout_handler = logging.StreamHandler(sys.stdout)
+    logger.addHandler(stdout_handler)
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    setattr(logger, "log_file", log_file)
+    return logger
+
+
+def close_logger(logger: logging.Logger) -> None:
+    """Closes all handlers associated with the given logger to prevent too many open files."""
+    # To avoid too many open files
+    for handler in logger.handlers:
+        handler.close()
+        logger.removeHandler(handler)
 
 
 def get_hash_string(input_string: str) -> str:
