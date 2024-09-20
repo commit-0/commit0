@@ -1,6 +1,7 @@
 import subprocess
 import sys
 from pathlib import Path
+from typing import List
 
 
 config = """repos:
@@ -27,7 +28,7 @@ config = """repos:
     - id: pyright"""
 
 
-def main(base_dir: str, files: list[str]) -> None:
+def main(files: List[Path]) -> None:
     config_file = Path(".commit0.pre-commit-config.yaml")
     if not config_file.is_file():
         config_file.write_text(config)
