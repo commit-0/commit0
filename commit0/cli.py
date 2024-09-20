@@ -222,7 +222,9 @@ def test(
     reference: Annotated[
         bool, typer.Option("--reference", help="Test the reference commit.")
     ] = False,
-    rebuild: bool = typer.Option(False, "--rebuild", help="Whether to rebuild an image"),
+    rebuild: bool = typer.Option(
+        False, "--rebuild", help="Whether to rebuild an image"
+    ),
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",

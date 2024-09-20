@@ -44,6 +44,7 @@ class ExecutionContext(ABC):
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
         files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
     ):
         """Create the remote execution context
 
@@ -85,6 +86,7 @@ class Docker(ExecutionContext):
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
         files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
     ):
         super().__init__(
             spec,
