@@ -57,7 +57,8 @@ class Spec:
         return f"commit0.repo.{repo}.{val}:latest".lower()
 
     @property
-    def repo_image_tag(self):
+    def repo_image_tag(self) -> str:
+        """Repo image tag that will be used throughout."""
         repo = self.repo.split("/")[-1]
         return f"wentingzhao/{repo}:latest".lower()
 

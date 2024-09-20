@@ -10,7 +10,7 @@ import time
 import traceback
 from pathlib import Path
 from io import BytesIO
-from typing import Optional, List, Union
+from typing import Optional, List
 
 import docker.errors
 from docker.models.containers import Container
@@ -165,7 +165,9 @@ def cleanup_container(
                 )
                 os.kill(pid, signal.SIGKILL)
             else:
-                logger.error(f"PID for container {container.name}: {pid} - not killing.")
+                logger.error(
+                    f"PID for container {container.name}: {pid} - not killing."
+                )
         except Exception as e2:
             raise Exception(
                 f"Failed to forcefully kill container {container.name}: {e2}\n"
@@ -184,9 +186,10 @@ def cleanup_container(
         )
 
 
-def image_exists_locally(client: docker.DockerClient, image_name: str, tag: str, logger: logging.Logger) -> bool:
-    """
-    Check if a Docker image exists locally.
+def image_exists_locally(
+    client: docker.DockerClient, image_name: str, tag: str, logger: logging.Logger
+) -> bool:
+    """Check if a Docker image exists locally.
 
     Args:
     ----
@@ -198,6 +201,7 @@ def image_exists_locally(client: docker.DockerClient, image_name: str, tag: str,
     Returns:
     -------
     bool: True if the image exists locally, False otherwise.
+
     """
     images = client.images.list(name=image_name)
     for image in images:
@@ -207,9 +211,11 @@ def image_exists_locally(client: docker.DockerClient, image_name: str, tag: str,
     logger.info(f"{image_name}:{tag} cannot be found locally")
     return False
 
-def pull_image_from_docker_hub(client: docker.DockerClient, image_name: str, tag: str, logger: logging.Logger) -> docker.models.images.Image:
-    """
-    Pull a Docker image from Docker Hub.
+
+def pull_image_from_docker_hub(
+    client: docker.DockerClient, image_name: str, tag: str, logger: logging.Logger
+) -> None:
+    """Pull a Docker image from Docker Hub.
 
     Args:
     ----
@@ -226,11 +232,11 @@ def pull_image_from_docker_hub(client: docker.DockerClient, image_name: str, tag
     ------
     docker.errors.ImageNotFound: If the image is not found on Docker Hub.
     docker.errors.APIError: If there's an issue with the Docker API during the pull.
+
     """
     try:
-        image = client.images.pull(image_name, tag=tag)
+        client.images.pull(image_name, tag=tag)
         logger.info(f"Loaded {image_name}:{tag} from Docker Hub.")
-        return image
     except docker.errors.ImageNotFound:
         raise Exception(f"Image {image_name}:{tag} not found on Docker Hub.")
     except docker.errors.APIError as e:
