@@ -118,7 +118,9 @@ def setup(
     typer.echo(f"Dataset name: {highlight(dataset_name, Colors.ORANGE)}")
     typer.echo(f"Dataset split: {highlight(dataset_split, Colors.ORANGE)}")
     typer.echo(f"Base directory: {highlight(base_dir, Colors.ORANGE)}")
-    typer.echo(f"Commit0 dot file path: {highlight(commit0_dot_file_path, Colors.ORANGE)}")
+    typer.echo(
+        f"Commit0 dot file path: {highlight(commit0_dot_file_path, Colors.ORANGE)}"
+    )
 
     commit0.harness.setup.main(
         dataset_name,
@@ -144,7 +146,8 @@ def build(
     num_workers: int = typer.Option(8, help="Number of workers"),
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
-        help="Path to the commit0 dot file, where the setup config is stored"),
+        help="Path to the commit0 dot file, where the setup config is stored",
+    ),
     verbose: int = typer.Option(
         1,
         "--verbose",
@@ -159,9 +162,15 @@ def build(
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     check_valid(commit0_config["repo_split"], SPLIT)
 
-    typer.echo(f"Building repository for split: {highlight(commit0_config['repo_split'], Colors.ORANGE)}")
-    typer.echo(f"Dataset name: {highlight(commit0_config['dataset_name'], Colors.ORANGE)}")
-    typer.echo(f"Dataset split: {highlight(commit0_config['dataset_split'], Colors.ORANGE)}")
+    typer.echo(
+        f"Building repository for split: {highlight(commit0_config['repo_split'], Colors.ORANGE)}"
+    )
+    typer.echo(
+        f"Dataset name: {highlight(commit0_config['dataset_name'], Colors.ORANGE)}"
+    )
+    typer.echo(
+        f"Dataset split: {highlight(commit0_config['dataset_split'], Colors.ORANGE)}"
+    )
     typer.echo(f"Number of workers: {highlight(str(num_workers), Colors.ORANGE)}")
 
     commit0.harness.build.main(
@@ -209,7 +218,8 @@ def test(
     ] = False,
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
-        help="Path to the commit0 dot file, where the setup config is stored"),
+        help="Path to the commit0 dot file, where the setup config is stored",
+    ),
     verbose: int = typer.Option(
         1,
         "--verbose",
