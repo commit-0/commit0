@@ -114,28 +114,22 @@ def main(
         eval_script={"src": eval_file, "dest": Path("/eval.sh")},
         patch={"src": patch_file, "dest": Path("/patch.diff")},
     )
+    files_to_collect = ["report.json", "coverage.json", "pytest_exit_code.txt", "test_output.txt"]
 
     try:
         with execution_context(
-            spec, logger, timeout, num_cpus, log_dir, files_to_copy
+            spec, logger, timeout, num_cpus, log_dir, files_to_copy, files_to_collect
         ) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh"
             )
-            logger.info(output)
-            test_output = extract_test_output(
-                output, "--json-report --json-report-file=report.json"
-            )
-            context.write_test_output(test_output, timed_out)
-            if stdout:
-                print(test_output)
-            pytest_exit_code = extract_test_output(output, "echo ")
-            try:
-                pytest_exit_code = int(pytest_exit_code)
-            except Exception:
-                raise Exception(
-                    f"Fail to convert pytest_exit_code {pytest_exit_code} into an integer."
+            if timed_out:
+                raise EvaluationError(
+                    self.spec.repo,
+                    f"Test timed out after {timeout} seconds.",
+                    self.logger,
                 )
+        pytest_exit_code = Path(log_dir / "pytest_exit_code.txt").read_text().strip()
         sys.exit(pytest_exit_code)
     except EvaluationError as e:
         error_msg = (

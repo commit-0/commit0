@@ -32,14 +32,6 @@ from commit0.harness.docker_utils import (
 )
 
 
-def read_stream(stream: modal.io_streams.StreamReader) -> str:
-    """Read stream"""
-    strings = []
-    for line in stream:
-        strings.append(line)
-    return "\n".join(strings)
-
-
 class ExecutionBackend(StrEnum):
     LOCAL = auto()
     MODAL = auto()
@@ -54,6 +46,7 @@ class ExecutionContext(ABC):
         num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
+        files_to_collect: Optional[Files] = None,
     ):
         """Create the remote execution context
 
@@ -65,24 +58,12 @@ class ExecutionContext(ABC):
         self.timeout = timeout
         self.num_cpus = num_cpus
         self.log_dir = log_dir
+        self.files_to_collect = files_to_collect
 
     @abstractmethod
     def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
         """Execute a test command"""
         raise NotImplementedError
-
-    def write_test_output(self, test_output: str, timed_out: bool) -> None:
-        """Write test output"""
-        test_output_path = self.log_dir / "test_output.txt"
-        with open(test_output_path, "w") as f:
-            f.write(test_output)
-            if timed_out:
-                f.write(f"\n\nTimeout error: {self.timeout} seconds exceeded.")
-                raise EvaluationError(
-                    self.spec.repo,
-                    f"Test timed out after {self.timeout} seconds.",
-                    self.logger,
-                )
 
     def __enter__(self):
         return self
@@ -106,8 +87,9 @@ class Docker(ExecutionContext):
         num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
+        files_to_collect: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, timeout, num_cpus, log_dir)
+        super().__init__(spec, logger, timeout, num_cpus, log_dir, files_to_copy=files_to_copy, files_to_collect=files_to_collect)
 
         self.client = docker.from_env()
         self.container = create_container(
@@ -126,17 +108,18 @@ class Docker(ExecutionContext):
         """Exec"""
         output = exec_run_with_timeout(self.container, command, self.timeout)
 
-        # copy back report.json if there is any
-        report_file = Path(self.spec.repo_directory) / "report.json"
-        # Run the test command inside the container to check if the file exists
-        exit_code, test_output = self.container.exec_run(
-            f"test -e {report_file}", demux=True
-        )
-        # Check the exit code of the command
-        if exit_code == 0:
-            copy_from_container(
-                self.container, report_file, self.log_dir / "report.json"
+        for fname in self.files_to_collect:
+            # copy back report.json if there is any
+            file = Path(self.spec.repo_directory) / fname
+            # Run the test command inside the container to check if the file exists
+            exit_code, test_output = self.container.exec_run(
+                f"test -e {file}", demux=True
             )
+            # Check the exit code of the command
+            if exit_code == 0:
+                copy_from_container(
+                    self.container, file, self.log_dir / fname
+                )
         return output
 
     def __exit__(
@@ -158,8 +141,9 @@ class Modal(ExecutionContext):
         num_cpus: int,
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
+        files_to_collect: Optional[Files] = None,
     ):
-        super().__init__(spec, logger, timeout, num_cpus, log_dir)
+        super().__init__(spec, logger, timeout, num_cpus, log_dir, files_to_copy=files_to_copy, files_to_collect=files_to_collect)
 
         self.app = modal.App()
 
@@ -176,13 +160,17 @@ class Modal(ExecutionContext):
         """Execute command on modal sandbox"""
         start_time = time.time()
         with modal.Volume.ephemeral() as vol:
-            # copy back report.json if there is any
-            report_file = Path(self.spec.repo_directory) / "report.json"
+            cp_cmd = ""
+            for fname in self.files_to_collect:
+                remote_file = Path(self.spec.repo_directory) / fname
+                curr_cp_cmd = f" && cp {str(remote_file)} /vol/{fname} 2>/dev/null"
+                cp_cmd += curr_cp_cmd
 
+            command += cp_cmd
             self.sandbox = modal.Sandbox.create(
                 "bash",
                 "-c",
-                f"{command} && cp {str(report_file)} /vol/report.json",
+                command,
                 image=self.image,
                 cpu=self.num_cpus,
                 timeout=self.timeout,
@@ -191,9 +179,6 @@ class Modal(ExecutionContext):
             )
             self.sandbox.wait()
 
-            # stdout has been redirected to stderr
-            stdout = read_stream(self.sandbox.stderr)
-
             return_code = self.sandbox.returncode
             # https://github.com/modal-labs/modal-client/blob/d577b2916b5c3bf4ebbcb58fadced84d85e1cf8c/modal/sandbox.py#L413
             if return_code == 124:
@@ -201,16 +186,14 @@ class Modal(ExecutionContext):
             else:
                 timed_out = False
 
-            # copy over report.json from mount
-            with (self.log_dir / "report.json").open("wb") as f:
-                for data in vol.read_file("report.json"):
-                    f.write(data)
+            for fname in self.files_to_collect:
+                with (self.log_dir / fname).open("wb") as f:
+                    for data in vol.read_file(fname):
+                        f.write(data)
 
             self.sandbox.terminate()
-
             end_time = time.time()
-
-            return stdout, timed_out, end_time - start_time
+            return self.sandbox.stderr.read(), timed_out, end_time - start_time
 
     def __exit__(
         self,
