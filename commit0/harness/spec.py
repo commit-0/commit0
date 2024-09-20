@@ -153,13 +153,11 @@ def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         f"git reset --hard {instance['base_commit']}",
         "git apply --allow-empty -v /patch.diff",
         "git status",
-        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors {{test_ids}}",
-        "echo $?",
+        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors --cov=. --cov-branch --cov-report json {{test_ids}} > test_output.txt 2>&1",
+        "echo $? > pytest_exit_code.txt",
         f"git reset --hard {instance['base_commit']}",
         "git status",
     ]
-    for i in range(len(eval_script_list)):
-        eval_script_list[i] = f"{eval_script_list[i]} 1>&2"
     return eval_script_list
 
 

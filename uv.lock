@@ -441,6 +441,7 @@ dependencies = [
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "typer" },
 ]
 
 [package.metadata]
@@ -456,6 +457,7 @@ requires-dist = [
     { name = "pre-commit", specifier = ">=3.8.0" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "ruff", specifier = ">=0.6.4" },
+    { name = "typer", specifier = ">=0.12.0" },
 ]
 
 [[package]]

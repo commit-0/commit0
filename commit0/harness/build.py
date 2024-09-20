@@ -19,7 +19,6 @@ def main(
     dataset_split: str,
     repo_split: str,
     num_workers: int,
-    backend: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
@@ -30,9 +29,8 @@ def main(
         spec = make_spec(example)
         specs.append(spec)
 
-    if backend == "local":
-        client = docker.from_env()
-        build_repo_images(client, specs, num_workers)
+    client = docker.from_env()
+    build_repo_images(client, specs, num_workers)
 
 
 __all__ = []
