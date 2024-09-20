@@ -1,4 +1,4 @@
-from commit0.args import app as commit0_app
+from commit0.cli import app as commit0_app
 
 
 def main() -> None:

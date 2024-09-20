@@ -1,6 +1,7 @@
 import typer
 from pathlib import Path
-from typing import List
+from typing import List, Union
+from typing_extensions import Annotated
 import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
 import commit0.harness.build
@@ -10,7 +11,7 @@ import commit0.harness.lint
 import commit0.harness.save
 from commit0.harness.constants import SPLIT, SPLIT_ALL
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False)
 
 
 class Colors:
@@ -26,27 +27,33 @@ def highlight(text: str, color: str) -> str:
     return f"{color}{text}{Colors.RESET}"
 
 
+def is_valid(one: str, total: Union[str, dict[str, str]]):
+    if isinstance(total, dict):
+        total = total.keys()
+    if one not in total:
+        valid = ", ".join(
+            [highlight(key, Colors.ORANGE) for key in total]
+        )
+        raise typer.BadParameter(
+            f"Invalid {highlight('REPO_OR_REPO_SPLIT', Colors.RED)}. Must be one of: {valid}",
+            param_hint="REPO or REPO_SPLIT",
+        )
+
+
 @app.command()
-def clone(
+def setup(
     repo_split: str = typer.Argument(
         ...,
-        help=f"Split of the repository, one of: {", ".join([highlight(key, Colors.ORANGE) for key in SPLIT.keys()])}",
+        help=f"Split of repositories, one of: {', '.join([highlight(key, Colors.ORANGE) for key in SPLIT.keys()])}",
     ),
     dataset_name: str = typer.Option(
         "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
     ),
     dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
-    base_dir: str = typer.Option("repos/", help="Base directory to clone repos"),
+    base_dir: str = typer.Option("repos/", help="Base directory to clone repos to"),
 ) -> None:
-    """Commit0 clone a repository."""
-    if repo_split not in SPLIT:
-        valid_splits = ", ".join(
-            [highlight(key, Colors.ORANGE) for key in SPLIT.keys()]
-        )
-        raise typer.BadParameter(
-            f"Invalid {highlight('REPO_SPLIT', Colors.RED)}. Must be one of: {valid_splits}",
-            param_hint="REPO_SPLIT",
-        )
+    """Commit0 clone a repo split."""
+    is_valid(repo_split, SPLIT)
 
     typer.echo(f"Cloning repository for split: {repo_split}")
     typer.echo(f"Dataset name: {dataset_name}")
@@ -65,37 +72,27 @@ def clone(
 def build(
     repo_split: str = typer.Argument(
         ...,
-        help=f"Split of the repository, one of {", ".join(highlight(key, Colors.ORANGE) for key in SPLIT.keys())}",
+        help=f"Split of repositories, one of {', '.join(highlight(key, Colors.ORANGE) for key in SPLIT.keys())}",
     ),
     dataset_name: str = typer.Option(
         "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
     ),
     dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
     num_workers: int = typer.Option(8, help="Number of workers"),
-    backend: str = typer.Option("local", help="Backend to use for building"),
 ) -> None:
     """Commit0 build a repository."""
-    if repo_split not in SPLIT:
-        valid_splits = ", ".join(
-            [highlight(key, Colors.ORANGE) for key in SPLIT.keys()]
-        )
-        raise typer.BadParameter(
-            f"Invalid {highlight('REPO_SPLIT', Colors.RED)}. Must be one of: {valid_splits}",
-            param_hint="REPO_SPLIT",
-        )
+    is_valid(repo_split, SPLIT)
 
     typer.echo(f"Building repository for split: {repo_split}")
     typer.echo(f"Dataset name: {dataset_name}")
     typer.echo(f"Dataset split: {dataset_split}")
     typer.echo(f"Number of workers: {num_workers}")
-    typer.echo(f"Backend: {backend}")
 
     commit0.harness.build.main(
         dataset_name,
         dataset_split,
         repo_split,
         num_workers,
-        backend,
     )
 
 
@@ -107,12 +104,7 @@ def get_tests(
     ),
 ) -> None:
     """Get tests for a Commit0 repository."""
-    if repo_name not in SPLIT_ALL:
-        valid_repos = ", ".join([highlight(key, Colors.ORANGE) for key in SPLIT_ALL])
-        raise typer.BadParameter(
-            f"Invalid {highlight('REPO_NAME', Colors.RED)}. Must be one of: {valid_repos}",
-            param_hint="REPO_NAME",
-        )
+    is_valid(repo_name, SPLIT_ALL)
 
     typer.echo(f"Getting tests for repository: {repo_name}")
 
@@ -124,45 +116,8 @@ def test(
     repo_or_repo_path: str = typer.Argument(
         ..., help="Directory of the repository to test"
     ),
-    branch: str = typer.Argument(..., help="Branch to test"),
-    test_ids: str = typer.Argument(..., help="Test IDs to run"),
-    dataset_name: str = typer.Option(
-        "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
-    ),
-    dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
-    base_dir: str = typer.Option("repos/", help="Base directory of repos"),
-    backend: str = typer.Option("local", help="Backend to use for testing"),
-    timeout: int = typer.Option(3600, help="Timeout for tests in seconds"),
-    num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
-) -> None:
-    """Run tests on a Commit0 repository."""
-    typer.echo(f"Running tests for repository: {repo_or_repo_path}")
-    typer.echo(f"Branch: {branch}")
-    typer.echo(f"Test IDs: {test_ids}")
-
-    if branch.startswith("branch="):
-        branch = branch[len("branch=") :]
-
-    commit0.harness.run_pytest_ids.main(
-        dataset_name,
-        dataset_split,
-        base_dir,
-        repo_or_repo_path,
-        branch,
-        test_ids,
-        backend,
-        timeout,
-        num_cpus,
-        stdout=True,
-    )
-
-
-@app.command()
-def test_reference(
-    repo_or_repo_path: str = typer.Argument(
-        ..., help="Directory of the repository to test"
-    ),
-    test_ids: str = typer.Argument(..., help="Test IDs to run"),
+    test_ids: str = typer.Argument(..., help="All ways pytest supports to run and select tests. Please provide a single string. Example: \"test_mod.py\", \"testing/\", \"test_mod.py::test_func\", \"-k 'MyClass and not method'\""),
+    branch: Union[str, None] = typer.Option(None, help="Branch to test (branch MUST be provided or use --reference)"),
     dataset_name: str = typer.Option(
         "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
     ),
@@ -171,17 +126,31 @@ def test_reference(
     backend: str = typer.Option("local", help="Backend to use for testing"),
     timeout: int = typer.Option(1800, help="Timeout for tests in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
+    reference: Annotated[bool, typer.Option("--reference", help="Test the reference commit.")] = False
 ) -> None:
-    """Run tests on the reference commit of a Commit0 repository"""
-    typer.echo(f"Running reference tests for repository: {repo_or_repo_path}")
+    """Run tests on a Commit0 repository."""
+    typer.echo(f"Running tests for repository: {repo_or_repo_path}")
+    typer.echo(f"Branch: {branch}")
     typer.echo(f"Test IDs: {test_ids}")
+
+    if repo_or_repo_path.endswith('/'):
+        repo_or_repo_path = repo_or_repo_path[:-1]
+    is_valid(repo_or_repo_path.split('/')[-1], SPLIT_ALL)
+    if reference:
+        branch = "reference"
+
+    if not branch and not reference:
+        raise typer.BadParameter(
+                f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name.",
+                param_hint="BRANCH",
+            )
 
     commit0.harness.run_pytest_ids.main(
         dataset_name,
         dataset_split,
         base_dir,
         repo_or_repo_path,
-        "reference",
+        branch,
         test_ids,
         backend,
         timeout,
@@ -193,9 +162,9 @@ def test_reference(
 @app.command()
 def evaluate(
     repo_split: str = typer.Argument(
-        ..., help=f"Split of the repository, one of {SPLIT.keys()}"
+        ..., help=f"Split of repositories, one of {SPLIT.keys()}"
     ),
-    branch: str = typer.Argument(..., help="Branch to evaluate"),
+    branch: Union[str, None] = typer.Option(None, help="Branch to evaluate (branch MUST be provided or use --reference)"),
     dataset_name: str = typer.Option(
         "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
     ),
@@ -205,22 +174,22 @@ def evaluate(
     timeout: int = typer.Option(1800, help="Timeout for evaluation in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     num_workers: int = typer.Option(8, help="Number of workers to use"),
+    reference: Annotated[bool, typer.Option("--reference", help="Evaluate the reference commit.")] = False
 ) -> None:
     """Evaluate a Commit0 repository."""
-    if repo_split not in SPLIT:
-        valid_splits = ", ".join(
-            [highlight(key, Colors.ORANGE) for key in SPLIT.keys()]
-        )
+    is_valid(repo_split, SPLIT)
+
+    if reference:
+        branch = "reference"
+
+    if not branch and not reference:
         raise typer.BadParameter(
-            f"Invalid repo_split. Must be one of: {valid_splits}",
-            param_hint="REPO_SPLIT",
-        )
+                f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name",
+                param_hint="BRANCH",
+            )
 
     typer.echo(f"Evaluating repository split: {repo_split}")
     typer.echo(f"Branch: {branch}")
-
-    if branch.startswith("branch="):
-        branch = branch[len("branch=") :]
 
     commit0.harness.evaluate.main(
         dataset_name,
@@ -236,62 +205,19 @@ def evaluate(
 
 
 @app.command()
-def evaluate_reference(
-    repo_split: str = typer.Argument(
-        ..., help=f"Split of the repository, one of {SPLIT.keys()}"
-    ),
-    dataset_name: str = typer.Option(
-        "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
-    ),
-    dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
-    base_dir: str = typer.Option("repos/", help="Base directory of repos"),
-    backend: str = typer.Option("local", help="Backend to use for evaluation"),
-    timeout: int = typer.Option(1800, help="Timeout for evaluation in seconds"),
-    num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
-    num_workers: int = typer.Option(8, help="Number of workers to use"),
-) -> None:
-    """Evaluate the reference commit of a Commit0 repository."""
-    if repo_split not in SPLIT:
-        valid_splits = ", ".join(
-            [highlight(key, Colors.ORANGE) for key in SPLIT.keys()]
-        )
-        raise typer.BadParameter(
-            f"Invalid repo_split. Must be one of: {valid_splits}",
-            param_hint="REPO_SPLIT",
-        )
-
-    typer.echo(f"Evaluating reference commit for repository split: {repo_split}")
-
-    commit0.harness.evaluate.main(
-        dataset_name,
-        dataset_split,
-        repo_split,
-        base_dir,
-        "reference",
-        backend,
-        timeout,
-        num_cpus,
-        num_workers,
-    )
-
-
-@app.command()
 def lint(
-    files: List[str] = typer.Argument(
+    files: List[Path] = typer.Argument(
         ..., help="Files to lint. If not provided, all files will be linted."
     ),
 ) -> None:
     """Lint given files if provided, otherwise lint all files in the base directory."""
-    if files:
-        for file in files:
-            if not Path(file).is_file():
-                raise FileNotFoundError(f"File not found: {file}")
-        typer.echo(
-            f"Linting specific files: {', '.join(highlight(file, Colors.ORANGE) for file in files)}"
-        )
-    else:
-        typer.echo("Linting all files in the repository")
-
+    assert len(files) > 0, "No files to lint."
+    for path in files:
+        if not path.is_file():
+            raise FileNotFoundError(f"File not found: {path}")
+    typer.echo(
+        f"Linting specific files: {', '.join(highlight(file, Colors.ORANGE) for file in files)}"
+    )
     commit0.harness.lint.main(files)
 
 
@@ -310,21 +236,11 @@ def save(
     github_token: str = typer.Option(None, help="GitHub token for authentication"),
 ) -> None:
     """Save a Commit0 repository to GitHub."""
-    if repo_split not in SPLIT:
-        valid_splits = ", ".join(
-            [highlight(key, Colors.ORANGE) for key in SPLIT.keys()]
-        )
-        raise typer.BadParameter(
-            f"Invalid repo_split. Must be one of: {valid_splits}",
-            param_hint="REPO_SPLIT",
-        )
+    is_valid(repo_split, SPLIT)
 
     typer.echo(f"Saving repository split: {repo_split}")
     typer.echo(f"Owner: {owner}")
     typer.echo(f"Branch: {branch}")
-
-    if branch.startswith("branch="):
-        branch = branch[len("branch=") :]
 
     commit0.harness.save.main(
         dataset_name,
@@ -335,7 +251,3 @@ def save(
         branch,
         github_token,
     )
-
-
-if __name__ == "__main__":
-    app()
