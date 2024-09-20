@@ -216,7 +216,7 @@ def test(
     branch: Union[str, None] = typer.Option(
         None, help="Branch to test (branch MUST be provided or use --reference)"
     ),
-    backend: str = typer.Option("local", help="Backend to use for testing"),
+    backend: str = typer.Option("modal", help="Backend to use for testing"),
     timeout: int = typer.Option(1800, help="Timeout for tests in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     reference: Annotated[
@@ -251,9 +251,10 @@ def test(
         branch = "reference"
     assert branch is not None, "branch is not specified"
 
-    typer.echo(f"Running tests for repository: {repo_or_repo_path}")
-    typer.echo(f"Branch: {branch}")
-    typer.echo(f"Test IDs: {test_ids}")
+    if verbose == 2:
+        typer.echo(f"Running tests for repository: {repo_or_repo_path}")
+        typer.echo(f"Branch: {branch}")
+        typer.echo(f"Test IDs: {test_ids}")
 
     commit0.harness.run_pytest_ids.main(
         commit0_config["dataset_name"],
@@ -274,7 +275,7 @@ def evaluate(
     branch: Union[str, None] = typer.Option(
         None, help="Branch to evaluate (branch MUST be provided or use --reference)"
     ),
-    backend: str = typer.Option("local", help="Backend to use for evaluation"),
+    backend: str = typer.Option("modal", help="Backend to use for evaluation"),
     timeout: int = typer.Option(1800, help="Timeout for evaluation in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     num_workers: int = typer.Option(8, help="Number of workers to use"),

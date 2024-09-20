@@ -171,14 +171,13 @@ class Modal(ExecutionContext):
         """Execute command on modal sandbox"""
         start_time = time.time()
         with modal.Volume.ephemeral() as vol:
-            cp_cmd = ""
             if self.files_to_collect:
+                command += " && "
                 for fname in self.files_to_collect:
                     remote_file = Path(self.spec.repo_directory) / fname
-                    curr_cp_cmd = f" && cp {str(remote_file)} /vol/{fname} 2>/dev/null"
-                    cp_cmd += curr_cp_cmd
+                    cp_cmd = f"cp {str(remote_file)} /vol/{fname} 2>/dev/null; "
+                    command += cp_cmd
 
-            command += cp_cmd
             self.sandbox = modal.Sandbox.create(
                 "bash",
                 "-c",
