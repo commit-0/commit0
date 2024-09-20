@@ -126,7 +126,7 @@ def write_to_container(container: Container, data: str, dst: Path) -> None:
 def cleanup_container(
     client: docker.DockerClient,
     container: Container,
-    logger: Union[None, str, logging.Logger],
+    logger: logging.Logger,
 ) -> None:
     """Stop and remove a Docker container.
     Performs this forcefully if the container cannot be stopped with the python API.
@@ -135,7 +135,7 @@ def cleanup_container(
     ----
         client (docker.DockerClient): Docker client.
         container (docker.Container): Container to remove.
-        logger (Union[str, logging.Logger], optional): Logger instance or log level as string for logging container creation messages. Defaults to None.
+        logger (logging.Logger): Logger instance or log level as string for logging container creation messages.
 
     """
     if not container:
@@ -143,43 +143,13 @@ def cleanup_container(
 
     container_id = container.id
 
-    if not logger:
-        # if logger is None, print to stdout
-        def log_error(x: str) -> None:
-            print(x)
-
-        def log_info(x: str) -> None:
-            print(x)
-
-        raise_error = True
-    elif logger == "quiet":
-        # if logger is "quiet", don't print anything
-        def log_info(x: str) -> None:
-            return None
-
-        def log_error(x: str) -> None:
-            return None
-
-        raise_error = True
-    else:
-        assert isinstance(logger, logging.Logger)
-
-        # if logger is a logger object, use it
-        def log_error(x: str) -> None:
-            logger.info(x)
-
-        def log_info(x: str) -> None:
-            logger.info(x)
-
-        raise_error = False
-
     # Attempt to stop the container
     try:
         if container:
-            log_info(f"Attempting to stop container {container.name}...")
+            logger.info(f"Attempting to stop container {container.name}...")
             container.kill()
     except Exception as e:
-        log_error(
+        logger.error(
             f"Failed to stop container {container.name}: {e}. Trying to forcefully kill..."
         )
         try:
@@ -190,42 +160,91 @@ def cleanup_container(
 
             # If container PID found, forcefully kill the container
             if pid > 0:
-                log_info(
+                logger.info(
                     f"Forcefully killing container {container.name} with PID {pid}..."
                 )
                 os.kill(pid, signal.SIGKILL)
             else:
-                log_error(f"PID for container {container.name}: {pid} - not killing.")
+                logger.error(f"PID for container {container.name}: {pid} - not killing.")
         except Exception as e2:
-            if raise_error:
-                raise e2
-            log_error(
+            raise Exception(
                 f"Failed to forcefully kill container {container.name}: {e2}\n"
                 f"{traceback.format_exc()}"
             )
 
     # Attempt to remove the container
     try:
-        log_info(f"Attempting to remove container {container.name}...")
+        logger.info(f"Attempting to remove container {container.name}...")
         container.remove(force=True)
-        log_info(f"Container {container.name} removed.")
+        logger.info(f"Container {container.name} removed.")
     except Exception as e:
-        if raise_error:
-            raise e
-        log_error(
+        raise Exception(
             f"Failed to remove container {container.name}: {e}\n"
             f"{traceback.format_exc()}"
         )
 
 
+def image_exists_locally(client: docker.DockerClient, image_name: str, tag: str, logger: logging.Logger) -> bool:
+    """
+    Check if a Docker image exists locally.
+
+    Args:
+    ----
+    client (docker.DockerClient): Docker client instance.
+    image_name (str): The name of the Docker image.
+    tag (str, optional): Tag of the Docker image.
+    logger (logging.Logger): Logger instance.
+
+    Returns:
+    -------
+    bool: True if the image exists locally, False otherwise.
+    """
+    images = client.images.list(name=image_name)
+    for image in images:
+        if f"{image_name}:{tag}" in image.tags:
+            logger.info(f"Using {image_name}:{tag} found locally.")
+            return True
+    logger.info(f"{image_name}:{tag} cannot be found locally")
+    return False
+
+def pull_image_from_docker_hub(client: docker.DockerClient, image_name: str, tag: str, logger: logging.Logger) -> docker.models.images.Image:
+    """
+    Pull a Docker image from Docker Hub.
+
+    Args:
+    ----
+    client (docker.DockerClient): Docker client instance.
+    image_name (str): The name of the Docker image.
+    tag (str, optional): Tag of the Docker image.
+    logger (logging.Logger): Logger instance.
+
+    Returns:
+    -------
+    docker.models.images.Image: The pulled Docker image.
+
+    Raises:
+    ------
+    docker.errors.ImageNotFound: If the image is not found on Docker Hub.
+    docker.errors.APIError: If there's an issue with the Docker API during the pull.
+    """
+    try:
+        image = client.images.pull(image_name, tag=tag)
+        logger.info(f"Loaded {image_name}:{tag} from Docker Hub.")
+        return image
+    except docker.errors.ImageNotFound:
+        raise Exception(f"Image {image_name}:{tag} not found on Docker Hub.")
+    except docker.errors.APIError as e:
+        raise Exception(f"Error pulling image: {e}")
+
+
 def create_container(
     client: docker.DockerClient,
     image_name: str,
-    container_name: Optional[str] = None,
+    container_name: str,
+    logger: logging.Logger,
     user: Optional[str] = None,
     command: Optional[str] = "tail -f /dev/null",
     nano_cpus: Optional[int] = None,
-    logger: Optional[Union[str, logging.Logger]] = None,
 ) -> Container:
     """Start a Docker container using the specified image.
 
@@ -233,11 +252,11 @@ def create_container(
     ----
     client (docker.DockerClient): Docker client.
     image_name (str): The name of the Docker image.
-    container_name (str, optional): Name for the Docker container. Defaults to None.
+    container_name (str): Name for the Docker container.
+    logger (logging.Logger): Logger instance or log level as string for logging container creation messages.
     user (str, option): Log in as which user. Defaults to None.
     command (str, optional): Command to run in the container. Defaults to None.
     nano_cpus (int, optional): The number of CPUs for the container. Defaults to None.
-    logger (Union[str, logging.Logger], optional): Logger instance or log level as string for logging container creation messages. Defaults to None.
 
     Returns:
     -------
@@ -249,41 +268,13 @@ def create_container(
     Exception: For other general errors.
 
     """
-    try:
-        # Pull the image if it doesn't already exist
-        client.images.pull(image_name)
-    except docker.errors.APIError as e:
-        raise docker.errors.APIError(f"Error pulling image: {str(e)}")
-
-    if not logger:
-        # if logger is None, print to stdout
-        def log_error(x: str) -> None:
-            print(x)
-
-        def log_info(x: str) -> None:
-            print(x)
-
-    elif logger == "quiet":
-        # if logger is "quiet", don't print anything
-        def log_info(x: str) -> None:
-            return None
-
-        def log_error(x: str) -> None:
-            return None
-
-    else:
-        assert isinstance(logger, logging.Logger)
-
-        # if logger is a logger object, use it
-        def log_error(x: str) -> None:
-            logger.info(x)
-
-        def log_info(x: str) -> None:
-            logger.info(x)
+    image, tag = image_name.split(":")
+    if not image_exists_locally(client, image, tag, logger):
+        pull_image_from_docker_hub(client, image, tag, logger)
 
     container = None
     try:
-        log_info(f"Creating container for {image_name}...")
+        logger.info(f"Creating container for {image_name}...")
         container = client.containers.run(
             image=image_name,
             name=container_name,
@@ -292,12 +283,12 @@ def create_container(
             nano_cpus=nano_cpus,
             detach=True,
         )
-        log_info(f"Container for {image_name} created: {container.id}")
+        logger.info(f"Container for {image_name} created: {container.id}")
         return container
     except Exception as e:
         # If an error occurs, clean up the container and raise an exception
-        log_error(f"Error creating container for {image_name}: {e}")
-        log_info(traceback.format_exc())
+        logger.error(f"Error creating container for {image_name}: {e}")
+        logger.info(traceback.format_exc())
         assert container is not None
         cleanup_container(client, container, logger)
         raise
