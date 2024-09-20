@@ -2,7 +2,7 @@ import tarfile
 from typing import List
 
 
-def main(repo: str, stdout: bool) -> List[str]:
+def main(repo: str, verbose: int) -> List[str]:
     repo = repo.lower()
     repo = repo.replace(".", "-")
     out = ""
@@ -13,7 +13,7 @@ def main(repo: str, stdout: bool) -> List[str]:
                 if file:
                     content = file.read().decode("utf-8")
                     out += content
-                    if stdout:
+                    if verbose:
                         print(content)
     out = out.split("\n")
     return out

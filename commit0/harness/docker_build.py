@@ -196,6 +196,7 @@ def build_repo_images(
     client: docker.DockerClient,
     dataset: list,
     max_workers: int = 4,
+    verbose: int = 1,
 ) -> tuple[list[str], list[str]]:
     """Builds the repo images required for the dataset if they do not already exist.
 
