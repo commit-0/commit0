@@ -12,14 +12,13 @@ from commit0.harness.constants import (
     RUN_PYTEST_LOG_DIR,
     RepoInstance,
 )
-from commit0.harness.docker_build import (
-    setup_logger,
-)
 from commit0.harness.spec import make_spec
 from commit0.harness.utils import (
     EvaluationError,
     get_hash_string,
     generate_patch_between_commits,
+    setup_logger,
+    close_logger,
 )
 from commit0.harness.execution_context import (
     ExecutionBackend,
@@ -133,6 +132,7 @@ def main(
                     f"Test timed out after {timeout} seconds.",
                     logger,
                 )
+        close_logger(logger)
         pytest_exit_code = Path(log_dir / "pytest_exit_code.txt").read_text().strip()
         sys.exit(pytest_exit_code)
     except EvaluationError as e:
