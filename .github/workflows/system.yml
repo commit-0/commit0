@@ -21,17 +21,17 @@ jobs:
       - name: Set up commit0
         run: uv run commit0 setup simpy
       - name: Build docker images
-        run: uv run commit0 build simpy
+        run: uv run commit0 build
       - name: Get tests
         run: uv run commit0 get-tests simpy
       - name: Test
         run: uv run commit0 test simpy tests/test_event.py::test_succeed --reference
       - name: Evaluate
-        run: uv run commit0 evaluate simpy --reference
+        run: uv run commit0 evaluate --reference
       - name: Lint
         run: uv run commit0 lint commit0/harness/lint.py
       - name: Save
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
         run: |
-          uv run commit0 save simpy test-save-commit0 master
+          uv run commit0 save test-save-commit0 master

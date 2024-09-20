@@ -165,3 +165,4 @@ logs/
 repos/
 config.yml
 hydra_outputs/
+.commit0*

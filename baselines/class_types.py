@@ -2,15 +2,6 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Commit0Config:
-    base_dir: str
-    dataset_name: str
-    dataset_split: str
-    repo_split: str
-    num_workers: int
-
-
-@dataclass
 class AgentConfig:
     agent_name: str
     model_name: str

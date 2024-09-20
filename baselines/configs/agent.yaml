@@ -3,9 +3,6 @@ defaults:
   - base
   - _self_
 
-commit0_config:
-  repo_split: minitorch
-
 agent_config:
   use_user_prompt: false
   use_repo_info: false
