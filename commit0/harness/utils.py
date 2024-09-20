@@ -27,7 +27,9 @@ class EvaluationError(Exception):
         )
 
 
-def setup_logger(repo: str, log_file: Path, mode: str = "w", verbose: int = 1) -> logging.Logger:
+def setup_logger(
+    repo: str, log_file: Path, mode: str = "w", verbose: int = 1
+) -> logging.Logger:
     """Used for logging the build process of images and running containers.
     It writes logs to the log file.
     """

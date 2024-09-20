@@ -205,6 +205,7 @@ def build_repo_images(
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
         max_workers (int): Maximum number of workers to use for building images
+        verbose (int): Level of verbosity
 
     Return:
     ------
