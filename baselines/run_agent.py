@@ -81,12 +81,10 @@ def run_agent_for_repo(
     if latest_commit.hexsha != example["base_commit"]:
         local_repo.git.reset("--hard", example["base_commit"])
     target_edit_files = get_target_edit_files(repo_path)
-
     with DirContext(repo_path):
         if commit0_config is None or agent_config is None:
             raise ValueError("Invalid input")
 
-        message = get_message(agent_config, repo_path, example["test"]["test_dir"])
         if agent_config.run_tests:
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
@@ -94,7 +92,7 @@ def run_agent_for_repo(
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
                 lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
-
+                message = get_message(agent_config, repo_path, test_file=test_file)
                 agent.run(
                     message,
                     test_cmd,
@@ -104,6 +102,9 @@ def run_agent_for_repo(
                 )
         else:
             # when unit test feedback is not available, iterate over target files to edit
+            message = get_message(
+                agent_config, repo_path, test_dir=example["test"]["test_dir"]
+            )
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
