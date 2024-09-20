@@ -10,7 +10,6 @@ requires-python = ">=3.10"
 dependencies = [
     "ruff>=0.6.4",
     "pre-commit>=3.8.0",
-    "hydra-core>=1.3.2",
     "PyMuPDF>=1.24.5",
     "aider-chat>=0.56.0",
     "modal>=0.64.95",
@@ -22,7 +21,7 @@ dependencies = [
     "gitpython>=3.1.43",
     "pytest>=8.3.3",
 ]
-scripts = { commit0 = "commit0.__main__:main" }
+scripts = { commit0 = "commit0.__main__:main", agent = "agent.__main__:main" }
 
 [tool.pyright]
 include = ["**/commit0"]
