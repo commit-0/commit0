@@ -1,5 +1,3 @@
-import hashlib
-
 from dataclasses import dataclass
 from typing import Union, cast, Optional
 
@@ -48,12 +46,13 @@ class Spec:
 
         Note that old images are not automatically deleted, so consider cleaning up old images periodically.
         """
-        hash_object = hashlib.sha256()
-        hash_object.update(str(self.setup_script).encode("utf-8"))
-        hash_value = hash_object.hexdigest()
-        val = hash_value[:22]  # 22 characters is still very likely to be unique
+        # hash_object = hashlib.sha256()
+        # hash_object.update(str(self.setup_script).encode("utf-8"))
+        # hash_value = hash_object.hexdigest()
+        # val = hash_value[:22]  # 22 characters is still very likely to be unique
         repo = self.repo.split("/")[-1]
-        return f"commit0.repo.{repo}.{val}:latest".lower()
+        # return f"commit0.repo.{repo}.{val}:latest".lower()
+        return f"wentingzhao/{repo}:latest".lower()
 
     def get_container_name(self, run_id: Optional[str] = None) -> str:
         repo = self.repo.split("/")[-1]

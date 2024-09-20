@@ -249,11 +249,11 @@ def create_container(
     Exception: For other general errors.
 
     """
-    # try:
-    #    # Pull the image if it doesn't already exist
-    #    client.images.pull(image_name)
-    # except docker.errors.APIError as e:
-    #    raise docker.errors.APIError(f"Error pulling image: {str(e)}")
+    try:
+        # Pull the image if it doesn't already exist
+        client.images.pull(image_name)
+    except docker.errors.APIError as e:
+        raise docker.errors.APIError(f"Error pulling image: {str(e)}")
 
     if not logger:
         # if logger is None, print to stdout
