@@ -83,7 +83,7 @@ def config(
         help="Use the user prompt instead of the default prompt",
     ),
     user_prompt: str = typer.Option(
-        "Here is your task:\nYou need to implement all functions with '    pass' and pass the unit tests.\nDo not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.\nWhen you generate code, you must maintain the original formatting of the function stubs (such as whitespaces), otherwise we will not able to search/replace blocks for code modifications, and therefore you will receive a score of 0 for your generated code.",
+        "Here is your task:\nYou need to complete the implementations for all functions (i.e., those with pass statements) and pass the unit tests.\nDo not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.\nWhen you generate code, you must maintain the original formatting of the function stubs (such as whitespaces), otherwise we will not able to search/replace blocks for code modifications, and therefore you will receive a score of 0 for your generated code.",
         help="User prompt to use",
     ),
     run_tests: bool = typer.Option(
