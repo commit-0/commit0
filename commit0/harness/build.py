@@ -31,6 +31,10 @@ def main(
 
     client = docker.from_env()
     build_repo_images(client, specs, num_workers)
+    for spec in specs:
+        image = client.images.get(spec.repo_image_key)
+        repository, tag = spec.repo_image_tag.split(":")
+        image.tag(repository, tag)
 
 
 __all__ = []
