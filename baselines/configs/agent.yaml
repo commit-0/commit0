@@ -10,4 +10,4 @@ agent_config:
   use_spec_info: false
   use_lint_info: true
   pre_commit_config_path: .pre-commit-config.yaml
-  run_tests: true
+  run_tests: false
