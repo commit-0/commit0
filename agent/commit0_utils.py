@@ -119,8 +119,7 @@ def get_file_info(file_path: Path, prefix: str = "") -> str:
 
 
 def get_target_edit_files(target_dir: str) -> list[str]:
-    """Find the files with functions with the pass statement.
-    """
+    """Find the files with functions with the pass statement."""
     files = []
     for root, _, filenames in os.walk(target_dir):
         for filename in filenames:
