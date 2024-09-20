@@ -15,11 +15,12 @@ from baselines.agents import AiderAgents
 from typing import Optional, Type
 from types import TracebackType
 from hydra.core.config_store import ConfigStore
-from baselines.class_types import AgentConfig, Commit0Config
+from baselines.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AIDER_LOG_DIR, RepoInstance
 from tqdm import tqdm
+from commit0.cli import read_commit0_dot_file
 
 
 class DirContext:
@@ -40,7 +41,7 @@ class DirContext:
 
 
 def run_agent_for_repo(
-    commit0_config: Commit0Config,
+    repo_base_dir: str,
     agent_config: AgentConfig,
     example: RepoInstance,
 ) -> None:
@@ -55,7 +56,7 @@ def run_agent_for_repo(
     test_files_str = get_tests(repo_name, verbose=0)
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
-    repo_path = os.path.join(commit0_config.base_dir, repo_name)
+    repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
     try:
         local_repo = Repo(repo_path)
@@ -82,13 +83,15 @@ def run_agent_for_repo(
         local_repo.git.reset("--hard", example["base_commit"])
     target_edit_files = get_target_edit_files(repo_path)
     with DirContext(repo_path):
-        if commit0_config is None or agent_config is None:
+        if agent_config is None:
             raise ValueError("Invalid input")
 
         if agent_config.run_tests:
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
-                test_cmd = f"python -m commit0 test {repo_path} {run_id} {test_file}"
+                test_cmd = (
+                    f"python -m commit0 test {repo_path} {test_file} --branch {run_id}"
+                )
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
                 lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
@@ -119,26 +122,26 @@ def main() -> None:
     Will run in parallel for each repo.
     """
     cs = ConfigStore.instance()
-    cs.store(name="user", node=Commit0Config)
     cs.store(name="user", node=AgentConfig)
     hydra.initialize(version_base=None, config_path="configs")
     config = hydra.compose(config_name="agent")
-    commit0_config = Commit0Config(**config.commit0_config)
     agent_config = AgentConfig(**config.agent_config)
 
+    commit0_config = read_commit0_dot_file(".commit0.yaml")
+
     dataset = load_dataset(
-        commit0_config.dataset_name, split=commit0_config.dataset_split
+        commit0_config["dataset_name"], split=commit0_config["dataset_split"]
     )
     filtered_dataset = [
         example
         for example in dataset
-        if commit0_config.repo_split == "all"
+        if commit0_config["repo_split"] == "all"
         or (
             isinstance(example, dict)
             and "repo" in example
             and isinstance(example["repo"], str)
             and example["repo"].split("/")[-1]
-            in SPLIT.get(commit0_config.repo_split, [])
+            in SPLIT.get(commit0_config["repo_split"], [])
         )
     ]
     assert len(filtered_dataset) > 0, "No examples available"
@@ -149,14 +152,14 @@ def main() -> None:
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
     ) as pbar:
-        with multiprocessing.Pool(processes=commit0_config.num_workers) as pool:
+        with multiprocessing.Pool(processes=10) as pool:
             results = []
 
             # Use apply_async to submit jobs and add progress bar updates
             for example in filtered_dataset:
                 result = pool.apply_async(
                     run_agent_for_repo,
-                    args=(commit0_config, agent_config, example),
+                    args=(commit0_config["base_dir"], agent_config, example),
                     callback=lambda _: pbar.update(
                         1
                     ),  # Update progress bar on task completion

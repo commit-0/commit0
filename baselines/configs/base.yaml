@@ -1,15 +1,6 @@
 defaults:
   - _self_
 
-
-
-commit0_config:
-  base_dir: repos
-  dataset_name: "wentingzhao/commit0_docstring"
-  dataset_split: "test"
-  repo_split: "simpy"
-  num_workers: 10
-
 agent_config:
   agent_name: "aider"
   model_name: "claude-3-5-sonnet-20240620"
