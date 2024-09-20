@@ -27,13 +27,11 @@ def highlight(text: str, color: str) -> str:
     return f"{color}{text}{Colors.RESET}"
 
 
-def is_valid(one: str, total: Union[str, dict[str, str]]):
+def check_valid(one: str, total: Union[list[str], dict[str, list[str]]]) -> None:
     if isinstance(total, dict):
-        total = total.keys()
+        total = list(total.keys())
     if one not in total:
-        valid = ", ".join(
-            [highlight(key, Colors.ORANGE) for key in total]
-        )
+        valid = ", ".join([highlight(key, Colors.ORANGE) for key in total])
         raise typer.BadParameter(
             f"Invalid {highlight('REPO_OR_REPO_SPLIT', Colors.RED)}. Must be one of: {valid}",
             param_hint="REPO or REPO_SPLIT",
@@ -53,7 +51,7 @@ def setup(
     base_dir: str = typer.Option("repos/", help="Base directory to clone repos to"),
 ) -> None:
     """Commit0 clone a repo split."""
-    is_valid(repo_split, SPLIT)
+    check_valid(repo_split, SPLIT)
 
     typer.echo(f"Cloning repository for split: {repo_split}")
     typer.echo(f"Dataset name: {dataset_name}")
@@ -81,7 +79,7 @@ def build(
     num_workers: int = typer.Option(8, help="Number of workers"),
 ) -> None:
     """Commit0 build a repository."""
-    is_valid(repo_split, SPLIT)
+    check_valid(repo_split, SPLIT)
 
     typer.echo(f"Building repository for split: {repo_split}")
     typer.echo(f"Dataset name: {dataset_name}")
@@ -104,7 +102,7 @@ def get_tests(
     ),
 ) -> None:
     """Get tests for a Commit0 repository."""
-    is_valid(repo_name, SPLIT_ALL)
+    check_valid(repo_name, SPLIT_ALL)
 
     typer.echo(f"Getting tests for repository: {repo_name}")
 
@@ -116,8 +114,13 @@ def test(
     repo_or_repo_path: str = typer.Argument(
         ..., help="Directory of the repository to test"
     ),
-    test_ids: str = typer.Argument(..., help="All ways pytest supports to run and select tests. Please provide a single string. Example: \"test_mod.py\", \"testing/\", \"test_mod.py::test_func\", \"-k 'MyClass and not method'\""),
-    branch: Union[str, None] = typer.Option(None, help="Branch to test (branch MUST be provided or use --reference)"),
+    test_ids: str = typer.Argument(
+        ...,
+        help='All ways pytest supports to run and select tests. Please provide a single string. Example: "test_mod.py", "testing/", "test_mod.py::test_func", "-k \'MyClass and not method\'"',
+    ),
+    branch: Union[str, None] = typer.Option(
+        None, help="Branch to test (branch MUST be provided or use --reference)"
+    ),
     dataset_name: str = typer.Option(
         "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
     ),
@@ -126,24 +129,26 @@ def test(
     backend: str = typer.Option("local", help="Backend to use for testing"),
     timeout: int = typer.Option(1800, help="Timeout for tests in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
-    reference: Annotated[bool, typer.Option("--reference", help="Test the reference commit.")] = False
+    reference: Annotated[
+        bool, typer.Option("--reference", help="Test the reference commit.")
+    ] = False,
 ) -> None:
     """Run tests on a Commit0 repository."""
+    if repo_or_repo_path.endswith("/"):
+        repo_or_repo_path = repo_or_repo_path[:-1]
+    check_valid(repo_or_repo_path.split("/")[-1], SPLIT_ALL)
+    if not branch and not reference:
+        raise typer.BadParameter(
+            f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name.",
+            param_hint="BRANCH",
+        )
+    if reference:
+        branch = "reference"
+    assert branch is not None, "branch is not specified"
+
     typer.echo(f"Running tests for repository: {repo_or_repo_path}")
     typer.echo(f"Branch: {branch}")
     typer.echo(f"Test IDs: {test_ids}")
-
-    if repo_or_repo_path.endswith('/'):
-        repo_or_repo_path = repo_or_repo_path[:-1]
-    is_valid(repo_or_repo_path.split('/')[-1], SPLIT_ALL)
-    if reference:
-        branch = "reference"
-
-    if not branch and not reference:
-        raise typer.BadParameter(
-                f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name.",
-                param_hint="BRANCH",
-            )
 
     commit0.harness.run_pytest_ids.main(
         dataset_name,
@@ -164,7 +169,9 @@ def evaluate(
     repo_split: str = typer.Argument(
         ..., help=f"Split of repositories, one of {SPLIT.keys()}"
     ),
-    branch: Union[str, None] = typer.Option(None, help="Branch to evaluate (branch MUST be provided or use --reference)"),
+    branch: Union[str, None] = typer.Option(
+        None, help="Branch to evaluate (branch MUST be provided or use --reference)"
+    ),
     dataset_name: str = typer.Option(
         "wentingzhao/commit0_docstring", help="Name of the Huggingface dataset"
     ),
@@ -174,19 +181,21 @@ def evaluate(
     timeout: int = typer.Option(1800, help="Timeout for evaluation in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     num_workers: int = typer.Option(8, help="Number of workers to use"),
-    reference: Annotated[bool, typer.Option("--reference", help="Evaluate the reference commit.")] = False
+    reference: Annotated[
+        bool, typer.Option("--reference", help="Evaluate the reference commit.")
+    ] = False,
 ) -> None:
     """Evaluate a Commit0 repository."""
-    is_valid(repo_split, SPLIT)
-
-    if reference:
-        branch = "reference"
-
     if not branch and not reference:
         raise typer.BadParameter(
-                f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name",
-                param_hint="BRANCH",
-            )
+            f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name",
+            param_hint="BRANCH",
+        )
+    if reference:
+        branch = "reference"
+    assert branch is not None, "branch is not specified"
+
+    check_valid(repo_split, SPLIT)
 
     typer.echo(f"Evaluating repository split: {repo_split}")
     typer.echo(f"Branch: {branch}")
@@ -214,9 +223,9 @@ def lint(
     assert len(files) > 0, "No files to lint."
     for path in files:
         if not path.is_file():
-            raise FileNotFoundError(f"File not found: {path}")
+            raise FileNotFoundError(f"File not found: {str(path)}")
     typer.echo(
-        f"Linting specific files: {', '.join(highlight(file, Colors.ORANGE) for file in files)}"
+        f"Linting specific files: {', '.join(highlight(str(file), Colors.ORANGE) for file in files)}"
     )
     commit0.harness.lint.main(files)
 
@@ -236,7 +245,7 @@ def save(
     github_token: str = typer.Option(None, help="GitHub token for authentication"),
 ) -> None:
     """Save a Commit0 repository to GitHub."""
-    is_valid(repo_split, SPLIT)
+    check_valid(repo_split, SPLIT)
 
     typer.echo(f"Saving repository split: {repo_split}")
     typer.echo(f"Owner: {owner}")
@@ -251,3 +260,6 @@ def save(
         branch,
         github_token,
     )
+
+
+__all__ = []
