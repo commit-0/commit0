@@ -222,6 +222,9 @@ def test(
     reference: Annotated[
         bool, typer.Option("--reference", help="Test the reference commit.")
     ] = False,
+    rebuild: bool = typer.Option(
+        False, "--rebuild", help="Whether to rebuild an image"
+    ),
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
@@ -266,6 +269,7 @@ def test(
         backend,
         timeout,
         num_cpus,
+        rebuild,
         verbose,
     )
 
@@ -286,6 +290,7 @@ def evaluate(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
+    rebuild: bool = typer.Option(False, "--rebuild", help="Whether to rebuild images"),
 ) -> None:
     """Evaluate Commit0 split you choose in Setup Stage."""
     check_commit0_path()
@@ -314,6 +319,7 @@ def evaluate(
         timeout,
         num_cpus,
         num_workers,
+        rebuild,
     )
 
 

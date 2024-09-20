@@ -28,6 +28,7 @@ def main(
     timeout: int,
     num_cpus: int,
     num_workers: int,
+    rebuild_image: bool,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     repos = SPLIT[repo_split]
@@ -57,6 +58,7 @@ def main(
                     backend,
                     timeout,
                     num_cpus,
+                    rebuild_image=rebuild_image,
                     verbose=0,
                 ): None
                 for repo, test_dir in pairs
