@@ -84,10 +84,12 @@ def main(
     if branch == "reference":
         commit_id = example["reference_commit"]
     else:
-        if branch not in local_repo.branches:
-            raise Exception(f"Branch {branch} does not exist.")
-        local_branch = local_repo.branches[branch]
-        commit_id = local_branch.commit.hexsha
+        try:
+            local_repo.git.checkout(branch)
+            local_branch = local_repo.branches[branch]
+            commit_id = local_branch.commit.hexsha
+        except Exception as e:
+            raise Exception(f"Problem checking out branch {branch}.\n{e}")
     patch = generate_patch_between_commits(
         local_repo, example["base_commit"], commit_id
     )
