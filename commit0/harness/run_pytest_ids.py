@@ -134,7 +134,7 @@ def main(
                 )
         close_logger(logger)
         pytest_exit_code = Path(log_dir / "pytest_exit_code.txt").read_text().strip()
-        sys.exit(pytest_exit_code)
+        sys.exit(int(pytest_exit_code))
     except EvaluationError as e:
         error_msg = (
             f"Error in running pytest for {repo_name}: {e}\n"
