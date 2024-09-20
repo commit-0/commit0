@@ -1,25 +1,24 @@
 import os
 import sys
-import hydra
+import yaml
 import multiprocessing
+from tqdm import tqdm
 from datasets import load_dataset
 from git import Repo
-from baselines.commit0_utils import (
+from agent.commit0_utils import (
     args2string,
     create_branch,
     get_message,
     get_target_edit_files,
     get_lint_cmd,
 )
-from baselines.agents import AiderAgents
+from agent.agents import AiderAgents
 from typing import Optional, Type
 from types import TracebackType
-from hydra.core.config_store import ConfigStore
-from baselines.class_types import AgentConfig
+from agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AIDER_LOG_DIR, RepoInstance
-from tqdm import tqdm
 from commit0.cli import read_commit0_dot_file
 
 
@@ -38,6 +37,14 @@ class DirContext:
         exctb: Optional[TracebackType],
     ) -> None:
         os.chdir(self.cwd)
+
+
+def read_yaml_config(config_file: str) -> dict:
+    """Read the yaml config from the file."""
+    if not os.path.exists(config_file):
+        raise FileNotFoundError(f"The config file '{config_file}' does not exist.")
+    with open(config_file, "r") as f:
+        return yaml.load(f, Loader=yaml.FullLoader)
 
 
 def run_agent_for_repo(
@@ -111,21 +118,23 @@ def run_agent_for_repo(
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
+                # write agent_config to .agent.yaml
+                with open(
+                    RUN_AIDER_LOG_DIR / "no_tests" / file_name / ".agent.yaml", "w"
+                ) as agent_config_file:
+                    yaml.dump(agent_config, agent_config_file)
                 lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
-
                 agent.run(message, "", lint_cmd, [f], log_dir)
 
 
-def main() -> None:
+def run_agent(agent_config_file: str) -> None:
     """Main function to run Aider for a given repository.
 
     Will run in parallel for each repo.
     """
-    cs = ConfigStore.instance()
-    cs.store(name="user", node=AgentConfig)
-    hydra.initialize(version_base=None, config_path="configs")
-    config = hydra.compose(config_name="agent")
-    agent_config = AgentConfig(**config.agent_config)
+    config = read_yaml_config(agent_config_file)
+
+    agent_config = AgentConfig(**config)
 
     commit0_config = read_commit0_dot_file(".commit0.yaml")
 
@@ -168,7 +177,3 @@ def main() -> None:
 
             for result in results:
                 result.wait()
-
-
-if __name__ == "__main__":
-    main()

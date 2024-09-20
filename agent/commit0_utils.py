@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import List
 import fitz
 
-from baselines.class_types import AgentConfig
+from agent.class_types import AgentConfig
 
 PROMPT_HEADER = ">>> Here is the Task:\n"
 REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"
@@ -128,7 +128,7 @@ def get_target_edit_files(target_dir: str) -> list[str]:
             if filename.endswith(".py"):
                 file_path = os.path.join(root, filename)
                 with open(file_path, "r") as file:
-                    if "NotImplementedError('IMPLEMENT ME HERE')" in file.read():
+                    if "    pass" in file.read():
                         files.append(file_path)
 
     # Remove the base_dir prefix
