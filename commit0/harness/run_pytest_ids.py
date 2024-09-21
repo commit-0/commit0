@@ -82,12 +82,13 @@ def main(
             )
         except Exception as e:
             raise e
+    commit_id = ""
     if branch == "reference":
         commit_id = example["reference_commit"]
     else:
         # Check if it's a local branch
         if branch in local_repo.branches:
-            commit_id = local_repo.commit(branch)
+            commit_id = local_repo.commit(branch).hexsha
         else:
             found_remote_branch = False
             for remote in local_repo.remotes:
@@ -95,8 +96,10 @@ def main(
 
                 # Check if the branch exists in this remote
                 for ref in remote.refs:
-                    if ref.remote_head == branch:  # Compare branch name without remote prefix
-                        commit_id = local_repo.commit(ref.name)
+                    if (
+                        ref.remote_head == branch
+                    ):  # Compare branch name without remote prefix
+                        commit_id = local_repo.commit(ref.name).hexsha
                         found_remote_branch = True
                         break  # Branch found, no need to keep checking this remote
                 if found_remote_branch:

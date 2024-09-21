@@ -29,11 +29,11 @@ def main(
             continue
         clone_url = f"https://github.com/{example['repo']}.git"
         clone_dir = os.path.abspath(os.path.join(base_dir, repo_name))
-        branch = dataset_name.split('/')[-1]
+        branch = dataset_name.split("/")[-1]
         repo = clone_repo(clone_url, clone_dir, branch, logger)
         if BASE_BRANCH in repo.branches:
-            repo.git.branch('-d', BASE_BRANCH)
-        repo.git.checkout('-b', BASE_BRANCH)
+            repo.git.branch("-d", BASE_BRANCH)
+        repo.git.checkout("-b", BASE_BRANCH)
         logger.info("Checked out the base commit: commit 0")
 
 
