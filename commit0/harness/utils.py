@@ -190,25 +190,30 @@ def generate_patch_between_commits(
 
 
 def get_active_branch(repo_path: Union[str, Path]) -> str:
-    """
-    Retrieve the current active branch of a Git repository.
+    """Retrieve the current active branch of a Git repository.
 
     Args:
+    ----
         repo_path (Path): The path to git repo.
 
     Returns:
+    -------
         str: The name of the active branch.
 
     Raises:
+    ------
         Exception: If the repository is in a detached HEAD state.
+
     """
     repo = git.Repo(repo_path)
     try:
         # Get the current active branch
         branch = repo.active_branch.name
     except TypeError as e:
-        raise Exception(f"{e}\nThis means the repository is in a detached HEAD state. "
-                        "To proceed, please specify a valid branch.")
+        raise Exception(
+            f"{e}\nThis means the repository is in a detached HEAD state. "
+            "To proceed, please specify a valid branch by using --branch {branch}."
+        )
 
     return branch
 

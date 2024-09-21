@@ -249,7 +249,9 @@ def test(
     if reference:
         branch = "reference"
     if branch is None and not reference:
-        git_path = os.path.join(commit0_config["base_dir"], repo_or_repo_path.split("/")[-1])
+        git_path = os.path.join(
+            commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
+        )
         branch = get_active_branch(git_path)
 
     if verbose == 2:
@@ -262,7 +264,7 @@ def test(
         commit0_config["dataset_split"],
         commit0_config["base_dir"],
         repo_or_repo_path,
-        branch,
+        branch,  # type: ignore
         test_ids,
         backend,
         timeout,
