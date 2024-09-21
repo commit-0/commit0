@@ -34,7 +34,7 @@ def main(
         if BASE_BRANCH in repo.branches:
             repo.git.branch("-d", BASE_BRANCH)
         repo.git.checkout("-b", BASE_BRANCH)
-        logger.info("Checked out the base commit: commit 0")
+        logger.info(f"Checked out the base branch: {BASE_BRANCH}")
 
 
 __all__ = []
