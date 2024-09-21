@@ -7,7 +7,7 @@ from typing import Iterator
 from commit0.harness.utils import (
     clone_repo,
 )
-from commit0.harness.constants import RepoInstance, SPLIT
+from commit0.harness.constants import BASE_BRANCH, RepoInstance, SPLIT
 
 
 logging.basicConfig(
@@ -29,7 +29,12 @@ def main(
             continue
         clone_url = f"https://github.com/{example['repo']}.git"
         clone_dir = os.path.abspath(os.path.join(base_dir, repo_name))
-        clone_repo(clone_url, clone_dir, example["base_commit"], logger)
+        branch = dataset_name.split('/')[-1]
+        repo = clone_repo(clone_url, clone_dir, branch, logger)
+        if BASE_BRANCH in repo.branches:
+            repo.git.branch('-d', BASE_BRANCH)
+        repo.git.checkout('-b', BASE_BRANCH)
+        logger.info("Checked out the base commit: commit 0")
 
 
 __all__ = []

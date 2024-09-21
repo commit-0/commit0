@@ -85,7 +85,7 @@ def extract_test_output(ss: str, pattern: str) -> str:
 
 
 def clone_repo(
-    clone_url: str, clone_dir: str, commit: str, logger: logging.Logger
+    clone_url: str, clone_dir: str, branch: str, logger: logging.Logger
 ) -> git.Repo:
     """Clone repo into the specified directory if it does not already exist.
 
@@ -98,8 +98,8 @@ def clone_repo(
         URL of the repository to clone.
     clone_dir : str
         Directory where the repository will be cloned.
-    commit : str
-        The commit hash or branch/tag name to checkout.
+    branch : str
+        The branch/tag name to checkout.
     logger : logging.Logger
         The logger object.
 
@@ -129,11 +129,10 @@ def clone_repo(
         except git.exc.GitCommandError as e:
             raise RuntimeError(f"Failed to clone repository: {e}")
 
-    logger.info(f"Checking out {commit}")
     try:
-        repo.git.checkout(commit)
+        repo.git.checkout(branch)
     except git.exc.GitCommandError as e:
-        raise RuntimeError(f"Failed to check out {commit}: {e}")
+        raise RuntimeError(f"Failed to check out {branch}: {e}")
 
     return repo
 

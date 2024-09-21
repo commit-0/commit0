@@ -15,6 +15,7 @@ class Files(TypedDict):
     eval_script: Dict[str, Path]
     patch: Dict[str, Path]
 
+BASE_BRANCH = "commit0"
 
 # Constants - Evaluation Log Directories
 BASE_IMAGE_BUILD_DIR = Path("logs/build_images/base")
