@@ -10,6 +10,7 @@ import commit0.harness.evaluate
 import commit0.harness.lint
 import commit0.harness.save
 from commit0.harness.constants import SPLIT, SPLIT_ALL
+from commit0.harness.utils import get_active_branch
 import subprocess
 import yaml
 import os
@@ -245,14 +246,13 @@ def test(
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
 
-    if not branch and not reference:
-        raise typer.BadParameter(
-            f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name.",
-            param_hint="BRANCH",
-        )
     if reference:
         branch = "reference"
-    assert branch is not None, "branch is not specified"
+    if branch is None and not reference:
+        git_path = os.path.join(
+            commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
+        )
+        branch = get_active_branch(git_path)
 
     if verbose == 2:
         typer.echo(f"Running tests for repository: {repo_or_repo_path}")
@@ -264,7 +264,7 @@ def test(
         commit0_config["dataset_split"],
         commit0_config["base_dir"],
         repo_or_repo_path,
-        branch,
+        branch,  # type: ignore
         test_ids,
         backend,
         timeout,
@@ -294,14 +294,8 @@ def evaluate(
 ) -> None:
     """Evaluate Commit0 split you choose in Setup Stage."""
     check_commit0_path()
-    if not branch and not reference:
-        raise typer.BadParameter(
-            f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name",
-            param_hint="BRANCH",
-        )
     if reference:
         branch = "reference"
-    assert branch is not None, "branch is not specified"
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     check_valid(commit0_config["repo_split"], SPLIT)
