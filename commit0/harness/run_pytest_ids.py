@@ -37,6 +37,7 @@ def main(
     backend: str,
     timeout: int,
     num_cpus: int,
+    rebuild_image: bool,
     verbose: int,
 ) -> None:
     """Runs the pytests for repos in a dataset.
@@ -81,15 +82,30 @@ def main(
             )
         except Exception as e:
             raise e
+    commit_id = ""
     if branch == "reference":
         commit_id = example["reference_commit"]
     else:
-        try:
-            local_repo.git.checkout(branch)
-            local_branch = local_repo.branches[branch]
-            commit_id = local_branch.commit.hexsha
-        except Exception as e:
-            raise Exception(f"Problem checking out branch {branch}.\n{e}")
+        # Check if it's a local branch
+        if branch in local_repo.branches:
+            commit_id = local_repo.commit(branch).hexsha
+        else:
+            found_remote_branch = False
+            for remote in local_repo.remotes:
+                remote.fetch()  # Fetch latest updates from each remote
+
+                # Check if the branch exists in this remote
+                for ref in remote.refs:
+                    if (
+                        ref.remote_head == branch
+                    ):  # Compare branch name without remote prefix
+                        commit_id = local_repo.commit(ref.name).hexsha
+                        found_remote_branch = True
+                        break  # Branch found, no need to keep checking this remote
+                if found_remote_branch:
+                    break  # Stop checking other remotes if branch is found
+            if not found_remote_branch:
+                raise Exception(f"Branch {branch} does not exist locally or remotely.")
     patch = generate_patch_between_commits(
         local_repo, example["base_commit"], commit_id
     )
@@ -125,7 +141,14 @@ def main(
 
     try:
         with execution_context(
-            spec, logger, timeout, num_cpus, log_dir, files_to_copy, files_to_collect
+            spec,
+            logger,
+            timeout,
+            num_cpus,
+            log_dir,
+            files_to_copy,
+            files_to_collect,
+            rebuild_image,
         ) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh"

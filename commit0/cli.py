@@ -10,6 +10,7 @@ import commit0.harness.evaluate
 import commit0.harness.lint
 import commit0.harness.save
 from commit0.harness.constants import SPLIT, SPLIT_ALL
+from commit0.harness.utils import get_active_branch
 import subprocess
 import yaml
 import os
@@ -216,12 +217,15 @@ def test(
     branch: Union[str, None] = typer.Option(
         None, help="Branch to test (branch MUST be provided or use --reference)"
     ),
-    backend: str = typer.Option("local", help="Backend to use for testing"),
+    backend: str = typer.Option("modal", help="Backend to use for testing"),
     timeout: int = typer.Option(1800, help="Timeout for tests in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     reference: Annotated[
         bool, typer.Option("--reference", help="Test the reference commit.")
     ] = False,
+    rebuild: bool = typer.Option(
+        False, "--rebuild", help="Whether to rebuild an image"
+    ),
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
@@ -242,29 +246,30 @@ def test(
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
 
-    if not branch and not reference:
-        raise typer.BadParameter(
-            f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name.",
-            param_hint="BRANCH",
-        )
     if reference:
         branch = "reference"
-    assert branch is not None, "branch is not specified"
+    if branch is None and not reference:
+        git_path = os.path.join(
+            commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
+        )
+        branch = get_active_branch(git_path)
 
-    typer.echo(f"Running tests for repository: {repo_or_repo_path}")
-    typer.echo(f"Branch: {branch}")
-    typer.echo(f"Test IDs: {test_ids}")
+    if verbose == 2:
+        typer.echo(f"Running tests for repository: {repo_or_repo_path}")
+        typer.echo(f"Branch: {branch}")
+        typer.echo(f"Test IDs: {test_ids}")
 
     commit0.harness.run_pytest_ids.main(
         commit0_config["dataset_name"],
         commit0_config["dataset_split"],
         commit0_config["base_dir"],
         repo_or_repo_path,
-        branch,
+        branch,  # type: ignore
         test_ids,
         backend,
         timeout,
         num_cpus,
+        rebuild,
         verbose,
     )
 
@@ -274,7 +279,7 @@ def evaluate(
     branch: Union[str, None] = typer.Option(
         None, help="Branch to evaluate (branch MUST be provided or use --reference)"
     ),
-    backend: str = typer.Option("local", help="Backend to use for evaluation"),
+    backend: str = typer.Option("modal", help="Backend to use for evaluation"),
     timeout: int = typer.Option(1800, help="Timeout for evaluation in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     num_workers: int = typer.Option(8, help="Number of workers to use"),
@@ -285,17 +290,12 @@ def evaluate(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
+    rebuild: bool = typer.Option(False, "--rebuild", help="Whether to rebuild images"),
 ) -> None:
     """Evaluate Commit0 split you choose in Setup Stage."""
     check_commit0_path()
-    if not branch and not reference:
-        raise typer.BadParameter(
-            f"Invalid {highlight('BRANCH', Colors.RED)}. Either --reference or provide a branch name",
-            param_hint="BRANCH",
-        )
     if reference:
         branch = "reference"
-    assert branch is not None, "branch is not specified"
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     check_valid(commit0_config["repo_split"], SPLIT)
@@ -313,6 +313,7 @@ def evaluate(
         timeout,
         num_cpus,
         num_workers,
+        rebuild,
     )
 
 

@@ -44,6 +44,7 @@ class ExecutionContext(ABC):
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
         files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
     ):
         """Create the remote execution context
 
@@ -85,6 +86,7 @@ class Docker(ExecutionContext):
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
         files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
     ):
         super().__init__(
             spec,
@@ -145,6 +147,7 @@ class Modal(ExecutionContext):
         log_dir: Path,
         files_to_copy: Optional[Files] = None,
         files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
     ):
         super().__init__(
             spec,
@@ -161,7 +164,7 @@ class Modal(ExecutionContext):
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
         image_name = f"wentingzhao/{reponame}:latest".lower()
-        image = modal.Image.from_registry(image_name)
+        image = modal.Image.from_registry(image_name, force_build=rebuild_image)
         if files_to_copy:
             for _, f in files_to_copy.items():
                 image = image.copy_local_file(f["src"], f["dest"])  # type: ignore
@@ -171,14 +174,12 @@ class Modal(ExecutionContext):
         """Execute command on modal sandbox"""
         start_time = time.time()
         with modal.Volume.ephemeral() as vol:
-            cp_cmd = ""
             if self.files_to_collect:
+                command += " && "
                 for fname in self.files_to_collect:
                     remote_file = Path(self.spec.repo_directory) / fname
-                    curr_cp_cmd = f" && cp {str(remote_file)} /vol/{fname} 2>/dev/null"
-                    cp_cmd += curr_cp_cmd
-
-            command += cp_cmd
+                    cp_cmd = f"test -e {str(remote_file)} && cp {str(remote_file)} /vol/{fname}; "
+                    command += cp_cmd
             self.sandbox = modal.Sandbox.create(
                 "bash",
                 "-c",
@@ -199,7 +200,9 @@ class Modal(ExecutionContext):
                 timed_out = False
 
             if self.files_to_collect:
-                for fname in self.files_to_collect:
+                fnames = vol.listdir("")
+                for fname in fnames:
+                    fname = fname.path
                     with (self.log_dir / fname).open("wb") as f:
                         for data in vol.read_file(fname):
                             f.write(data)

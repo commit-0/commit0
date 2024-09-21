@@ -6,7 +6,7 @@ import os
 import time
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
 from ghapi.core import GhApi
@@ -85,7 +85,7 @@ def extract_test_output(ss: str, pattern: str) -> str:
 
 
 def clone_repo(
-    clone_url: str, clone_dir: str, commit: str, logger: logging.Logger
+    clone_url: str, clone_dir: str, branch: str, logger: logging.Logger
 ) -> git.Repo:
     """Clone repo into the specified directory if it does not already exist.
 
@@ -98,8 +98,8 @@ def clone_repo(
         URL of the repository to clone.
     clone_dir : str
         Directory where the repository will be cloned.
-    commit : str
-        The commit hash or branch/tag name to checkout.
+    branch : str
+        The branch/tag name to checkout.
     logger : logging.Logger
         The logger object.
 
@@ -129,11 +129,10 @@ def clone_repo(
         except git.exc.GitCommandError as e:
             raise RuntimeError(f"Failed to clone repository: {e}")
 
-    logger.info(f"Checking out {commit}")
     try:
-        repo.git.checkout(commit)
+        repo.git.checkout(branch)
     except git.exc.GitCommandError as e:
-        raise RuntimeError(f"Failed to check out {commit}: {e}")
+        raise RuntimeError(f"Failed to check out {branch}: {e}")
 
     return repo
 
@@ -188,6 +187,35 @@ def generate_patch_between_commits(
         return patch + "\n\n"
     except git.GitCommandError as e:
         raise Exception(f"Error generating patch: {e}")
+
+
+def get_active_branch(repo_path: Union[str, Path]) -> str:
+    """Retrieve the current active branch of a Git repository.
+
+    Args:
+    ----
+        repo_path (Path): The path to git repo.
+
+    Returns:
+    -------
+        str: The name of the active branch.
+
+    Raises:
+    ------
+        Exception: If the repository is in a detached HEAD state.
+
+    """
+    repo = git.Repo(repo_path)
+    try:
+        # Get the current active branch
+        branch = repo.active_branch.name
+    except TypeError as e:
+        raise Exception(
+            f"{e}\nThis means the repository is in a detached HEAD state. "
+            "To proceed, please specify a valid branch by using --branch {branch}."
+        )
+
+    return branch
 
 
 __all__ = []

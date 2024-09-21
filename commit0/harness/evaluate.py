@@ -5,12 +5,12 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datasets import load_dataset
 from tqdm import tqdm
-from typing import Iterator
+from typing import Iterator, Union
 
 from commit0.harness.run_pytest_ids import main as run_tests
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RepoInstance, SPLIT, RUN_PYTEST_LOG_DIR
-from commit0.harness.utils import get_hash_string
+from commit0.harness.utils import get_hash_string, get_active_branch
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -23,24 +23,28 @@ def main(
     dataset_split: str,
     repo_split: str,
     base_dir: str,
-    branch: str,
+    branch: Union[str, None],
     backend: str,
     timeout: int,
     num_cpus: int,
     num_workers: int,
+    rebuild_image: bool,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     repos = SPLIT[repo_split]
-    pairs = []
+    triples = []
     log_dirs = []
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         if repo_split != "all" and repo_name not in SPLIT[repo_split]:
             continue
-        pairs.append((repo_name, example["test"]["test_dir"]))
         hashed_test_ids = get_hash_string(example["test"]["test_dir"])
+        if branch is None:
+            git_path = os.path.join(base_dir, repo_name)
+            branch = get_active_branch(git_path)
         log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
         log_dirs.append(str(log_dir))
+        triples.append((repo_name, example["test"]["test_dir"], branch))
 
     with tqdm(total=len(repos), smoothing=0, desc="Evaluating repos") as pbar:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -57,9 +61,10 @@ def main(
                     backend,
                     timeout,
                     num_cpus,
+                    rebuild_image=rebuild_image,
                     verbose=0,
                 ): None
-                for repo, test_dir in pairs
+                for repo, test_dir, branch in triples
             }
             # Wait for each future to complete
             for future in as_completed(futures):
