@@ -10,7 +10,7 @@ from typing import Iterator
 from commit0.harness.run_pytest_ids import main as run_tests
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RepoInstance, SPLIT, RUN_PYTEST_LOG_DIR
-from commit0.harness.utils import get_hash_string
+from commit0.harness.utils import get_hash_string, get_active_branch
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -40,6 +40,9 @@ def main(
             continue
         pairs.append((repo_name, example["test"]["test_dir"]))
         hashed_test_ids = get_hash_string(example["test"]["test_dir"])
+        if branch is None:
+            git_path = os.path.join(base_dir, repo_name)
+            branch = get_active_branch(git_path)
         log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
         log_dirs.append(str(log_dir))
 
