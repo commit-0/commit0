@@ -54,13 +54,13 @@ class Spec:
         repo = self.repo.split("/")[-1]
         # this is the image name created locally
         # once this image created, it will be tagged with repo_image_tag
-        return f"commit0.repo.{repo}.{val}:latest".lower()
+        return f"commit0.repo.{repo}.{val}:v0".lower()
 
     @property
     def repo_image_tag(self) -> str:
         """Repo image tag that will be used throughout."""
         repo = self.repo.split("/")[-1]
-        return f"wentingzhao/{repo}:latest".lower()
+        return f"wentingzhao/{repo}:v0".lower()
 
     def get_container_name(self, run_id: Optional[str] = None) -> str:
         repo = self.repo.split("/")[-1]
