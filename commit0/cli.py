@@ -200,8 +200,6 @@ def get_tests(
     check_commit0_path()
     check_valid(repo_name, SPLIT_ALL)
 
-    typer.echo(f"Getting tests for repository: {repo_name}")
-
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
 
