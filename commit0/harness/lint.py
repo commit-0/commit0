@@ -1,7 +1,13 @@
 import subprocess
 import sys
+import os
+from datasets import load_dataset
 from pathlib import Path
-from typing import List
+from typing import Iterator
+
+from commit0.harness.constants import (
+    RepoInstance,
+)
 
 
 config = """repos:
@@ -28,7 +34,38 @@ config = """repos:
     - id: pyright"""
 
 
-def main(files: List[Path]) -> None:
+def main(
+    dataset_name: str, dataset_split: str, repo_or_repo_dir: str, base_dir: str
+) -> None:
+    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    example = None
+    repo_name = None
+    for example in dataset:
+        repo_name = example["repo"].split("/")[-1]
+        if repo_or_repo_dir.endswith("/"):
+            repo_or_repo_dir = repo_or_repo_dir[:-1]
+        if repo_name in os.path.basename(repo_or_repo_dir):
+            break
+    assert example is not None, "No example available"
+    assert repo_name is not None, "No repo available"
+
+    repo_dir = os.path.join(base_dir, repo_name)
+    if os.path.isdir(repo_or_repo_dir):
+        repo = repo_or_repo_dir
+    elif os.path.isdir(repo_dir):
+        repo = repo_dir
+    else:
+        raise Exception(
+            f"Neither {repo_dir} nor {repo_or_repo_dir} is a valid path.\nUsage: commit0 lint {{repo_or_repo_dir}}"
+        )
+
+    files = []
+    repo = os.path.join(repo, example["src_dir"])
+    for root, dirs, fs in os.walk(repo):
+        for file in fs:
+            if file.endswith(".py"):
+                files.append(os.path.join(root, file))
+
     config_file = Path(".commit0.pre-commit-config.yaml")
     if not config_file.is_file():
         config_file.write_text(config)

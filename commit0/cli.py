@@ -1,6 +1,6 @@
 import typer
 from pathlib import Path
-from typing import List, Union
+from typing import Union
 from typing_extensions import Annotated
 import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
@@ -327,17 +327,24 @@ def evaluate(
 
 @commit0_app.command()
 def lint(
-    files: List[Path] = typer.Argument(..., help="Files to lint."),
+    repo_or_repo_dir: str = typer.Argument(
+        ..., help="Directory of the repository to test"
+    ),
+    commit0_dot_file_path: str = typer.Option(
+        ".commit0.yaml",
+        help="Path to the commit0 dot file, where the setup config is stored",
+    ),
 ) -> None:
     """Lint given files if provided, otherwise lint all files in the base directory."""
     check_commit0_path()
-    for path in files:
-        if not path.is_file():
-            raise FileNotFoundError(f"File not found: {str(path)}")
-    typer.echo(
-        f"Linting specific files: {', '.join(highlight(str(file), Colors.ORANGE) for file in files)}"
+    commit0_config = read_commit0_dot_file(commit0_dot_file_path)
+    typer.echo(f"Linting repo: {highlight(str(repo_or_repo_dir), Colors.ORANGE)}")
+    commit0.harness.lint.main(
+        commit0_config["dataset_name"],
+        commit0_config["dataset_split"],
+        repo_or_repo_dir,
+        commit0_config["base_dir"],
     )
-    commit0.harness.lint.main(files)
 
 
 @commit0_app.command()
