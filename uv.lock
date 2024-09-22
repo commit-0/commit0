@@ -435,6 +435,7 @@ dependencies = [
     { name = "pymupdf" },
     { name = "pytest" },
     { name = "ruff" },
+    { name = "tenacity" },
     { name = "typer" },
 ]
 
@@ -451,6 +452,7 @@ requires-dist = [
     { name = "pymupdf", specifier = ">=1.24.5" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "ruff", specifier = ">=0.6.4" },
+    { name = "tenacity", specifier = ">=8.5.0" },
     { name = "typer", specifier = ">=0.12.0" },
 ]
 
@@ -2074,6 +2076,15 @@ dependencies = [
 ]
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0f/9c/3dde3ff3b79cc0a14239001f63e5304d0466c2041f3c4535fd39276cd258/synchronicity-0.7.6-py3-none-any.whl", hash = "sha256:c5bb60a0f39c5a161b5013d183cfe6229dc4ee6e3a09714f37da2905635cf983", size = 31312 },
+]
+
+[[package]]
+name = "tenacity"
+version = "9.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/94/91fccdb4b8110642462e653d5dcb27e7b674742ad68efd146367da7bdb10/tenacity-9.0.0.tar.gz", hash = "sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b", size = 47421 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b6/cb/b86984bed139586d01532a587464b5805f12e397594f19f931c4c2fbfa61/tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539", size = 28169 },
 ]
 
 [[package]]

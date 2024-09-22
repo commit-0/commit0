@@ -164,7 +164,7 @@ def run_agent(agent_config_file: str) -> None:
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
     ) as pbar:
-        with multiprocessing.Pool(processes=10) as pool:
+        with multiprocessing.Pool(processes=2) as pool:
             results = []
 
             # Use apply_async to submit jobs and add progress bar updates
