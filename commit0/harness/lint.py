@@ -3,7 +3,7 @@ import sys
 import os
 from datasets import load_dataset
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Union, List
 
 from commit0.harness.constants import (
     RepoInstance,
@@ -35,7 +35,11 @@ config = """repos:
 
 
 def main(
-    dataset_name: str, dataset_split: str, repo_or_repo_dir: str, base_dir: str
+    dataset_name: str,
+    dataset_split: str,
+    repo_or_repo_dir: str,
+    files: Union[List[Path], None],
+    base_dir: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     example = None
@@ -49,22 +53,23 @@ def main(
     assert example is not None, "No example available"
     assert repo_name is not None, "No repo available"
 
-    repo_dir = os.path.join(base_dir, repo_name)
-    if os.path.isdir(repo_or_repo_dir):
-        repo = repo_or_repo_dir
-    elif os.path.isdir(repo_dir):
-        repo = repo_dir
-    else:
-        raise Exception(
-            f"Neither {repo_dir} nor {repo_or_repo_dir} is a valid path.\nUsage: commit0 lint {{repo_or_repo_dir}}"
-        )
+    if files is None:
+        repo_dir = os.path.join(base_dir, repo_name)
+        if os.path.isdir(repo_or_repo_dir):
+            repo = repo_or_repo_dir
+        elif os.path.isdir(repo_dir):
+            repo = repo_dir
+        else:
+            raise Exception(
+                f"Neither {repo_dir} nor {repo_or_repo_dir} is a valid path.\nUsage: commit0 lint {{repo_or_repo_dir}}"
+            )
 
-    files = []
-    repo = os.path.join(repo, example["src_dir"])
-    for root, dirs, fs in os.walk(repo):
-        for file in fs:
-            if file.endswith(".py"):
-                files.append(os.path.join(root, file))
+        files = []
+        repo = os.path.join(repo, example["src_dir"])
+        for root, dirs, fs in os.walk(repo):
+            for file in fs:
+                if file.endswith(".py"):
+                    files.append(Path(os.path.join(root, file)))
 
     config_file = Path(".commit0.pre-commit-config.yaml")
     if not config_file.is_file():
@@ -75,7 +80,8 @@ def main(
         print(result.stdout)
         sys.exit(result.returncode)
     except subprocess.CalledProcessError as e:
-        raise Exception(f"Pre-commit checks failed\n{e.output}")
+        print(e.output)
+        sys.exit(e.returncode)
     except FileNotFoundError:
         raise FileNotFoundError("Error: pre-commit command not found. Is it installed?")
     except Exception as e:
