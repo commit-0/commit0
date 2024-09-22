@@ -115,14 +115,17 @@ def run_agent_for_repo(
             message = get_message(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
+            agent_config_log_file = os.path.abspath(
+                RUN_AIDER_LOG_DIR / "no_tests" / ".agent.yaml"
+            )
+            os.makedirs(os.path.dirname(agent_config_log_file), exist_ok=True)
+            # write agent_config to .agent.yaml
+            with open(agent_config_log_file, "w") as agent_config_file:
+                yaml.dump(agent_config, agent_config_file)
+
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
-                # write agent_config to .agent.yaml
-                with open(
-                    RUN_AIDER_LOG_DIR / "no_tests" / file_name / ".agent.yaml", "w"
-                ) as agent_config_file:
-                    yaml.dump(agent_config, agent_config_file)
                 lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
                 agent.run(message, "", lint_cmd, [f], log_dir)
 

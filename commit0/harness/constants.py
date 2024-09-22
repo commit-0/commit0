@@ -9,6 +9,7 @@ class RepoInstance(TypedDict):
     reference_commit: str
     setup: dict
     test: Dict[str, str]
+    src_dir: str
 
 
 class Files(TypedDict):

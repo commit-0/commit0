@@ -34,6 +34,7 @@ def main(
     repo_or_repo_dir: str,
     branch: str,
     test_ids: str,
+    coverage: bool,
     backend: str,
     timeout: int,
     num_cpus: int,
@@ -113,7 +114,11 @@ def main(
     patch_file.write_text(patch)
 
     # make eval file
-    eval_script = spec.eval_script.format(test_ids=test_ids)
+    if coverage:
+        coverage_text = f" --cov={example['src_dir']} --cov-branch --cov-report json"
+    else:
+        coverage_text = ""
+    eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
@@ -134,10 +139,11 @@ def main(
     )
     files_to_collect = [
         "report.json",
-        "coverage.json",
         "pytest_exit_code.txt",
         "test_output.txt",
     ]
+    if coverage:
+        files_to_collect.append("coverage.json")
 
     try:
         with execution_context(
