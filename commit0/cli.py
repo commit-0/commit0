@@ -1,6 +1,6 @@
 import typer
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 from typing_extensions import Annotated
 import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
@@ -200,8 +200,6 @@ def get_tests(
     check_commit0_path()
     check_valid(repo_name, SPLIT_ALL)
 
-    typer.echo(f"Getting tests for repository: {repo_name}")
-
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
 
@@ -330,19 +328,39 @@ def lint(
     repo_or_repo_dir: str = typer.Argument(
         ..., help="Directory of the repository to test"
     ),
+    files: Union[List[Path], None] = typer.Option(
+        None, help="Files to lint. If not provided, all files will be linted."
+    ),
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
+    ),
+    verbose: int = typer.Option(
+        1,
+        "--verbose",
+        "-v",
+        help="Set this to 2 for more logging information",
+        count=True,
     ),
 ) -> None:
     """Lint given files if provided, otherwise lint all files in the base directory."""
     check_commit0_path()
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    typer.echo(f"Linting repo: {highlight(str(repo_or_repo_dir), Colors.ORANGE)}")
+    appended_files = None
+    if files is not None:
+        appended_files = []
+        for path in files:
+            path = Path(commit0_config["base_dir"]) / Path(repo_or_repo_dir) / path
+            if not path.is_file():
+                raise FileNotFoundError(f"File not found: {str(path)}")
+            appended_files.append(path)
+    if verbose == 2:
+        typer.echo(f"Linting repo: {highlight(str(repo_or_repo_dir), Colors.ORANGE)}")
     commit0.harness.lint.main(
         commit0_config["dataset_name"],
         commit0_config["dataset_split"],
         repo_or_repo_dir,
+        appended_files,
         commit0_config["base_dir"],
     )
 
