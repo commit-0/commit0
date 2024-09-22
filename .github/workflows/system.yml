@@ -39,7 +39,7 @@ jobs:
           uv run commit0 evaluate --reference  --rebuild
           uv run commit0 evaluate --reference
       - name: Lint
-        run: uv run commit0 lint simpy
+        run: uv run commit0 lint commit0/harness/
       - name: Save
         env:
           GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
