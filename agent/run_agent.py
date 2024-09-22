@@ -101,7 +101,7 @@ def run_agent_for_repo(
                 )
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
-                lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
                 message = get_message(agent_config, repo_path, test_file=test_file)
                 agent.run(
                     message,
@@ -126,7 +126,7 @@ def run_agent_for_repo(
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
                 log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
-                lint_cmd = get_lint_cmd(local_repo, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
                 agent.run(message, "", lint_cmd, [f], log_dir)
 
 
@@ -164,7 +164,7 @@ def run_agent(agent_config_file: str) -> None:
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
     ) as pbar:
-        with multiprocessing.Pool(processes=2) as pool:
+        with multiprocessing.Pool(processes=5) as pool:
             results = []
 
             # Use apply_async to submit jobs and add progress bar updates

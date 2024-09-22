@@ -288,12 +288,12 @@ def get_changed_files(repo: git.Repo) -> list[str]:
     return files_changed
 
 
-def get_lint_cmd(repo: git.Repo, use_lint_info: bool) -> str:
-    """Generate a linting command based on whether to include files changed in the latest commit.
+def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
+    """Generate a linting command based on whether to include files.
 
     Args:
     ----
-        repo (git.Repo): An instance of GitPython's Repo object representing the Git repository.
+        repo_name (str): The name of the repository.
         use_lint_info (bool): A flag indicating whether to include changed files in the lint command.
 
     Returns:
@@ -304,7 +304,7 @@ def get_lint_cmd(repo: git.Repo, use_lint_info: bool) -> str:
     """
     lint_cmd = "python -m commit0 lint "
     if use_lint_info:
-        lint_cmd += " ".join(get_changed_files(repo))
+        lint_cmd += repo_name + " --files "
     else:
         lint_cmd = ""
     return lint_cmd
