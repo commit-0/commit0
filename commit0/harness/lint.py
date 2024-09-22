@@ -35,7 +35,11 @@ config = """repos:
 
 
 def main(
-    dataset_name: str, dataset_split: str, repo_or_repo_dir: str, files: Union[List[Path], None], base_dir: str
+    dataset_name: str,
+    dataset_split: str,
+    repo_or_repo_dir: str,
+    files: Union[List[Path], None],
+    base_dir: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     example = None
@@ -65,7 +69,7 @@ def main(
         for root, dirs, fs in os.walk(repo):
             for file in fs:
                 if file.endswith(".py"):
-                    files.append(os.path.join(root, file))
+                    files.append(Path(os.path.join(root, file)))
 
     config_file = Path(".commit0.pre-commit-config.yaml")
     if not config_file.is_file():
