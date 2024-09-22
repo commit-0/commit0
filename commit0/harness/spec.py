@@ -146,7 +146,7 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
             )
         setup_commands.append(install)
     setup_commands.append(
-        "uv pip install pytest pytest-cov coverage pytest-json-report"
+        "uv pip install -U pytest pytest-cov coverage pytest-json-report"
     )
     setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
@@ -160,10 +160,8 @@ def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         f"git reset --hard {instance['base_commit']}",
         "git apply --allow-empty -v /patch.diff",
         "git status",
-        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors --cov=. --cov-branch --cov-report json {{test_ids}} > test_output.txt 2>&1",
+        f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors{{coverage}} {{test_ids}} > test_output.txt 2>&1",
         "echo $? > pytest_exit_code.txt",
-        f"git reset --hard {instance['base_commit']}",
-        "git status",
     ]
     return eval_script_list
 

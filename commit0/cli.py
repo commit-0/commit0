@@ -221,7 +221,10 @@ def test(
     timeout: int = typer.Option(1800, help="Timeout for tests in seconds"),
     num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
     reference: Annotated[
-        bool, typer.Option("--reference", help="Test the reference commit.")
+        bool, typer.Option("--reference", help="Test the reference commit")
+    ] = False,
+    coverage: Annotated[
+        bool, typer.Option("--coverage", help="Whether to get coverage information")
     ] = False,
     rebuild: bool = typer.Option(
         False, "--rebuild", help="Whether to rebuild an image"
@@ -266,6 +269,7 @@ def test(
         repo_or_repo_path,
         branch,  # type: ignore
         test_ids,
+        coverage,
         backend,
         timeout,
         num_cpus,
@@ -285,6 +289,9 @@ def evaluate(
     num_workers: int = typer.Option(8, help="Number of workers to use"),
     reference: Annotated[
         bool, typer.Option("--reference", help="Evaluate the reference commit.")
+    ] = False,
+    coverage: Annotated[
+        bool, typer.Option("--coverage", help="Whether to get coverage information")
     ] = False,
     commit0_dot_file_path: str = typer.Option(
         ".commit0.yaml",
@@ -309,6 +316,7 @@ def evaluate(
         commit0_config["repo_split"],
         commit0_config["base_dir"],
         branch,
+        coverage,
         backend,
         timeout,
         num_cpus,
