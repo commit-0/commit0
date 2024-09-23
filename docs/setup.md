@@ -18,11 +18,11 @@ pip install commit0
 
 The system is a command-line tool that allows you to run unit-tests on a
 variety of libraries in isolated environments. To get started with the full
-setup run the `clone` command which will install a clone the code of a subset
+setup run the `setup` command which will install a clone the code of a subset
 of libraries to your `repos/` directory.
 
 ```bash
-commit0 clone lit
+commit0 setup lite
 ```
 
 Next run the `build` command which will configure Docker containers for
