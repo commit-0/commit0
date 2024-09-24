@@ -2,6 +2,9 @@ import typer
 import subprocess
 import yaml
 from agent.run_agent import run_agent
+from agent.run_agent_test import run_agent_test
+from commit0.harness.constants import RUN_AIDER_LOG_DIR
+from pathlib import Path
 
 agent_app = typer.Typer(
     no_args_is_help=True,
@@ -14,6 +17,7 @@ agent_app = typer.Typer(
     """,
 )
 
+dot_file_dir = Path(__file__).parent.parent
 
 class Colors:
     RESET = "\033[0m"
@@ -131,7 +135,7 @@ def config(
         help="Path to the pre-commit config file",
     ),
     agent_config_file: str = typer.Option(
-        ".agent.yaml",
+        str(dot_file_dir / ".agent.yaml"),
         help="Path to the agent config file",
     ),
 ) -> None:
@@ -167,10 +171,45 @@ def config(
 
 @agent_app.command()
 def run(
+    experiment_name: str = typer.Argument(
+        ...,
+        help="Experiment name of current run",
+    ),
+    override_previous_changes: bool = typer.Option(
+        False,
+        help="If override the previous agent changes on `experiment_name` or run the agent continuously on the new changes",
+    ),
+    backend: str = typer.Option(
+        "modal",
+        help="Test backend to run the agent on, ignore this option if you are not adding `test` option to agent",
+    ),
+    agent_config_file: str = typer.Option(
+        str(dot_file_dir / ".agent.yaml"),
+        help="Path to the agent config file",
+    ),
+    log_dir: str = typer.Option(
+        str(dot_file_dir / RUN_AIDER_LOG_DIR),
+        help="Log directory to store the logs",
+    ),
+) -> None:
+    """Run the agent on the repository."""
+    run_agent(experiment_name, override_previous_changes, backend, agent_config_file, log_dir)
+
+
+@agent_app.command()
+def run_test(
+    experiment_name: str = typer.Argument(
+        ...,
+        help="Experiment name to run the agent on",
+    ),
+    backend: str = typer.Option(
+        "modal",
+        help="Backend to run the agent on",
+    ),
     agent_config_file: str = typer.Argument(
         ".agent.yaml",
         help="Path to the agent config file",
     ),
 ) -> None:
     """Run the agent on the repository."""
-    run_agent(agent_config_file)
+    run_agent_test(experiment_name, backend, agent_config_file)

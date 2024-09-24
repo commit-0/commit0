@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class AgentConfig:
     agent_name: str
     model_name: str
+    backend: str
     use_user_prompt: bool
     user_prompt: str
     use_repo_info: bool

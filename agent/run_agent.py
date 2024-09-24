@@ -20,7 +20,8 @@ from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AIDER_LOG_DIR, RepoInstance
 from commit0.cli import read_commit0_dot_file
-
+from pathlib import Path
+from datetime import datetime
 
 class DirContext:
     def __init__(self, d: str):
@@ -51,6 +52,10 @@ def run_agent_for_repo(
     repo_base_dir: str,
     agent_config: AgentConfig,
     example: RepoInstance,
+    experiment_name: Optional[str] = None,
+    override_previous_changes: bool = False,
+    backend: str = "modal",
+    log_dir: str = str(RUN_AIDER_LOG_DIR.resolve()),
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info
@@ -58,13 +63,10 @@ def run_agent_for_repo(
 
     repo_name = repo_name.lower()
     repo_name = repo_name.replace(".", "-")
-
-    # Call the commit0 get-tests command to retrieve test files
-    test_files_str = get_tests(repo_name, verbose=0)
-    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
-
+    
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
+
     try:
         local_repo = Repo(repo_path)
     except Exception:
@@ -79,28 +81,45 @@ def run_agent_for_repo(
             f"{agent_config.agent_name} is not implemented; please add your implementations in baselines/agents.py."
         )
 
-    run_id = args2string(agent_config)
-    print(f"Agent is coding on branch: {run_id}", file=sys.stderr)
-    create_branch(local_repo, run_id, example["base_commit"])
-    latest_commit = local_repo.commit(run_id)
+    # if branch_name is not provided, create a new branch name based on agent_config
+    if experiment_name is None:
+        experiment_name = args2string(agent_config)
+
+    create_branch(local_repo, experiment_name, example["base_commit"])
+
     # in cases where the latest commit of branch is not commit 0
     # set it back to commit 0
-    # TODO: ask user for permission
-    if latest_commit.hexsha != example["base_commit"]:
+    latest_commit = local_repo.commit(experiment_name)
+    if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
-    target_edit_files = get_target_edit_files(repo_path)
+
+    # prepare the log dir
+    experiment_log_dir = Path(log_dir) / repo_name / experiment_name / datetime.now().strftime("%Y-%m-%d")
+    experiment_log_dir.mkdir(parents=True, exist_ok=True)
+
+    # write agent_config to .agent.yaml in the log_dir for record
+    agent_config_log_file = experiment_log_dir / ".agent.yaml"
+    with open(agent_config_log_file, "w") as agent_config_file:
+        yaml.dump(agent_config, agent_config_file)
+
     with DirContext(repo_path):
         if agent_config is None:
             raise ValueError("Invalid input")
 
+        target_edit_files = get_target_edit_files(repo_path)
+
         if agent_config.run_tests:
+            # Call the commit0 get-tests command to retrieve test files
+            test_files_str = get_tests(repo_name, verbose=0)
+            test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
+
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 test_cmd = (
-                    f"python -m commit0 test {repo_path} {test_file} --branch {run_id}"
+                    f"python -m commit0 test {repo_path} {test_file} --branch {experiment_name} --backend {backend}"
                 )
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
-                log_dir = RUN_AIDER_LOG_DIR / "with_tests" / test_file_name
+                test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
                 message = get_message(agent_config, repo_path, test_file=test_file)
                 agent.run(
@@ -108,29 +127,22 @@ def run_agent_for_repo(
                     test_cmd,
                     lint_cmd,
                     target_edit_files,
-                    log_dir,
+                    test_log_dir,
                 )
         else:
             # when unit test feedback is not available, iterate over target files to edit
             message = get_message(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
-            agent_config_log_file = os.path.abspath(
-                RUN_AIDER_LOG_DIR / "no_tests" / ".agent.yaml"
-            )
-            os.makedirs(os.path.dirname(agent_config_log_file), exist_ok=True)
-            # write agent_config to .agent.yaml
-            with open(agent_config_log_file, "w") as agent_config_file:
-                yaml.dump(agent_config, agent_config_file)
-
+            
             for f in target_edit_files:
                 file_name = f.replace(".py", "").replace("/", "__")
-                log_dir = RUN_AIDER_LOG_DIR / "no_tests" / file_name
+                file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
-                agent.run(message, "", lint_cmd, [f], log_dir)
+                agent.run(message, "", lint_cmd, [f], file_log_dir)
 
 
-def run_agent(agent_config_file: str) -> None:
+def run_agent(experiment_name: str, override_previous_changes: bool, backend: str, agent_config_file: str, log_dir: str) -> None:
     """Main function to run Aider for a given repository.
 
     Will run in parallel for each repo.
@@ -161,22 +173,23 @@ def run_agent(agent_config_file: str) -> None:
     if len(filtered_dataset) > 1:
         sys.stdout = open(os.devnull, "w")
 
-    with tqdm(
-        total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
-    ) as pbar:
-        with multiprocessing.Pool(processes=5) as pool:
-            results = []
+    run_agent_for_repo(commit0_config["base_dir"], agent_config, filtered_dataset[0], experiment_name=experiment_name, override_previous_changes=override_previous_changes, backend=backend, log_dir=log_dir)
+    # with tqdm(
+    #     total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
+    # ) as pbar:
+    #     with multiprocessing.Pool(processes=3) as pool:
+    #         results = []
 
-            # Use apply_async to submit jobs and add progress bar updates
-            for example in filtered_dataset:
-                result = pool.apply_async(
-                    run_agent_for_repo,
-                    args=(commit0_config["base_dir"], agent_config, example),
-                    callback=lambda _: pbar.update(
-                        1
-                    ),  # Update progress bar on task completion
-                )
-                results.append(result)
+    #         # Use apply_async to submit jobs and add progress bar updates
+    #         for example in filtered_dataset:
+    #             result = pool.apply_async(
+    #                 run_agent_for_repo,
+    #                 args=(commit0_config["base_dir"], agent_config, example),
+    #                 callback=lambda _: pbar.update(
+    #                     1
+    #                 ),  # Update progress bar on task completion
+    #             )
+    #             results.append(result)
 
-            for result in results:
-                result.wait()
+    #         for result in results:
+    #             result.wait()
