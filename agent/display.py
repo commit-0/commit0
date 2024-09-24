@@ -81,6 +81,7 @@ class TerminalDisplay:
         self.finished_files = {}
         self.total_files_per_repo = {}
         self.repo_money_spent = {}
+        self.display_repo_progress_num = 5
 
         self.overall_progress = Progress(
             SpinnerColumn(),
@@ -156,6 +157,10 @@ class TerminalDisplay:
         self.layout["main"]["right"].update(
             Panel(Layout(name="ongoing"), title="Ongoing", border_style="yellow")
         )
+
+    def update_repo_progress_num(self, display_repo_progress_num: int) -> None:
+        """Update the number of repositories to display in the ongoing section."""
+        self.display_repo_progress_num = display_repo_progress_num
 
     def update_agent_display(
         self,
@@ -262,15 +267,20 @@ class TerminalDisplay:
 
         if ongoing_panels:
             ongoing_layout = Layout()
-            for i, panel in enumerate(ongoing_panels[:5]):
+            for i, panel in enumerate(ongoing_panels[: self.display_repo_progress_num]):
                 ongoing_layout.add_split(Layout(panel, name=f"repo_{i}"))
-            ongoing_layout.split_row(
-                *[ongoing_layout[f"repo_{i}"] for i in range(len(ongoing_panels[:5]))]
+            ongoing_layout.split_column(
+                *[
+                    ongoing_layout[f"repo_{i}"]
+                    for i in range(
+                        len(ongoing_panels[: self.display_repo_progress_num])
+                    )
+                ]
             )
             self.layout["main"]["right"].update(
                 Panel(
                     ongoing_layout,
-                    title="Ongoing(Only first 5 shown if more than 5)",
+                    title=f"Ongoing(only show at most {self.display_repo_progress_num} repos, set with `--display_repo_progress_num` flag)",
                     border_style="yellow",
                 )
             )

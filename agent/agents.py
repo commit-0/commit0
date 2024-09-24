@@ -111,19 +111,19 @@ class AiderAgents(Agents):
         coder.stream = True
 
         # Run the agent
-        # coder.run(message)
+        coder.run(message)
 
-        #### TMP
-        import time
-        import random
+        # #### TMP
+        # import time
+        # import random
 
-        time.sleep(random.random() * 5)
-        n = random.random() / 10
-        with open(log_file, "a") as f:
-            f.write(
-                f"> Tokens: 33k sent, 1.3k received. Cost: $0.12 message, ${n} session.  \n"
-            )
-        #### TMP
+        # time.sleep(random.random() * 5)
+        # n = random.random() / 10
+        # with open(log_file, "a") as f:
+        #     f.write(
+        #         f"> Tokens: 33k sent, 1.3k received. Cost: $0.12 message, ${n} session.  \n"
+        #     )
+        # #### TMP
 
         # Close redirected stdout and stderr
         sys.stdout.close()

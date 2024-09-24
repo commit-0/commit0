@@ -178,6 +178,7 @@ def run_agent(
     agent_config_file: str,
     log_dir: str,
     max_parallel_repos: int,
+    display_repo_progress_num: int,
 ) -> None:
     """Main function to run Aider for a given repository."""
     config = read_yaml_config(agent_config_file)
@@ -208,10 +209,12 @@ def run_agent(
 
     with TerminalDisplay(len(filtered_dataset)) as display:
         not_started_repos = [
-            getattr(example, "repo", "").split("/")[-1] for example in filtered_dataset
+            cast(RepoInstance, example)["repo"].split("/")[-1]
+            for example in filtered_dataset
         ]
         display.set_not_started_repos(not_started_repos)
 
+        display.update_repo_progress_num(display_repo_progress_num)
         display.update_backend_display(backend)
         display.update_log_dir_display(log_dir)
         display.update_agent_display(
@@ -223,7 +226,6 @@ def run_agent(
             agent_config.use_spec_info,
             agent_config.use_lint_info,
         )
-
         with multiprocessing.Manager() as manager:
             update_queue = manager.Queue()
             with multiprocessing.Pool(processes=max_parallel_repos) as pool:

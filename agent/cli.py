@@ -190,6 +190,10 @@ def run(
         1,
         help="Maximum number of repositories for agent to run in parallel",
     ),
+    display_repo_progress_num: int = typer.Option(
+        5,
+        help="Display the agent progress",
+    ),
 ) -> None:
     """Run the agent on the repository."""
     run_agent(
@@ -199,6 +203,7 @@ def run(
         agent_config_file,
         log_dir,
         max_parallel_repos,
+        display_repo_progress_num,
     )
 
 
@@ -231,44 +236,6 @@ def run_test_no_rich(
 ) -> None:
     """Run the agent on the repository."""
     run_agent_no_rich(
-        experiment_name,
-        override_previous_changes,
-        backend,
-        agent_config_file,
-        log_dir,
-        max_parallel_repos,
-    )
-
-
-@agent_app.command()
-def run_test(
-    experiment_name: str = typer.Argument(
-        ...,
-        help="Experiment name of current run",
-    ),
-    override_previous_changes: bool = typer.Option(
-        False,
-        help="If override the previous agent changes on `experiment_name` or run the agent continuously on the new changes",
-    ),
-    backend: str = typer.Option(
-        "modal",
-        help="Test backend to run the agent on, ignore this option if you are not adding `test` option to agent",
-    ),
-    agent_config_file: str = typer.Option(
-        ".agent.yaml",
-        help="Path to the agent config file",
-    ),
-    log_dir: str = typer.Option(
-        str(RUN_AIDER_LOG_DIR.resolve()),
-        help="Log directory to store the logs",
-    ),
-    max_parallel_repos: int = typer.Option(
-        1,
-        help="Maximum number of repositories for agent to run in parallel",
-    ),
-) -> None:
-    """Run the agent on the repository."""
-    run_agent(
         experiment_name,
         override_previous_changes,
         backend,
