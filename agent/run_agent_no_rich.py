@@ -1,6 +1,7 @@
 import os
 import yaml
 import multiprocessing
+from tqdm import tqdm
 from datasets import load_dataset
 from git import Repo
 from agent.agent_utils import (
@@ -21,9 +22,6 @@ from commit0.harness.constants import RUN_AIDER_LOG_DIR, RepoInstance
 from commit0.cli import read_commit0_dot_file
 from pathlib import Path
 from datetime import datetime
-from agent.display import TerminalDisplay
-import queue
-import time
 
 
 class DirContext:
@@ -47,7 +45,6 @@ def run_agent_for_repo(
     repo_base_dir: str,
     agent_config: AgentConfig,
     example: RepoInstance,
-    update_queue: multiprocessing.Queue,
     experiment_name: Optional[str] = None,
     override_previous_changes: bool = False,
     backend: str = "modal",
@@ -59,9 +56,6 @@ def run_agent_for_repo(
 
     repo_name = repo_name.lower()
     repo_name = repo_name.replace(".", "-")
-
-    # before starting, display all information to terminal
-    update_queue.put(("start_repo", (repo_name, 0)))
 
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
@@ -110,7 +104,6 @@ def run_agent_for_repo(
 
     # TODO: make this path more general
     commit0_dot_file_path = str(Path(repo_path).parent.parent / ".commit0.yaml")
-
     with DirContext(repo_path):
         if agent_config is None:
             raise ValueError("Invalid input")
@@ -124,51 +117,32 @@ def run_agent_for_repo(
             test_files_str = get_tests(repo_name, verbose=0)
             test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
-            update_queue.put(("start_repo", (repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
-                update_queue.put(("set_current_file", (repo_name, test_file)))
                 test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {experiment_name} --backend {backend} --commit0_dot_file_path {commit0_dot_file_path}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
                 message = get_message(agent_config, repo_path, test_file=test_file)
-
-                # display the test file to terminal
-                agent_return = agent.run(
+                _ = agent.run(
                     message,
                     test_cmd,
                     lint_cmd,
                     target_edit_files,
                     test_log_dir,
                 )
-                # after running the agent, update the money display
-                update_queue.put(
-                    (
-                        "update_money_display",
-                        (repo_name, test_file, agent_return.last_cost),
-                    )
-                )
+                # cost = agent_return.last_cost
         else:
             # when unit test feedback is not available, iterate over target files to edit
             message = get_message(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
-
-            update_queue.put(("start_repo", (repo_name, len(target_edit_files))))
             for f in target_edit_files:
-                update_queue.put(("set_current_file", (repo_name, f)))
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
-                agent_return = agent.run(message, "", lint_cmd, [f], file_log_dir)
-                update_queue.put(
-                    (
-                        "update_money_display",
-                        (repo_name, file_name, agent_return.last_cost),
-                    )
-                )
-    update_queue.put(("finish_repo", repo_name))
+                _ = agent.run(message, "", lint_cmd, [f], file_log_dir)
+                # cost = agent_return.last_cost
 
 
 def run_agent(
@@ -179,7 +153,10 @@ def run_agent(
     log_dir: str,
     max_parallel_repos: int,
 ) -> None:
-    """Main function to run Aider for a given repository."""
+    """Main function to run Aider for a given repository.
+
+    Will run in parallel for each repo.
+    """
     config = read_yaml_config(agent_config_file)
 
     agent_config = AgentConfig(**config)
@@ -206,83 +183,30 @@ def run_agent(
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
 
-    with TerminalDisplay(len(filtered_dataset)) as display:
-        not_started_repos = [
-            getattr(example, "repo", "").split("/")[-1] for example in filtered_dataset
-        ]
-        display.set_not_started_repos(not_started_repos)
+    with tqdm(
+        total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
+    ) as pbar:
+        with multiprocessing.Pool(processes=max_parallel_repos) as pool:
+            results = []
 
-        display.update_backend_display(backend)
-        display.update_log_dir_display(log_dir)
-        display.update_agent_display(
-            agent_config.agent_name,
-            agent_config.model_name,
-            agent_config.run_tests,
-            agent_config.use_repo_info,
-            agent_config.use_unit_tests_info,
-            agent_config.use_spec_info,
-            agent_config.use_lint_info,
-        )
+            # Use apply_async to submit jobs and add progress bar updates
+            for example in filtered_dataset:
+                result = pool.apply_async(
+                    run_agent_for_repo,
+                    args=(
+                        commit0_config["base_dir"],
+                        agent_config,
+                        cast(RepoInstance, example),
+                        experiment_name,
+                        override_previous_changes,
+                        backend,
+                        log_dir,
+                    ),
+                    callback=lambda _: pbar.update(
+                        1
+                    ),  # Update progress bar on task completion
+                )
+                results.append(result)
 
-        with multiprocessing.Manager() as manager:
-            update_queue = manager.Queue()
-            with multiprocessing.Pool(processes=max_parallel_repos) as pool:
-                results = []
-
-                # Use apply_async to submit jobs and add progress bar updates
-                for example in filtered_dataset:
-                    result = pool.apply_async(
-                        run_agent_for_repo,
-                        args=(
-                            commit0_config["base_dir"],
-                            agent_config,
-                            cast(RepoInstance, example),
-                            update_queue,
-                            experiment_name,
-                            override_previous_changes,
-                            backend,
-                            log_dir,
-                        ),
-                    )
-                    results.append(result)
-
-                while any(not r.ready() for r in results):
-                    try:
-                        while not update_queue.empty():
-                            action, data = update_queue.get_nowait()
-                            if action == "start_repo":
-                                repo_name, total_files = data
-                                display.start_repo(repo_name, total_files)
-                            elif action == "finish_repo":
-                                repo_name = data
-                                display.finish_repo(repo_name)
-                            elif action == "set_current_file":
-                                repo_name, file_name = data
-                                display.set_current_file(repo_name, file_name)
-                            elif action == "update_money_display":
-                                repo_name, file_name, money_spent = data
-                                display.update_money_display(
-                                    repo_name, file_name, money_spent
-                                )
-                    except queue.Empty:
-                        pass
-                    time.sleep(0.1)  # Small delay to prevent busy-waiting
-
-                # Final update after all repos are processed
-                while not update_queue.empty():
-                    action, data = update_queue.get()
-                    if action == "start_repo":
-                        repo_name, total_files = data
-                        display.start_repo(repo_name, total_files)
-                    elif action == "finish_repo":
-                        repo_name = data
-                        display.finish_repo(repo_name)
-                    elif action == "set_current_file":
-                        repo_name, file_name = data
-                        display.set_current_file(repo_name, file_name)
-                    elif action == "update_money_display":
-                        repo_name, file_name, money_spent = data
-                        display.update_money_display(repo_name, file_name, money_spent)
-
-                for result in results:
-                    result.get()
+            for result in results:
+                result.wait()

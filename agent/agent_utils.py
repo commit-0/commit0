@@ -5,6 +5,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import List
 import fitz
+import yaml
 
 from agent.class_types import AgentConfig
 
@@ -118,7 +119,7 @@ def get_file_info(file_path: Path, prefix: str = "") -> str:
     return "\n".join(filter(None, tree_string))
 
 
-def get_target_edit_files(target_dir: str) -> list[str]:
+def get_target_edit_files(target_dir: str, src_prefix: str) -> list[str]:
     """Find the files with functions with the pass statement."""
     files = []
     for root, _, filenames in os.walk(target_dir):
@@ -131,7 +132,7 @@ def get_target_edit_files(target_dir: str) -> list[str]:
 
     # Remove the base_dir prefix
     files = [file.replace(target_dir, "").lstrip("/") for file in files]
-
+    files = [src_prefix + file for file in files]
     # Only keep python files
     files = [file for file in files if file.endswith(".py")]
 
@@ -308,3 +309,17 @@ def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
     else:
         lint_cmd = ""
     return lint_cmd
+
+
+def write_agent_config(agent_config_file: str, agent_config: dict) -> None:
+    """Write the agent config to the file."""
+    with open(agent_config_file, "w") as f:
+        yaml.dump(agent_config, f)
+
+
+def read_yaml_config(config_file: str) -> dict:
+    """Read the yaml config from the file."""
+    if not os.path.exists(config_file):
+        raise FileNotFoundError(f"The config file '{config_file}' does not exist.")
+    with open(config_file, "r") as f:
+        return yaml.load(f, Loader=yaml.FullLoader)

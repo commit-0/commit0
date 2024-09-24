@@ -15,6 +15,7 @@ import subprocess
 import yaml
 import os
 import sys
+
 commit0_app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
@@ -282,7 +283,6 @@ def test(
         rebuild,
         verbose,
     )
-
 
 
 @commit0_app.command()
