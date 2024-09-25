@@ -6,6 +6,7 @@ nav:
   - Setup: setup.md
   - Extending: repos.md
   - About: about.md
+  - Submission Analysis: analysis.md
 theme:
   name: material
   logo: "logo2.webp"
