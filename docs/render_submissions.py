@@ -61,7 +61,7 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
                 failure_string = test["call"]["longrepr"]
                 # could use test['call']['traceback'] information and test['call']['crash'] for more info
             else:
-                breakpoint()
+                failure_string = ""
             duration = 0.0
             for action_key in ["setup", "call", "teardown"]:
                 if action_key not in test:
