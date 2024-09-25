@@ -14,6 +14,7 @@ from commit0.harness.utils import get_active_branch
 import subprocess
 import yaml
 import os
+import sys
 
 commit0_app = typer.Typer(
     no_args_is_help=True,
@@ -209,7 +210,7 @@ def test(
         ..., help="Directory of the repository to test"
     ),
     test_ids: str = typer.Argument(
-        ...,
+        None,
         help='All ways pytest supports to run and select tests. Please provide a single string. Example: "test_mod.py", "testing/", "test_mod.py::test_func", "-k \'MyClass and not method\'"',
     ),
     branch: Union[str, None] = typer.Option(
@@ -238,6 +239,11 @@ def test(
         help="Set this to 2 for more logging information",
         count=True,
     ),
+    stdin: bool = typer.Option(
+        False,
+        "--stdin",
+        help="Read test names from stdin. Example: `echo 'test_mod.py' | commit0 test REPO --branch BRANCH`",
+    ),
 ) -> None:
     """Run tests on a Commit0 repository."""
     check_commit0_path()
@@ -254,6 +260,13 @@ def test(
             commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
         )
         branch = get_active_branch(git_path)
+
+    if stdin:
+        # Read test names from stdin
+        test_ids = sys.stdin.read().strip()
+    elif test_ids is None:
+        typer.echo("Error: test_ids must be provided or use --stdin option", err=True)
+        raise typer.Exit(code=1)
 
     if verbose == 2:
         typer.echo(f"Running tests for repository: {repo_or_repo_path}")

@@ -1,5 +1,4 @@
 import sys
-import os
 from abc import ABC, abstractmethod
 from pathlib import Path
 import logging
@@ -7,7 +6,38 @@ import logging
 from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
-from tenacity import retry, wait_exponential
+import re
+
+
+def handle_logging(logging_name: str, log_file: Path) -> None:
+    """Handle logging for agent"""
+    logger = logging.getLogger(logging_name)
+    logger.setLevel(logging.INFO)
+    logger.propagate = False
+    logger_handler = logging.FileHandler(log_file)
+    logger_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
+    logger.addHandler(logger_handler)
+
+
+class AgentReturn(ABC):
+    def __init__(self, log_file: Path):
+        self.log_file = log_file
+        self.last_cost = self.get_money_cost()
+
+    def get_money_cost(self) -> float:
+        """Get accumulated money cost from log file"""
+        last_cost = 0.0
+        with open(self.log_file, "r") as file:
+            for line in file:
+                if "Tokens:" in line and "Cost:" in line:
+                    match = re.search(
+                        r"Cost: \$\d+\.\d+ message, \$(\d+\.\d+) session", line
+                    )
+                    if match:
+                        last_cost = float(match.group(1))
+        return last_cost
 
 
 class Agents(ABC):
@@ -15,7 +45,7 @@ class Agents(ABC):
         self.max_iteration = max_iteration
 
     @abstractmethod
-    def run(self) -> None:
+    def run(self) -> AgentReturn:
         """Start agent"""
         raise NotImplementedError
 
@@ -25,9 +55,6 @@ class AiderAgents(Agents):
         super().__init__(max_iteration)
         self.model = Model(model_name)
 
-    @retry(
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-    )
     def run(
         self,
         message: str,
@@ -35,7 +62,7 @@ class AiderAgents(Agents):
         lint_cmd: str,
         fnames: list[str],
         log_dir: Path,
-    ) -> None:
+    ) -> AgentReturn:
         """Start aider agent"""
         if test_cmd:
             auto_test = True
@@ -50,10 +77,6 @@ class AiderAgents(Agents):
         input_history_file = log_dir / ".aider.input.history"
         chat_history_file = log_dir / ".aider.chat.history.md"
 
-        print(
-            f"check {os.path.abspath(chat_history_file)} for prompts and lm generations",
-            file=sys.stderr,
-        )
         # Set up logging
         log_file = log_dir / "aider.log"
         logging.basicConfig(
@@ -66,15 +89,9 @@ class AiderAgents(Agents):
         sys.stdout = open(log_file, "a")
         sys.stderr = open(log_file, "a")
 
-        # Configure httpx logging
-        httpx_logger = logging.getLogger("httpx")
-        httpx_logger.setLevel(logging.INFO)
-        httpx_logger.propagate = False  # Prevent propagation to root logger
-        httpx_handler = logging.FileHandler(log_file)
-        httpx_handler.setFormatter(
-            logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-        )
-        httpx_logger.addHandler(httpx_handler)
+        # Configure httpx and backoff logging
+        handle_logging("httpx", log_file)
+        handle_logging("backoff", log_file)
 
         io = InputOutput(
             yes=True,
@@ -91,10 +108,22 @@ class AiderAgents(Agents):
             io=io,
         )
         coder.max_reflection = self.max_iteration
-        coder.stream = False
+        coder.stream = True
 
         # Run the agent
         coder.run(message)
+
+        # #### TMP
+        # import time
+        # import random
+
+        # time.sleep(random.random() * 5)
+        # n = random.random() / 10
+        # with open(log_file, "a") as f:
+        #     f.write(
+        #         f"> Tokens: 33k sent, 1.3k received. Cost: $0.12 message, ${n} session.  \n"
+        #     )
+        # #### TMP
 
         # Close redirected stdout and stderr
         sys.stdout.close()
@@ -102,3 +131,5 @@ class AiderAgents(Agents):
         # Restore original stdout and stderr
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
+
+        return AgentReturn(log_file)
