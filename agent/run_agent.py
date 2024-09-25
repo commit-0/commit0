@@ -61,17 +61,15 @@ def run_agent_for_repo(
     original_repo_name = repo_name
     update_queue.put(("start_repo", (original_repo_name, 0)))
 
-    repo_name = repo_name.lower()
-    repo_name = repo_name.replace(".", "-")
+    # repo_name = repo_name.lower()
+    # repo_name = repo_name.replace(".", "-")
 
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
-    # TODO: remove this to make web3.py work
-    if repo_name == "web3-py":
-        repo_path = repo_path.replace("web3-py", "web3.py")
-
-    src_dir = os.path.join(repo_path, example["src_dir"])
+    # # TODO: remove this to make web3.py work
+    # if repo_name == "web3-py":
+    #     repo_path = repo_path.replace("web3-py", "web3.py")
 
     try:
         local_repo = Repo(repo_path)
@@ -121,7 +119,7 @@ def run_agent_for_repo(
             raise ValueError("Invalid input")
 
         target_edit_files = get_target_edit_files(
-            src_dir, src_prefix=example["src_dir"]
+            repo_path, example["src_dir"], example["test"]["test_dir"]
         )
 
         if agent_config.run_tests:
@@ -133,7 +131,7 @@ def run_agent_for_repo(
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0_dot_file_path {commit0_dot_file_path}"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-dot-file-path {commit0_dot_file_path}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)

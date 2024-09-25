@@ -60,8 +60,6 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
-    src_dir = os.path.join(repo_path, example["src_dir"])
-
     try:
         local_repo = Repo(repo_path)
     except Exception:
@@ -109,7 +107,7 @@ def run_agent_for_repo(
             raise ValueError("Invalid input")
 
         target_edit_files = get_target_edit_files(
-            src_dir, src_prefix=example["src_dir"]
+            repo_path, example["src_dir"], example["test"]["test_dir"]
         )
 
         if agent_config.run_tests:

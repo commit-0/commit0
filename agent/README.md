@@ -37,3 +37,24 @@ python baselines/run_aider.py
 - `max_unit_tests_info_length`: Max length of unit tests info. Default: `10000`.
 - `max_reference_info_length`: Max length of reference info. Default: `10000`.
 - `max_lint_info_length`: Max length of lint info. Default: `10000`.
+
+
+
+
+
+
+
+
+
+
+Error Section
+
+
+
+Running the agent
+
+Run with Tmux!
+
+process_max_worker set to 3....
+
+currently not handling file with more than 1500 lines...
