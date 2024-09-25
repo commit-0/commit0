@@ -3,19 +3,23 @@
 
 #
 
-Commit-0 is a real-world AI coding challenge.
-Can your agent generate a working library from commit 0?
+## Overview
+
+Commit-0 is a from scratch AI coding challenge.
+Can you create a library from commit 0?
 
 The benchmark consists of 57 core Python libraries.
-Libraries are selected based on:
+The challenge is to rebuild these libraries and
+pass their unit tests.  All libraries have:
 
-* Significant unit-test coverage
+* Significant test coverage
 * Detailed specification and documentation
 * Lint and type checking
 
-The [commit0 tool](setup) allows you to:
+Commit-0 is an interactive environment that makes it easy
+to design and test new agents. You can:
 
-* Efficiently run interactive tests in isolated environemnts
+* Efficiently run tests in isolated environemnts
 * Distribute testing and development across cloud systems
 * Track and log all changes made throughout.
 
@@ -25,6 +29,14 @@ To install run:
 pip install commit0
 ```
 
+## Architecture
+
+![](arch.png)
+
+
+![](commit0.gif)
+
+## Libraries
 
 |  | Name |  Repo | Commit0 | Tests |  |
 |--|--------|-------|----|----|------|

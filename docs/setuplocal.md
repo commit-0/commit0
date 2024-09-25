@@ -33,4 +33,4 @@ Here we run [a test](https://github.com/commit-0/simpy/blob/master/tests/test_ev
 commit0 test simpy tests/test_event.py::test_succeed
 ```
 
-See [distributed setup](setupdist) for more commands.
+See [distributed setup](/setupdist) for more commands.
