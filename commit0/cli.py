@@ -239,7 +239,11 @@ def test(
         help="Set this to 2 for more logging information",
         count=True,
     ),
-    stdin: bool = typer.Option(False, "--stdin", help="Read test names from stdin"),
+    stdin: bool = typer.Option(
+        False,
+        "--stdin",
+        help="Read test names from stdin. Example: `echo 'test_mod.py' | commit0 test REPO --branch BRANCH`",
+    ),
 ) -> None:
     """Run tests on a Commit0 repository."""
     check_commit0_path()
