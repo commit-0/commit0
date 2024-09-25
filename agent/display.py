@@ -38,6 +38,14 @@ class RepoProgressColumn(ProgressColumn):
         return Text(f"{int(task.completed or 0)}/{int(task.total or 1)}")
 
 
+class RepoCountColumn(ProgressColumn):
+    """Custom progress column for displaying the count of finished repositories."""
+
+    def render(self, task: Task) -> Text:
+        """Render the count of finished repositories."""
+        return Text(f"{int(task.completed or 0)}/{int(task.total or 1)}")
+
+
 class OngoingRepo:
     def __init__(
         self, name: str, current_file: str, finished_files: list[str], total_files: int
@@ -90,6 +98,7 @@ class TerminalDisplay:
         self.overall_progress = Progress(
             SpinnerColumn(),
             BarColumn(bar_width=None),
+            RepoCountColumn(),
             TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
         )
         self.overall_task = self.overall_progress.add_task(
