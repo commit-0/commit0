@@ -53,9 +53,10 @@ def run_agent_for_repo(
     """Run Aider for a given repository."""
     # get repo info
     _, repo_name = example["repo"].split("/")
+    print("Working on repo: ", repo_name)
 
-    repo_name = repo_name.lower()
-    repo_name = repo_name.replace(".", "-")
+    # repo_name = repo_name.lower()
+    # repo_name = repo_name.replace(".", "-")
 
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
@@ -102,6 +103,7 @@ def run_agent_for_repo(
 
     # TODO: make this path more general
     commit0_dot_file_path = str(Path(repo_path).parent.parent / ".commit0.yaml")
+
     with DirContext(repo_path):
         if agent_config is None:
             raise ValueError("Invalid input")
