@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "commit0"
-version = "0.0.1"
+version = "0.1.0"
 description = "A development and evaluation framework for using language models to generate libraries."
 requires-python = ">=3.10"
 dependencies = [
@@ -23,6 +23,15 @@ dependencies = [
     "pytest>=8.3.3",
 ]
 scripts = { commit0 = "commit0.__main__:main", agent = "agent.__main__:main" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+]
+license = {file = "LICENSE"}
+
+[project.urls]
+Homepage = "https://commit-0.github.io/"
+Repository = "https://github.com/commit-0/commit0"
+Issues = "https://github.com/commit-0/commit0/issues"
 
 [tool.pyright]
 include = ["**/commit0"]
