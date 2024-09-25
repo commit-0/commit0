@@ -61,9 +61,7 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
                 failure_string = test["call"]["longrepr"]
                 # could use test['call']['traceback'] information and test['call']['crash'] for more info
             else:
-                import pdb
-
-                pdb.set_trace()
+                breakpoint()
             duration = 0.0
             for action_key in ["setup", "call", "teardown"]:
                 if action_key not in test:
@@ -195,13 +193,13 @@ def render_mds(subfolder="docs"):
                 patch_diff = (
                     f"""\n\n### Patch diff\n```diff\n{pytest_info['patch_diff']}```"""
                 )
-                if "reason_for_failure" in pytest_info:
+                if "failed_to_run" in pytest_info:
                     all_submissions[branch_name][repo_name][pytest_group] = {
-                        "reason_for_failure": pytest_info["failed_to_run"]
+                        "failed_to_run": pytest_info["failed_to_run"]
                     }
                     method_repo_pytests[
                         f"{branch_name}_{repo_name}"
-                    ] += f"""\n## Failed to run pytests\n{ pytest_info['failed_to_run']}"""
+                    ] += f"""\n## Failed to run pytests\n```\n{pytest_info['failed_to_run']}\n```"""
                 else:
                     all_submissions[branch_name][repo_name][pytest_group] = {
                         "summary": pytest_info["summary"],
@@ -210,9 +208,9 @@ def render_mds(subfolder="docs"):
                     method_repo_pytests[
                         f"{branch_name}_{repo_name}"
                     ] += f"""\n## Pytest Summary: {pytest_group}
-    | status   | count |
-    |:---------|:-----:|
-    """
+| status   | count |
+|:---------|:-----:|
+"""
                     for category, count in pytest_info["summary"].items():
                         if category not in {"duration"}:
                             method_repo_pytests[
@@ -230,10 +228,10 @@ def render_mds(subfolder="docs"):
                         shortened_testname = os.path.basename(testname)
                         method_repo_pytests[f"{branch_name}_{repo_name}"] += (
                             f"### {shortened_testname}\n\n<details><summary> <pre>{shortened_testname}"
-                            "</pre></summary><pre>\n{failure['failure_string']}\n</pre>\n</details>\n"
+                            f"</pre></summary><pre>\n{failure['failure_string']}\n</pre>\n</details>\n"
                         )
 
-            back_button = f"[back to {branch_name} summary]({os.path.join('/', f'analysis_{branch_name}')})\n\n"
+            back_button = f"[back to {branch_name} summary]({f'analysis_{branch_name}'})\n\n"
             with open(
                 os.path.join(subfolder, f"analysis_{branch_name}_{repo_name}.md"), "w"
             ) as wf:
@@ -252,22 +250,20 @@ def render_mds(subfolder="docs"):
     # Render method & repo page. Has "back" button.
     for branch_name, branch_info in all_submissions.items():
         cum_pytests = {"passed": 0}
-        method_to_repos[
-            branch_name
-        ] = """
+        method_to_repos[branch_name] = """
 | | Repository | Summary | |
 |-|------------|---------|-|"""
         total_tests = 0  # better info is probably broken down by split lol TODO
         total_duration = 0.0
         for repo_name, repo_test_info in branch_info.items():
             for testname, test_info in repo_test_info.items():
-                if "reason_for_failure" in test_info:
+                if "failed_to_run" in test_info:
                     summary_pytests_string = "failure"
                 else:
                     total_duration += test_info["duration"]
                     summary_pytests_string = (
                         f"{testname}: {test_info['summary']['passed']} / "
-                        "{test_info['summary']['collected']} ; duration: { test_info['duration']:.2f}s"
+                        f"{test_info['summary']['collected']} ; duration: { test_info['duration']:.2f}s"
                     )
                     for category, count in test_info["summary"].items():
                         if category not in cum_pytests:
@@ -278,14 +274,14 @@ def render_mds(subfolder="docs"):
                             cum_pytests[category] += float(count)
                         total_tests += 1
                 method_to_repos[branch_name] += (
-                    f"\n||[{repo_name}]({os.path.join('/', f'analysis_{branch_name}_{repo_name}')})|"
+                    f"\n||[{repo_name}]({f'analysis_{branch_name}_{repo_name}'})|"
                     f"{summary_pytests_string}||"
                 )
                 break  # assume we ran all tests. will add functionality for checking diff tests later, as we need it.
         summary_pytests_string = (
             f"{cum_pytests['passed']} / {total_tests} ; duration: {total_duration:.2f}s"
         )
-        leaderboard += f"\n||[{branch_name}]({os.path.join('/', f'analysis_{branch_name}')})|{summary_pytests_string}||"
+        leaderboard += f"\n||[{branch_name}]({f'analysis_{branch_name}'})|{summary_pytests_string}||"
         with open(os.path.join(subfolder, f"analysis_{branch_name}.md"), "w") as wf:
             wf.write(method_to_repos[branch_name])
     with open(os.path.join(subfolder, "analysis.md"), "w") as wf:
@@ -322,7 +318,7 @@ def main(args):
         if args.do_setup:
             os.system(
                 f"commit0 setup {args.split} --base-dir {analysis_files_path}/repos "
-                "--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
+                f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
             )
         branch_name = "blank"
         if not args.keep_previous_eval:
@@ -358,7 +354,7 @@ def main(args):
         if args.do_setup:
             os.system(
                 f"commit0 setup {args.split} --base-dir {analysis_files_path}/repos "
-                "--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
+                f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
             )
         branch_name = "reference"
         os.makedirs(os.path.join(analysis_files_path, branch_name), exist_ok=True)
@@ -389,6 +385,14 @@ def main(args):
         commit0_dot_file_path = os.path.join(
             analysis_files_path, "submission_repos", ".commit0.yaml"
         )
+        if not args.keep_previous_eval:
+            for subfolder in glob.glob(os.path.join(analysis_files_path, "*")):
+                if os.path.basename(subfolder) not in {"blank", "reference", "repos", "submission_repos"}:
+                    try:
+                        shutil.rmtree(analysis_files_path, subfolder)
+                    except Exception as e:
+                        print(f"{e}: when removing {subfolder}")
+
         for submission in submission_dataset:
             branch_name = submission["name"]
             os.makedirs(os.path.join(analysis_files_path, branch_name), exist_ok=True)
@@ -418,7 +422,7 @@ def main(args):
             # run pytests
             os.system(
                 f"commit0 evaluate --branch {branch_name} "
-                "--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-dot-file-path {commit0_dot_file_path}"
             )
             for example in dataset:
                 repo_name = example["repo"].split("/")[-1]
