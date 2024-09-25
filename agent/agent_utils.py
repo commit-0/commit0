@@ -196,7 +196,9 @@ def get_target_edit_files(target_dir: str, src_dir: str, test_dir: str) -> list[
     for file_path in files:
         with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
             content = file.read()
-            if len(content.splitlines()) < 1500:
+            if len(content.splitlines()) > 1500:
+                continue
+            if "    pass" in content:
                 filtered_files.append(file_path)
 
     # Remove the base_dir prefix

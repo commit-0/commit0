@@ -1,3 +1,4 @@
+import time
 from rich.console import Console, Group
 from rich.panel import Panel
 from rich.progress import (
@@ -82,6 +83,9 @@ class TerminalDisplay:
         self.total_files_per_repo = {}
         self.repo_money_spent = {}
         self.display_repo_progress_num = 5
+        self.start_time_per_repo = {}
+        self.end_time_per_repo = {}
+        self.total_time_spent = 0
 
         self.overall_progress = Progress(
             SpinnerColumn(),
@@ -208,6 +212,7 @@ class TerminalDisplay:
             time_str = f"{minutes:02d}m {seconds:02d}s"
         else:
             time_str = f"{seconds:02d}s"
+        self.total_time_spent = time_in_seconds
         self.time_display = Text(f"Time Spent So Far: {time_str}", justify="center")
         self.layout["progress"]["time"].update(
             Panel(self.time_display, title="Time", border_style="blue")
@@ -323,6 +328,7 @@ class TerminalDisplay:
         self.ongoing_repos[repo_name] = ""
         self.finished_files[repo_name] = []
         self.total_files_per_repo[repo_name] = total_files
+        self.start_time_per_repo[repo_name] = time.time()
         self.update()
 
     def finish_repo(self, repo_name: str) -> None:
@@ -333,6 +339,7 @@ class TerminalDisplay:
         if repo_name in self.finished_files:
             del self.finished_files[repo_name]
         self.overall_progress.update(self.overall_task, advance=1)
+        self.end_time_per_repo[repo_name] = time.time()
         self.update()
 
     def set_not_started_repos(self, repos: list[str]) -> None:
@@ -354,4 +361,25 @@ class TerminalDisplay:
         exc_tb: TracebackType | None,
     ):
         self.live.stop()
-        print("Agent finished running")
+        print("\nSummary of Repository Processing:")
+        print("-" * 80)
+        print(
+            f"{'Repository':<30} {'Time Spent':<15} {'Files Processed':<20} {'Money Spent':<15}"
+        )
+        print("-" * 80)
+        total_files = 0
+        total_money = 0
+        for repo_name, end_time in self.end_time_per_repo.items():
+            time_spent = end_time - self.start_time_per_repo[repo_name]
+            files_processed = self.total_files_per_repo[repo_name]
+            money_spent = sum(self.repo_money_spent.get(repo_name, {}).values())
+            print(
+                f"{repo_name:<30} {time_spent:>13.2f}s {files_processed:>18} {money_spent:>13.2f}$"
+            )
+            total_files += files_processed
+            total_money += money_spent
+        print("-" * 80)
+        print(
+            f"{'Total':<30} {self.total_time_spent:>13.2f}s {total_files:>18} {total_money:>13.2f}$"
+        )
+        print("-" * 80)
