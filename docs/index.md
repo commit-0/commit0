@@ -19,6 +19,13 @@ The [commit0 tool](setup) allows you to:
 * Distribute testing and development across cloud systems
 * Track and log all changes made throughout.
 
+To install run:
+
+```bash
+pip install commit0
+```
+
+
 |  | Name |  Repo | Commit0 | Tests |  |
 |--|--------|-------|----|----|------|
 | <img src='https://avatars.githubusercontent.com/u/69814924?s=280&v=4' width='100px'/> | [minitorch](https://minitorch.github.io/) | [[orig](http://github.com/minitorch/minitorch)] | [[commit0](http://github.com/commit-0/minitorch)] | 230 | <img src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAABkCAQAAADtJZLrAAAAD0lEQVR42mNkYGAcRcQhADxaAGWhD8eHAAAAAElFTkSuQmCC'/> |
