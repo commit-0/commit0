@@ -71,7 +71,7 @@ def main(
     try:
         local_repo = git.Repo(repo_or_repo_dir)
         logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
-    except git.exc.NoSuchPathError:  # type: ignore
+    except (git.exc.NoSuchPathError, git.exc.InvalidGitRepositoryError):  # type: ignore
         repo_dir = os.path.join(base_dir, repo_name)
         logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
         try:

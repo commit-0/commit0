@@ -1,12 +1,15 @@
 import typer
-import subprocess
-import yaml
+from agent.run_agent_no_rich import run_agent as run_agent_no_rich
 from agent.run_agent import run_agent
+from commit0.harness.constants import RUN_AGENT_LOG_DIR
+import subprocess
+from agent.agent_utils import write_agent_config
 
 agent_app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
     context_settings={"help_option_names": ["-h", "--help"]},
+    pretty_exceptions_show_locals=False,
     help="""
     This is the command for running agent on Commit-0.
 
@@ -21,12 +24,6 @@ class Colors:
     YELLOW = "\033[93m"
     CYAN = "\033[96m"
     ORANGE = "\033[95m"
-
-
-def write_agent_config(agent_config_file: str, agent_config: dict) -> None:
-    """Write the agent config to the file."""
-    with open(agent_config_file, "w") as f:
-        yaml.dump(agent_config, f)
 
 
 def check_aider_path() -> None:
@@ -138,11 +135,9 @@ def config(
     """Configure the agent."""
     if agent_name == "aider":
         check_aider_path()
-    else:
-        raise typer.BadParameter(
-            f"Invalid {highlight('AGENT', Colors.RED)}. We only support aider for now",
-            param_hint="AGENT",
-        )
+
+    if use_user_prompt:
+        user_prompt = typer.prompt("Please enter your user prompt")
 
     agent_config = {
         "agent_name": agent_name,
@@ -167,10 +162,80 @@ def config(
 
 @agent_app.command()
 def run(
-    agent_config_file: str = typer.Argument(
+    branch: str = typer.Argument(
+        ...,
+        help="Branch name of current run",
+    ),
+    override_previous_changes: bool = typer.Option(
+        False,
+        help="If override the previous agent changes on `branch` or run the agent continuously on the new changes",
+    ),
+    backend: str = typer.Option(
+        "modal",
+        help="Test backend to run the agent on, ignore this option if you are not adding `test` option to agent",
+    ),
+    agent_config_file: str = typer.Option(
         ".agent.yaml",
         help="Path to the agent config file",
     ),
+    log_dir: str = typer.Option(
+        str(RUN_AGENT_LOG_DIR.resolve()),
+        help="Log directory to store the logs",
+    ),
+    max_parallel_repos: int = typer.Option(
+        1,
+        help="Maximum number of repositories for agent to run in parallel",
+    ),
+    display_repo_progress_num: int = typer.Option(
+        5,
+        help="Display the agent progress",
+    ),
 ) -> None:
     """Run the agent on the repository."""
-    run_agent(agent_config_file)
+    run_agent(
+        branch,
+        override_previous_changes,
+        backend,
+        agent_config_file,
+        log_dir,
+        max_parallel_repos,
+        display_repo_progress_num,
+    )
+
+
+@agent_app.command()
+def run_test_no_rich(
+    branch: str = typer.Argument(
+        ...,
+        help="Branch name of current run",
+    ),
+    override_previous_changes: bool = typer.Option(
+        False,
+        help="If override the previous agent changes on `branch` or run the agent continuously on the new changes",
+    ),
+    backend: str = typer.Option(
+        "modal",
+        help="Test backend to run the agent on, ignore this option if you are not adding `test` option to agent",
+    ),
+    agent_config_file: str = typer.Option(
+        ".agent.yaml",
+        help="Path to the agent config file",
+    ),
+    log_dir: str = typer.Option(
+        str(RUN_AGENT_LOG_DIR.resolve()),
+        help="Log directory to store the logs",
+    ),
+    max_parallel_repos: int = typer.Option(
+        1,
+        help="Maximum number of repositories for agent to run in parallel",
+    ),
+) -> None:
+    """Run the agent on the repository."""
+    run_agent_no_rich(
+        branch,
+        override_previous_changes,
+        backend,
+        agent_config_file,
+        log_dir,
+        max_parallel_repos,
+    )
