@@ -1,7 +1,7 @@
 import typer
 from agent.run_agent_no_rich import run_agent as run_agent_no_rich
 from agent.run_agent import run_agent
-from commit0.harness.constants import RUN_AIDER_LOG_DIR
+from commit0.harness.constants import RUN_AGENT_LOG_DIR
 import subprocess
 from agent.agent_utils import write_agent_config
 
@@ -135,11 +135,7 @@ def config(
     """Configure the agent."""
     if agent_name == "aider":
         check_aider_path()
-    else:
-        raise typer.BadParameter(
-            f"Invalid {highlight('AGENT', Colors.RED)}. We only support aider for now",
-            param_hint="AGENT",
-        )
+
     if use_user_prompt:
         user_prompt = typer.prompt("Please enter your user prompt")
 
@@ -183,7 +179,7 @@ def run(
         help="Path to the agent config file",
     ),
     log_dir: str = typer.Option(
-        str(RUN_AIDER_LOG_DIR.resolve()),
+        str(RUN_AGENT_LOG_DIR.resolve()),
         help="Log directory to store the logs",
     ),
     max_parallel_repos: int = typer.Option(
@@ -226,7 +222,7 @@ def run_test_no_rich(
         help="Path to the agent config file",
     ),
     log_dir: str = typer.Option(
-        str(RUN_AIDER_LOG_DIR.resolve()),
+        str(RUN_AGENT_LOG_DIR.resolve()),
         help="Log directory to store the logs",
     ),
     max_parallel_repos: int = typer.Option(

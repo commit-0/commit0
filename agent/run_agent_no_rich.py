@@ -18,7 +18,7 @@ from types import TracebackType
 from agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
-from commit0.harness.constants import RUN_AIDER_LOG_DIR, RepoInstance
+from commit0.harness.constants import RUN_AGENT_LOG_DIR, RepoInstance
 from commit0.cli import read_commit0_dot_file
 from pathlib import Path
 from datetime import datetime
@@ -48,7 +48,7 @@ def run_agent_for_repo(
     branch: Optional[str] = None,
     override_previous_changes: bool = False,
     backend: str = "modal",
-    log_dir: str = str(RUN_AIDER_LOG_DIR.resolve()),
+    log_dir: str = str(RUN_AGENT_LOG_DIR.resolve()),
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info

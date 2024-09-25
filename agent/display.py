@@ -120,9 +120,9 @@ class TerminalDisplay:
         self.layout["progress"]["pbar"].update(
             Panel(self.overall_progress, title="Overall Progress", border_style="blue")
         )
-        self.time_display = Text("Time Spent So Far: 0s", justify="center")
+        self.time_display = Text("Time Taken So Far: 0s", justify="center")
         self.layout["progress"]["time"].update(
-            Panel(self.time_display, title="$$$$", border_style="blue")
+            Panel(self.time_display, title="Time", border_style="blue")
         )
         self.money_display = Text("Money Spent So Far: $0.00", justify="center")
         self.layout["progress"]["money"].update(
@@ -373,7 +373,7 @@ class TerminalDisplay:
         print("\nSummary of Repository Processing:")
         print("-" * 80)
         print(
-            f"{'Repository':<30} {'Time Spent':<15} {'Files Processed':<20} {'Money Spent':<15}"
+            f"{'Repository':<30} {'Time Taken':<15} {'Files Processed':<20} {'Money Spent':<15}"
         )
         print("-" * 80)
         total_files = 0
