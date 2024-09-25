@@ -57,13 +57,13 @@ def run_agent_for_repo(
     # get repo info
     _, repo_name = example["repo"].split("/")
 
+    # before starting, display all information to terminal
     original_repo_name = repo_name
+    update_queue.put(("start_repo", (original_repo_name, 0)))
 
     repo_name = repo_name.lower()
     repo_name = repo_name.replace(".", "-")
 
-    # before starting, display all information to terminal
-    update_queue.put(("start_repo", (original_repo_name, 0)))
 
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
