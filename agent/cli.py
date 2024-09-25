@@ -166,13 +166,13 @@ def config(
 
 @agent_app.command()
 def run(
-    experiment_name: str = typer.Argument(
+    branch: str = typer.Argument(
         ...,
-        help="Experiment name of current run",
+        help="Branch name of current run",
     ),
     override_previous_changes: bool = typer.Option(
         False,
-        help="If override the previous agent changes on `experiment_name` or run the agent continuously on the new changes",
+        help="If override the previous agent changes on `branch` or run the agent continuously on the new changes",
     ),
     backend: str = typer.Option(
         "modal",
@@ -197,7 +197,7 @@ def run(
 ) -> None:
     """Run the agent on the repository."""
     run_agent(
-        experiment_name,
+        branch,
         override_previous_changes,
         backend,
         agent_config_file,
@@ -209,13 +209,13 @@ def run(
 
 @agent_app.command()
 def run_test_no_rich(
-    experiment_name: str = typer.Argument(
+    branch: str = typer.Argument(
         ...,
-        help="Experiment name of current run",
+        help="Branch name of current run",
     ),
     override_previous_changes: bool = typer.Option(
         False,
-        help="If override the previous agent changes on `experiment_name` or run the agent continuously on the new changes",
+        help="If override the previous agent changes on `branch` or run the agent continuously on the new changes",
     ),
     backend: str = typer.Option(
         "modal",
@@ -236,7 +236,7 @@ def run_test_no_rich(
 ) -> None:
     """Run the agent on the repository."""
     run_agent_no_rich(
-        experiment_name,
+        branch,
         override_previous_changes,
         backend,
         agent_config_file,

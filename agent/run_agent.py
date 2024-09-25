@@ -48,7 +48,7 @@ def run_agent_for_repo(
     agent_config: AgentConfig,
     example: RepoInstance,
     update_queue: multiprocessing.Queue,
-    experiment_name: Optional[str] = None,
+    branch: Optional[str] = None,
     override_previous_changes: bool = False,
     backend: str = "modal",
     log_dir: str = str(RUN_AIDER_LOG_DIR.resolve()),
@@ -87,14 +87,14 @@ def run_agent_for_repo(
         )
 
     # if branch_name is not provided, create a new branch name based on agent_config
-    if experiment_name is None:
-        experiment_name = args2string(agent_config)
+    if branch is None:
+        branch = args2string(agent_config)
 
-    create_branch(local_repo, experiment_name, example["base_commit"])
+    create_branch(local_repo, branch, example["base_commit"])
 
     # in cases where the latest commit of branch is not commit 0
     # set it back to commit 0
-    latest_commit = local_repo.commit(experiment_name)
+    latest_commit = local_repo.commit(branch)
     if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
 
@@ -102,7 +102,7 @@ def run_agent_for_repo(
     experiment_log_dir = (
         Path(log_dir)
         / repo_name
-        / experiment_name
+        / branch
         / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     )
     experiment_log_dir.mkdir(parents=True, exist_ok=True)
@@ -132,7 +132,7 @@ def run_agent_for_repo(
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {experiment_name} --backend {backend} --commit0_dot_file_path {commit0_dot_file_path}"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0_dot_file_path {commit0_dot_file_path}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
@@ -176,7 +176,7 @@ def run_agent_for_repo(
 
 
 def run_agent(
-    experiment_name: str,
+    branch: str,
     override_previous_changes: bool,
     backend: str,
     agent_config_file: str,
@@ -248,7 +248,7 @@ def run_agent(
                             agent_config,
                             cast(RepoInstance, example),
                             update_queue,
-                            experiment_name,
+                            branch,
                             override_previous_changes,
                             backend,
                             log_dir,
