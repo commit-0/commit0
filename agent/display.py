@@ -100,11 +100,16 @@ class TerminalDisplay:
         )
         self.layout["progress"].split_row(
             Layout(name="pbar", ratio=4),
+            Layout(name="time", ratio=1),
             Layout(name="money", ratio=1),
         )
 
         self.layout["progress"]["pbar"].update(
             Panel(self.overall_progress, title="Overall Progress", border_style="blue")
+        )
+        self.time_display = Text("Time Spent So Far: 0s", justify="center")
+        self.layout["progress"]["time"].update(
+            Panel(self.time_display, title="$$$$", border_style="blue")
         )
         self.money_display = Text("Money Spent So Far: $0.00", justify="center")
         self.layout["progress"]["money"].update(
@@ -189,6 +194,24 @@ class TerminalDisplay:
             self.layout["info"]["agent_info"][attr_name].update(
                 Panel(text, title=title, border_style="blue")
             )
+
+    def update_time_display(self, time_in_seconds: int) -> None:
+        """Update the time display with the given time."""
+        days, remainder = divmod(time_in_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if days > 0:
+            time_str = f"{days}d {hours:02d}h {minutes:02d}m {seconds:02d}s"
+        elif hours > 0:
+            time_str = f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
+        elif minutes > 0:
+            time_str = f"{minutes:02d}m {seconds:02d}s"
+        else:
+            time_str = f"{seconds:02d}s"
+        self.time_display = Text(f"Time Spent So Far: {time_str}", justify="center")
+        self.layout["progress"]["time"].update(
+            Panel(self.time_display, title="Time", border_style="blue")
+        )
 
     def update_backend_display(self, backend: str) -> None:
         """Update the backend display with the given backend."""

@@ -66,6 +66,10 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
+    # TODO: remove this to make web3.py work
+    if repo_name == "web3-py":
+        repo_path = repo_path.replace("web3-py", "web3.py")
+
     src_dir = os.path.join(repo_path, example["src_dir"])
 
     try:
@@ -214,7 +218,11 @@ def run_agent(
         ]
         display.set_not_started_repos(not_started_repos)
 
-        display.update_repo_progress_num(display_repo_progress_num)
+        start_time = time.time()
+
+        display.update_repo_progress_num(
+            min(display_repo_progress_num, max_parallel_repos)
+        )
         display.update_backend_display(backend)
         display.update_log_dir_display(log_dir)
         display.update_agent_display(
@@ -248,6 +256,7 @@ def run_agent(
                     )
                     results.append(result)
 
+                last_time_update = 0
                 while any(not r.ready() for r in results):
                     try:
                         while not update_queue.empty():
@@ -268,6 +277,14 @@ def run_agent(
                                 )
                     except queue.Empty:
                         pass
+
+                    # Update time display every second
+                    current_time = time.time()
+                    if current_time - last_time_update >= 1:
+                        elapsed_time = int(current_time - start_time)
+                        display.update_time_display(elapsed_time)
+                        last_time_update = current_time
+
                     time.sleep(0.1)  # Small delay to prevent busy-waiting
 
                 # Final update after all repos are processed
@@ -285,6 +302,10 @@ def run_agent(
                     elif action == "update_money_display":
                         repo_name, file_name, money_spent = data
                         display.update_money_display(repo_name, file_name, money_spent)
+
+                # Final time update
+                elapsed_time = int(time.time() - start_time)
+                display.update_time_display(elapsed_time)
 
                 for result in results:
                     result.get()
