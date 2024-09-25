@@ -1,6 +1,5 @@
-# Quickstart
+## Local Mode
 
-## Install
 
 First be sure that you have docker tools installed.
 
@@ -10,11 +9,6 @@ apt install docker
 
 To install the benchmark run,
 
-```bash
-pip install commit0
-```
-
-## Commands
 
 The system is a command-line tool that allows you to run unit-tests on a
 variety of libraries in isolated environments. To get started with the full
@@ -72,68 +66,4 @@ a branch and the environment will sync and run.
 
 ```bash
 commit0 test minitorch branch=mychange tests/test_operators.py::test_relu
-```
-
-## Running an Agent
-
-Next we will see how this can be run with an AI agent system.
-We will use [Aider](https://aider.chat/) which is a nice
-command-line oriented agent system.
-
-To setup Aider first set your api key.
-We recommend using Claude Sonnet.
-
-```bash
-# Work with Claude 3.5 Sonnet on your repo
-export ANTHROPIC_API_KEY=your-key-goes-here
-```
-
-Once this is setup you can run Aider with the following command.
-This will edit the files locally in your branch, but
-run the tests inside the environment.
-
-```bash
-aider --model sonnet --file repos/minitorch/operators.py --message "fill in" \
-     --auto-test --test \
-     --test-cmd 'commit0 test minitorch branch=mychange tests/test_operators.py::test_relu' \
-     --yes
-```
-
-This will run an LLM agent that will try to fill in the
-functions in one file of the minitorch library.
-
-For a full example baseline system that tries to solve
-all the tests in the library see the [baseline](baseline) documentation.
-
-
-## Distributed Tests
-
-One of the main advantages of `commit0` is that it can run
-a range of unit tests in distributed environments.
-
-By default, the library is configured to work with [modal](https://modal.com/).
-
-```bash
-pip install modal
-modal token new
-```
-
-To enable distributed run, first
-create a file called `distributed.yaml`
-
-```yaml
-backend: modal
-base_dir: repos.dist/
-```
-
-You can pass this configuration file as an argumnet to clone.
-
-```bash
-commit0 clone lite --cfg=distributed.yaml
-```
-
-Next to run tests you can run the standard test command.
-
-```bash
-commit0 test simpy master tests/test_event.py::test_succeed --cfg=distributed.yaml
 ```
