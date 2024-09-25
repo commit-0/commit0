@@ -64,7 +64,6 @@ def run_agent_for_repo(
     repo_name = repo_name.lower()
     repo_name = repo_name.replace(".", "-")
 
-
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
