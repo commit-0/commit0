@@ -67,9 +67,12 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
-    # # TODO: remove this to make web3.py work
-    # if repo_name == "web3-py":
-    #     repo_path = repo_path.replace("web3-py", "web3.py")
+    target_edit_files = get_target_edit_files(
+        repo_path, example["src_dir"], example["test"]["test_dir"]
+    )
+    # Call the commit0 get-tests command to retrieve test files
+    test_files_str = get_tests(repo_name, verbose=0)
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     try:
         local_repo = Repo(repo_path)
@@ -118,15 +121,7 @@ def run_agent_for_repo(
         if agent_config is None:
             raise ValueError("Invalid input")
 
-        target_edit_files = get_target_edit_files(
-            repo_path, example["src_dir"], example["test"]["test_dir"]
-        )
-
         if agent_config.run_tests:
-            # Call the commit0 get-tests command to retrieve test files
-            test_files_str = get_tests(repo_name, verbose=0)
-            test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
-
             update_queue.put(("start_repo", (original_repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:

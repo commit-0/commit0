@@ -61,6 +61,14 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
+    # get target files to edit and test files to run
+    target_edit_files = get_target_edit_files(
+        repo_path, example["src_dir"], example["test"]["test_dir"]
+    )
+    # Call the commit0 get-tests command to retrieve test files
+    test_files_str = get_tests(repo_name, verbose=0)
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
+
     try:
         local_repo = Repo(repo_path)
     except Exception:
@@ -108,18 +116,10 @@ def run_agent_for_repo(
         if agent_config is None:
             raise ValueError("Invalid input")
 
-        target_edit_files = get_target_edit_files(
-            repo_path, example["src_dir"], example["test"]["test_dir"]
-        )
-
         if agent_config.run_tests:
-            # Call the commit0 get-tests command to retrieve test files
-            test_files_str = get_tests(repo_name, verbose=0)
-            test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
-
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0_dot_file_path {commit0_dot_file_path}"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-dot-file-path {commit0_dot_file_path}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
