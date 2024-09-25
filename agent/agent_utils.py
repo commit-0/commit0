@@ -126,7 +126,7 @@ def get_target_edit_files(target_dir: str, src_prefix: str) -> list[str]:
         for filename in filenames:
             if filename.endswith(".py"):
                 file_path = os.path.join(root, filename)
-                with open(file_path, "r") as file:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
                     if "    pass" in file.read():
                         files.append(file_path)
 

@@ -57,11 +57,13 @@ def run_agent_for_repo(
     # get repo info
     _, repo_name = example["repo"].split("/")
 
+    original_repo_name = repo_name
+
     repo_name = repo_name.lower()
     repo_name = repo_name.replace(".", "-")
 
     # before starting, display all information to terminal
-    update_queue.put(("start_repo", (repo_name, 0)))
+    update_queue.put(("start_repo", (original_repo_name, 0)))
 
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
@@ -128,7 +130,7 @@ def run_agent_for_repo(
             test_files_str = get_tests(repo_name, verbose=0)
             test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
-            update_queue.put(("start_repo", (repo_name, len(test_files))))
+            update_queue.put(("start_repo", (original_repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
@@ -159,7 +161,9 @@ def run_agent_for_repo(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
 
-            update_queue.put(("start_repo", (repo_name, len(target_edit_files))))
+            update_queue.put(
+                ("start_repo", (original_repo_name, len(target_edit_files)))
+            )
             for f in target_edit_files:
                 update_queue.put(("set_current_file", (repo_name, f)))
                 file_name = f.replace(".py", "").replace("/", "__")
@@ -172,7 +176,7 @@ def run_agent_for_repo(
                         (repo_name, file_name, agent_return.last_cost),
                     )
                 )
-    update_queue.put(("finish_repo", repo_name))
+    update_queue.put(("finish_repo", original_repo_name))
 
 
 def run_agent(
