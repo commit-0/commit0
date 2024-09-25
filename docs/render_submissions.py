@@ -262,8 +262,8 @@ def render_mds(subfolder="docs"):
                 else:
                     total_duration += test_info["duration"]
                     summary_pytests_string = (
-                        f"{testname}: {test_info['summary']['passed']} / "
-                        f"{test_info['summary']['collected']} ; duration: { test_info['duration']:.2f}s"
+                        f"`{testname}`: {test_info['summary']['passed']} / "
+                        f"{test_info['summary']['collected']} ; duration: {test_info['duration']:.2f}s"
                     )
                     for category, count in test_info["summary"].items():
                         if category not in cum_pytests:
