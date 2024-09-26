@@ -6,7 +6,7 @@ In this example we use [Aider](https://aider.chat/) as the
 baseline code completion agent
 
 ```bash
-pip install aider
+pip install aider-chat
 ```
 
 First we assume there is an underlying `commit0`
