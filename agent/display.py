@@ -135,7 +135,8 @@ class TerminalDisplay:
         )
         self.layout["info"]["other_info"].split_row(
             Layout(name="backend", ratio=1),
-            Layout(name="log_dir", ratio=1),
+            Layout(name="branch", ratio=2),
+            Layout(name="log_dir", ratio=2),
         )
         self.layout["info"]["agent_info"].split_row(
             Layout(name="agent_name", ratio=1),
@@ -150,6 +151,10 @@ class TerminalDisplay:
         self.backend_display = Text("Using: ", justify="center")
         self.layout["info"]["other_info"]["backend"].update(
             Panel(self.backend_display, title="Backend", border_style="blue")
+        )
+        self.branch_display = Text("", justify="center")
+        self.layout["info"]["other_info"]["branch"].update(
+            Panel(self.branch_display, title="Branch", border_style="blue")
         )
         self.log_dir_display = Text("", justify="center")
         self.layout["info"]["other_info"]["log_dir"].update(
@@ -227,9 +232,16 @@ class TerminalDisplay:
             Panel(self.time_display, title="Time Taken", border_style="blue")
         )
 
+    def update_branch_display(self, branch: str) -> None:
+        """Update the branch display with the given branch."""
+        self.branch_display = Text(f"{branch}", justify="center")
+        self.layout["info"]["other_info"]["branch"].update(
+            Panel(self.branch_display, title="Branch", border_style="blue")
+        )
+
     def update_backend_display(self, backend: str) -> None:
         """Update the backend display with the given backend."""
-        self.backend_display = Text(f"Backend Using: {backend}", justify="center")
+        self.backend_display = Text(f"{backend}", justify="center")
         self.layout["info"]["other_info"]["backend"].update(
             Panel(self.backend_display, title="Backend", border_style="blue")
         )

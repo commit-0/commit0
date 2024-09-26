@@ -48,7 +48,7 @@ def run_agent_for_repo(
     agent_config: AgentConfig,
     example: RepoInstance,
     update_queue: multiprocessing.Queue,
-    branch: Optional[str] = None,
+    branch: str,
     override_previous_changes: bool = False,
     backend: str = "modal",
     log_dir: str = str(RUN_AGENT_LOG_DIR.resolve()),
@@ -87,10 +87,6 @@ def run_agent_for_repo(
         raise NotImplementedError(
             f"{agent_config.agent_name} is not implemented; please add your implementations in baselines/agents.py."
         )
-
-    # if branch_name is not provided, create a new branch name based on agent_config
-    if branch is None:
-        branch = args2string(agent_config)
 
     create_branch(local_repo, branch, example["base_commit"])
 
@@ -173,7 +169,7 @@ def run_agent_for_repo(
 
 
 def run_agent(
-    branch: str,
+    branch: Optional[str],
     override_previous_changes: bool,
     backend: str,
     agent_config_file: str,
@@ -208,6 +204,10 @@ def run_agent(
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
 
+    # if branch_name is not provided, create a new branch name based on agent_config
+    if branch is None:
+        branch = args2string(agent_config)
+
     with TerminalDisplay(len(filtered_dataset)) as display:
         not_started_repos = [
             cast(RepoInstance, example)["repo"].split("/")[-1]
@@ -231,6 +231,7 @@ def run_agent(
             agent_config.use_spec_info,
             agent_config.use_lint_info,
         )
+        display.update_branch_display(branch)
         with multiprocessing.Manager() as manager:
             update_queue = manager.Queue()
             with multiprocessing.Pool(processes=max_parallel_repos) as pool:
