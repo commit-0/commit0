@@ -179,8 +179,8 @@ def render_mds(subfolder="docs"):
         leaderboard[
             split
         ] = f"""\n\n## Leaderboard ({split})
-| Name | Repos Resolved (/{num_repos}) | Test Duration (s) | Date | Analysis | 
-|------|-------------------------|--------------------|----------|----| """
+| Name | Repos Resolved (/{num_repos}) | Test Duration (s) | Date | Analysis | Github | 
+|------|:-------------------------:|:--------------------:|:----------:|----|----| """
 
     for branch_name in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
         branch_name = os.path.basename(branch_name)
@@ -193,8 +193,8 @@ def render_mds(subfolder="docs"):
         submission_info = None
         submission_page = """# Submission Name: DISPLAYNAME_GOES_HERE (split: SPLIT_GOES_HERE)
 
-| Repository | Resolved | Pass Rate | Test Duration (s) | Analysis |
-|------------|---------|-----| -----|-----|"""
+| Repository | Resolved | Pass Rate | Test Duration (s) | Analysis | Github Link |
+|------------|---------|:-----:|:-----:|-----|-----|"""
         for repo_file in glob.glob(
             os.path.join(analysis_files_path, branch_name, "*.json")
         ):
@@ -206,9 +206,10 @@ def render_mds(subfolder="docs"):
             if submission_info is None:
                 submission_info = repo_metrics["submission_info"]
                 split = submission_info["split"]
-                # project_page_link = submission_info["project_page"]
+                project_page_link = submission_info["project_page"]
                 display_name = submission_info["display_name"]
                 submission_date = submission_info["submission_date"]
+                branch_name = submission_info["branch"]
                 submission_page = submission_page.replace(
                     "DISPLAYNAME_GOES_HERE", display_name
                 ).replace("SPLIT_GOES_HERE", split)
@@ -256,7 +257,7 @@ def render_mds(subfolder="docs"):
                     pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
                     duration = f"{pytest_info['duration']:.2f}"
             submission_page += f"""
-| {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | [Analysis](/{f'analysis_{branch_name}_{repo_name}'}) |"""
+| {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | [Analysis](/{f'analysis_{branch_name}_{repo_name}'}) | [Github]({project_page_link}/{repo_name}/tree/{branch_name}) |"""
             back_button = (
                 f"[back to {display_name} summary](/{f'analysis_{branch_name}'})\n\n"
             )
@@ -265,13 +266,14 @@ def render_mds(subfolder="docs"):
             ) as wf:
                 wf.write(back_button + submission_repo_page + patch_diff)
         analysis_link = f"[Analysis](/{f'analysis_{branch_name}'})"
-        # f"\n|[{display_name}]({project_page_link})|" \
+        github_link = f"[Github]({project_page_link})"
         leaderboard[split] += (
             f"\n|{display_name}|"
             f"{repos_resolved}|"
             f"{total_duration:.2f}|"
             f"{submission_date}|"
             f"{analysis_link}|"
+            f"{github_link}|"
         )
 
         back_button = f"[back to all submissions](/{f'analysis'})\n\n"
@@ -378,7 +380,7 @@ def main(args):
                 "display_name": "Reference (Gold)",
                 "submission_date": "NA",
                 "split": args.split,
-                "project_page": "https://commit-0.github.io",
+                "project_page": "https://github.com/commit-0",
             }
             json.dump(pytest_results, open(repo_metrics_output_file, "w"), indent=4)
 
@@ -400,9 +402,10 @@ def main(args):
                     except Exception as e:
                         print(f"{e}: when removing {subfolder}")
 
-        for submission in submission_dataset:
+        for submission in tqdm.tqdm(submission_dataset):
             # submission_details = {"submission_info": submission}
             branch_name = submission["branch"]
+            org_name = submission["org_name"]
             os.makedirs(os.path.join(analysis_files_path, branch_name), exist_ok=True)
             if not args.keep_previous_eval:
                 for repo_log_path in glob.glob(f"{os.getcwd()}/logs/pytest/*"):
@@ -412,9 +415,9 @@ def main(args):
                 repo_name = example["repo"].split("/")[-1]
                 if args.split != "all" and repo_name not in SPLIT[args.split]:
                     continue
-                clone_url = f"https://github.com/test-save-commit0/{repo_name}.git"
+                clone_url = f"https://github.com/{org_name}/{repo_name}.git"
                 clone_dir = os.path.abspath(
-                    os.path.join(analysis_files_path, "submission_repos", repo_name)
+                    os.path.join(analysis_files_path, "submission_repos", org_name, repo_name)
                 )
                 clone_repo(clone_url, clone_dir, branch_name, logger)
             # after successfully setup, write the commit0 dot file
@@ -424,7 +427,7 @@ def main(args):
                     "dataset_name": commit0_dataset_name,
                     "dataset_split": "test",
                     "repo_split": args.split,
-                    "base_dir": os.path.join(analysis_files_path, "submission_repos"),
+                    "base_dir": os.path.join(analysis_files_path, "submission_repos", org_name),
                 },
             )
             # run pytests
