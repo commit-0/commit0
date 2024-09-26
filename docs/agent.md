@@ -27,7 +27,7 @@ agent config aider
 ```
 
 Finally we run the underlying agent. This will create a display
-that shows the current progress of the agent. Specify the branch 
+that shows the current progress of the agent. Specify the branch
 you want to commit changes on.
 
 ```bash
