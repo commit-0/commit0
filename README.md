@@ -1,6 +1,17 @@
 # Commit0
 
-Commit0 is a from scratch AI coding challenge. Can you create a library from commit 0?
+<a href="https://commit-0.github.io/">Commit0</a> is a from scratch AI coding challenge. Can you create a library from commit 0?
+
+<p align="center">
+<img src="docs/arch.png" width="500px">
+</p>
+
+<p align="center">
+  <a href="https://commit-0.github.io/">
+    <img src="https://img.shields.io/badge/Read-Docs-green.svg"/>
+  </a>
+</p>
+
 
 The benchmark consists of 57 core Python libraries. The challenge is to rebuild these libraries and pass their unit tests. All libraries have:
 
@@ -23,6 +34,10 @@ pip install commit0
 Commit0 provides several commands to facilitate the process of cloning, building, testing, and evaluating repositories. Here's an overview of the available commands:
 
 ### Setup
+
+<p align=center>
+<img src="docs/commit0.gif" width="500px">
+</p>
 
 Use `commit0 setup [OPTIONS] REPO_SPLIT` to clone a repository split.
 Available options include:
