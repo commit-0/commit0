@@ -19,7 +19,7 @@ pass their unit tests.  All libraries have:
 Commit-0 is an interactive environment that makes it easy
 to design and test new agents. You can:
 
-* Efficiently run tests in isolated environemnts
+* Efficiently run tests in isolated environments
 * Distribute testing and development across cloud systems
 * Track and log all changes made throughout.
 
