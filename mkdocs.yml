@@ -6,7 +6,7 @@ nav:
   - Commit0: setupdist.md
   - Agent: agent.md
   - API: api.md
-  - Submission Analysis: analysis.md
+  - Leaderboard: analysis.md
 theme:
   name: material
   logo: "logo2.webp"
