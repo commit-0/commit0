@@ -22,10 +22,13 @@ dependencies = [
     "gitpython>=3.1.43",
     "pytest>=8.3.3",
 ]
-scripts = { commit0 = "commit0.__main__:main", agent = "agent.__main__:main" }
+
+[project.scripts]
+commit0 = "commit0.__main__:main"
+agent = "agent.__main__:main"
 
 [tool.pyright]
-include = ["**/commit0", "**/agent"]
+include = ["**/commit0"]
 ignore = ["**/docs", "**/logs", "**/repos"]
 venvPath = "."
 venv = ".venv"
