@@ -12,7 +12,7 @@ dependencies = [
     "pre-commit>=3.8.0",
     "PyMuPDF>=1.24.5",
     "aider-chat>=0.56.0",
-    "modal>=0.64.95",
+    "modal==0.64.95",
     "typer>=0.12.0",
     "tenacity>=8.5.0",
     "datasets>=3.0.0",
