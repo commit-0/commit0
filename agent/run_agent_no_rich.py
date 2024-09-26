@@ -130,6 +130,7 @@ def run_agent_for_repo(
                     lint_cmd,
                     target_edit_files,
                     test_log_dir,
+                    test_first=True,
                 )
                 # cost = agent_return.last_cost
         else:

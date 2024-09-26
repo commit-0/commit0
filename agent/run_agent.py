@@ -139,6 +139,7 @@ def run_agent_for_repo(
                     lint_cmd,
                     target_edit_files,
                     test_log_dir,
+                    test_first=True,
                 )
                 # after running the agent, update the money display
                 update_queue.put(

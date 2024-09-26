@@ -62,6 +62,7 @@ class AiderAgents(Agents):
         lint_cmd: str,
         fnames: list[str],
         log_dir: Path,
+        test_first: bool = False,
     ) -> AgentReturn:
         """Start aider agent"""
         if test_cmd:
@@ -111,7 +112,14 @@ class AiderAgents(Agents):
         coder.stream = True
 
         # Run the agent
-        coder.run(message)
+        if test_first:
+            test_errors = coder.commands.cmd_test(test_cmd)
+            if test_errors:
+                coder.run(test_errors)
+        else:
+            coder.run(message)
+
+        # #### TMP
 
         # #### TMP
         # import time
