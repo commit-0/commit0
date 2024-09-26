@@ -1,6 +1,11 @@
 
-|  | Name   |  Summary |  |
-|--|--------|----------|--|
-||[reference](/analysis_reference)|3628 / 33 ; duration: 18.66s||
-||[test-save-commit0](/analysis_test-save-commit0)|0 / 0 ; duration: 0.00s||
-||[model_name-claude-3-5-sonnet-20240620__run_tests-0__use_lint_info-0__use_spec_info-0](/analysis_model_name-claude-3-5-sonnet-20240620__run_tests-0__use_lint_info-0__use_spec_info-0)|0 / 0 ; duration: 0.00s||
+
+## Leaderboard (lite)
+|  | Name | Repos Resolved /10 | Test Duration (s) | Date | Analysis | |
+|--|------|-----------|------|----------|------|---|--------| |
+||[Reference (Gold)](commit-0.github.io)|10|21.13NA|[Analysis](analysis_reference)||
+||[Claude Sonnet - Base](commit-0.github.io)|7|14.8509/25/2024|[Analysis](analysis_baseline)||
+
+## Leaderboard (all)
+|  | Name | Repos Resolved /56 | Test Duration (s) | Date | Analysis | |
+|--|------|-----------|------|----------|------|---|--------| |
