@@ -39,9 +39,12 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
         }
         report_file_path = os.path.join(path_to_logs, pytest_hash, "report.json")
         if not os.path.exists(report_file_path):
-            reason_for_failure = open(
-                os.path.join(path_to_logs, pytest_hash, "test_output.txt")
-            ).read()
+            if os.path.exists(os.path.join(path_to_logs, pytest_hash, "test_output.txt")):
+                reason_for_failure = open(
+                    os.path.join(path_to_logs, pytest_hash, "test_output.txt")
+                ).read()
+            else: 
+                reason_for_failure = "Unknown failure."
             pytest_info[testname]["failed_to_run"] = reason_for_failure
             return pytest_info
         pytest_report = json.load(open(report_file_path))
@@ -56,7 +59,7 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
         if "passed" not in pytest_summary:
             pytest_summary["passed"] = 0
         for test in pytest_report["tests"]:
-            if test["outcome"] == "passed":
+            if test["outcome"] in {"passed", "skipped"}:
                 continue
             if "longrepr" in test:
                 failure_string = test["longrepr"]
@@ -85,17 +88,6 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
 
 
 def get_coverage_info(path_to_logs, repo_name, branch_name):
-    # coverage_fp = open(os.path.join(path_to_logs, pytest_hash, "coverage.json"))
-    # for filename, file_coverage in json.load(coverage_fp)["files"].items():
-    #     if not any(relevant_function.startswith(filename) for relevant_function in relevant_functions):
-    #         continue
-    #     for funcname, func_coverage in file_coverage["functions"].items():
-    #         if f"{filename}::{funcname}" not in relevant_functions: continue
-    #         pycov_info[testname][f"{filename}::{funcname}"] = {
-    #                 "implementation": submission_info["function_impls"][f"{filename}::{funcname}"],
-    #                 "executed_lines": func_coverage["executed_lines"],
-    #                 "executed_branches": func_coverage["executed_branches"]
-    #         }
     raise NotImplementedError
 
 
@@ -182,91 +174,80 @@ def render_mds(subfolder="docs"):
 | Name | Repos Resolved (/{num_repos}) | Test Duration (s) | Date | Analysis | Github | 
 |------|:-------------------------:|:--------------------:|:----------:|----|----| """
 
-    for branch_name in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
-        branch_name = os.path.basename(branch_name)
-        if branch_name in {"blank", "repos", "submission_repos"}:
+    for org_path in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
+        org_name = os.path.basename(org_path)
+        if org_name in {"blank", "repos", "submission_repos"}:
             continue
         repos_resolved = 0
         # cum_passed = 0
         total_duration = 0.0
-        # TODO better way to have submission info loaded up before get into repos...
-        submission_info = None
-        submission_page = """# Submission Name: **DISPLAYNAME_GOES_HERE** (split: SPLIT_GOES_HERE)
+        for branch_path in glob.glob(os.path.join(org_path, "*.json")):
+            branch_metrics = json.load(open(branch_path))
+            submission_info = branch_metrics["submission_info"]
+            split = submission_info["split"]
+            org_name = submission_info["org_name"]
+            project_page_link = submission_info["project_page"]
+            display_name = submission_info["display_name"]
+            submission_date = submission_info["submission_date"]
+            branch_name = submission_info["branch"]
+            submission_page = f"""# Submission Name: **{display_name}** (split: {split})
 
 | Repository | Resolved | Pass Rate | Test Duration (s) | Analysis | Github Link |
 |------------|---------|:-----:|:-----:|-----|-----|"""
-        for repo_file in glob.glob(
-            os.path.join(analysis_files_path, branch_name, "*.json")
-        ):
-            repo_metrics_output_file = os.path.join(
-                analysis_files_path, branch_name, repo_file
-            )
-            repo_metrics = json.load(open(repo_metrics_output_file))
-            repo_name = os.path.basename(repo_file[: -len(".json")])
-            if submission_info is None:
-                submission_info = repo_metrics["submission_info"]
-                split = submission_info["split"]
-                org_name = submission_info["org_name"]
-                project_page_link = submission_info["project_page"]
-                display_name = submission_info["display_name"]
-                submission_date = submission_info["submission_date"]
-                branch_name = submission_info["branch"]
-                submission_page = submission_page.replace(
-                    "DISPLAYNAME_GOES_HERE", display_name
-                ).replace("SPLIT_GOES_HERE", split)
-            submission_repo_page = (
-                f"# **{display_name}**: {repo_name}"
-            )
-            for pytest_group, pytest_info in repo_metrics.items():
-                if pytest_group == "submission_info":
-                    continue
-                pytest_group = os.path.basename(pytest_group.strip("/"))
-                patch_diff = (
-                    f"""\n\n## Patch diff\n```diff\n{pytest_info['patch_diff']}```"""
+
+            for repo_name, repo_pytest_results in branch_metrics.items():
+                if repo_name == "submission_info": continue
+                submission_repo_page = (
+                    f"# **{display_name}**: {repo_name}"
                 )
-                if "failed_to_run" in pytest_info:
-                    submission_repo_page += f"""\n## Failed to run pytests\n```\n{pytest_info['failed_to_run']}\n```"""
-                    resolved = False
-                    pytest_details = "Pytest failed"
-                    duration = "Failed."
-                else:
-                    submission_repo_page += """\n## Pytest Summary
+                for pytest_group, pytest_info in repo_pytest_results.items():
+                    pytest_group = os.path.basename(pytest_group.strip("/"))
+                    patch_diff = (
+                        f"""\n\n## Patch diff\n```diff\n{pytest_info['patch_diff']}```"""
+                    )
+                    if "failed_to_run" in pytest_info:
+                        submission_repo_page += f"""\n## Failed to run pytests for test `{pytest_group}`\n```\n{pytest_info['failed_to_run']}\n```"""
+                        resolved = False
+                        pytest_details = "Pytest failed"
+                        duration = "Failed."
+                    else:
+                        submission_repo_page += f"""\n## Pytest Summary for test `{pytest_group}`
 | status   | count |
 |:---------|:-----:|
 """
-                    total_duration += pytest_info["duration"]
-                    # cum_passed += pytest_info["summary"]["passed"]
-                    for category, count in pytest_info["summary"].items():
-                        if category not in {"duration"}:
-                            submission_repo_page += f"""| {category} | {count} |\n"""
-                        else:
-                            submission_repo_page += (
-                                f"""| {category} | {float(count):.2f}s |\n"""
-                            )
+                        total_duration += pytest_info["duration"]
+                        # cum_passed += pytest_info["summary"]["passed"]
+                        for category, count in pytest_info["summary"].items():
+                            if category not in {"duration"}:
+                                submission_repo_page += f"""| {category} | {count} |\n"""
+                            else:
+                                submission_repo_page += (
+                                    f"""| {category} | {float(count):.2f}s |\n"""
+                                )
 
-                    submission_repo_page += "\n## Failed pytest:\n\n"
-                    for testname, failure in pytest_info["failures"].items():
-                        shortened_testname = os.path.basename(testname)
-                        submission_repo_page += (
-                            f"### {shortened_testname}\n\n<details><summary> <pre>{shortened_testname}"
-                            f"</pre></summary><pre>\n{failure['failure_string']}\n</pre>\n</details>\n"
+                        submission_repo_page += "\n## Failed pytests:\n\n"
+                        for testname, failure in pytest_info["failures"].items():
+                            shortened_testname = os.path.basename(testname)
+                            submission_repo_page += (
+                                f"### {shortened_testname}\n\n<details><summary> <pre>{shortened_testname}"
+                                f"</pre></summary><pre>\n{failure['failure_string']}\n</pre>\n</details>\n"
+                            )
+                        resolved = ("failed" not in pytest_info["summary"]) or (
+                            pytest_info["summary"]["failed"] == 0
                         )
-                    resolved = ("failed" not in pytest_info["summary"]) or (
-                        pytest_info["summary"]["failed"] == 0
-                    )
-                    repos_resolved += 1
-                    pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
-                    duration = f"{pytest_info['duration']:.2f}"
-            github_hyperlink = f"{project_page_link}/{repo_name}" if branch_name == "reference" else f"{project_page_link}/{repo_name}/tree/{branch_name}"
-            submission_page += f"""
+                        repos_resolved += int(resolved)
+                        pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
+                        duration = f"{pytest_info['duration']:.2f}"
+                github_hyperlink = f"{project_page_link}/{repo_name}" if branch_name == "reference" else f"{project_page_link}/{repo_name}/tree/{branch_name}"
+                submission_page += f"""
 | {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | [Analysis](/{f'analysis_{org_name}_{branch_name}_{repo_name}'}) | [Github]({github_hyperlink}) |"""
-            back_button = (
-                f"[back to {display_name} summary](/{f'analysis_{org_name}_{branch_name}'})\n\n"
-            )
-            with open(
-                os.path.join(subfolder, f"analysis_{org_name}_{branch_name}_{repo_name}.md"), "w"
-            ) as wf:
-                wf.write(back_button + submission_repo_page + patch_diff)
+                back_button = (
+                    f"[back to {display_name} summary](/{f'analysis_{org_name}_{branch_name}'})\n\n"
+                )
+                with open(
+                    os.path.join(subfolder, f"analysis_{org_name}_{branch_name}_{repo_name}.md"), "w"
+                ) as wf:
+                    wf.write(back_button + submission_repo_page + patch_diff)
         analysis_link = f"[Analysis](/{f'analysis_{org_name}_{branch_name}'})"
         github_link = f"[Github]({project_page_link})"
         leaderboard[split] += (
@@ -355,7 +336,20 @@ def main(args):
                 f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
             )
         branch_name = "reference"
-        os.makedirs(os.path.join(analysis_files_path, branch_name), exist_ok=True)
+        org_name = "commit0"
+        submission_metrics_output_file = os.path.join(
+            analysis_files_path, org_name, f"{branch_name}.json"
+        )
+        submission_details = {"submission_info": {
+            "org_name": org_name,
+            "branch": branch_name,
+            "display_name": "Reference (Gold)",
+            "submission_date": "NA",
+            "split": args.split,
+            "project_page": "https://github.com/commit-0",
+        }}
+
+        os.makedirs(os.path.join(analysis_files_path, org_name), exist_ok=True)
         if not args.keep_previous_eval:
             for repo_log_path in glob.glob(f"{os.getcwd()}/logs/pytest/*"):
                 if os.path.exists(os.path.join(repo_log_path, branch_name)):
@@ -364,40 +358,26 @@ def main(args):
             "commit0 evaluate --reference "
             f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
         )
-
         # get coverage and pytest info for each repo
         for example in dataset:
             repo_name = example["repo"].split("/")[-1]
             if args.split != "all" and repo_name not in SPLIT[args.split]:
                 continue
 
-            repo_metrics_output_file = os.path.join(
-                analysis_files_path, branch_name, f"{repo_name}.json"
-            )
-
             path_to_logs = f"{os.getcwd()}/logs/pytest/{repo_name}/{branch_name}"
             pytest_results = get_pytest_info(path_to_logs, repo_name, branch_name)
-            pytest_results["submission_info"] = {
-                "org_name": "gold",
-                "branch": "reference",
-                "display_name": "Reference (Gold)",
-                "submission_date": "NA",
-                "split": args.split,
-                "project_page": "https://github.com/commit-0",
-            }
-            json.dump(pytest_results, open(repo_metrics_output_file, "w"), indent=4)
+            submission_details[repo_name] = pytest_results
+        json.dump(submission_details, open(submission_metrics_output_file, "w"), indent=4)
+        print(f"Saved pytest info to {submission_metrics_output_file}")
 
     if args.analyze_submissions:
-        commit0_dot_file_path = os.path.join(
-            analysis_files_path, "submission_repos", ".commit0.yaml"
-        )
         if not args.keep_previous_eval:
             for subfolder in glob.glob(os.path.join(analysis_files_path, "*")):
                 if os.path.basename(subfolder.rstrip("/")) not in {
                     "blank",
-                    "reference",
                     "repos",
                     "submission_repos",
+                    "commit0"
                 }:
                     try:
                         print(f"Clearing {subfolder}")
@@ -406,10 +386,17 @@ def main(args):
                         print(f"{e}: when removing {subfolder}")
 
         for submission in tqdm.tqdm(submission_dataset):
-            # submission_details = {"submission_info": submission}
+            submission_details = {"submission_info": submission}
             branch_name = submission["branch"]
             org_name = submission["org_name"]
-            os.makedirs(os.path.join(analysis_files_path, branch_name), exist_ok=True)
+            submission_metrics_output_file = os.path.join(
+                analysis_files_path, org_name, f"{branch_name}.json"
+            )
+            os.makedirs(os.path.join(analysis_files_path, org_name), exist_ok=True)
+            commit0_dot_file_path = os.path.join(
+                analysis_files_path, "submission_repos", org_name, ".commit0.yaml"
+            )
+            print("commit0_dot_file_path", commit0_dot_file_path)
             if not args.keep_previous_eval:
                 for repo_log_path in glob.glob(f"{os.getcwd()}/logs/pytest/*"):
                     if os.path.exists(os.path.join(repo_log_path, branch_name)):
@@ -443,16 +430,11 @@ def main(args):
                 if args.split != "all" and repo_name not in SPLIT[args.split]:
                     continue
 
-                repo_metrics_output_file = os.path.join(
-                    analysis_files_path, branch_name, f"{repo_name}.json"
-                )
-
                 path_to_logs = f"{os.getcwd()}/logs/pytest/{repo_name}/{branch_name}"
                 pytest_results = get_pytest_info(path_to_logs, repo_name, branch_name)
-                # submission_details.update(pytest_results)
-                pytest_results["submission_info"] = submission
-                json.dump(pytest_results, open(repo_metrics_output_file, "w"), indent=4)
-                # json.dump(submission_details, open(repo_metrics_output_file, "w"), indent=4)
+                submission_details[repo_name] = pytest_results
+            json.dump(submission_details, open(submission_metrics_output_file, "w"), indent=4)
+            print(f"Saved pytest info to {submission_metrics_output_file}")
 
     if not args.keep_previous_eval:
         for analysis_file in glob.glob("docs/analysis*.md"):
