@@ -25,7 +25,7 @@ dependencies = [
 scripts = { commit0 = "commit0.__main__:main", agent = "agent.__main__:main" }
 
 [tool.pyright]
-include = ["**/commit0"]
+include = ["**/commit0", "**/agent"]
 ignore = ["**/docs", "**/logs", "**/repos"]
 venvPath = "."
 venv = ".venv"
