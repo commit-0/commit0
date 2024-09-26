@@ -453,7 +453,6 @@ def main(args):
                 pytest_results["submission_info"] = submission
                 json.dump(pytest_results, open(repo_metrics_output_file, "w"), indent=4)
                 # json.dump(submission_details, open(repo_metrics_output_file, "w"), indent=4)
-            break
 
     if not args.keep_previous_eval:
         for analysis_file in glob.glob("docs/analysis*.md"):
