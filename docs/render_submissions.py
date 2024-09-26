@@ -47,6 +47,10 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
         pytest_report = json.load(open(report_file_path))
         pytest_summary = pytest_report["summary"]
         pytest_info[testname]["summary"] = pytest_summary
+        if pytest_summary["collected"] < 5: 
+            reason_for_failure = "Pytest collection failure."
+            pytest_info[testname]["failed_to_run"] = reason_for_failure
+            return pytest_info
         pytest_info[testname]["duration"] = pytest_report["duration"]
         if "passed" not in pytest_summary:
             pytest_summary["passed"] = 0
@@ -173,8 +177,8 @@ def render_mds(subfolder="docs"):
     for split in tqdm.tqdm(["lite", "all"]):
         num_repos = len(SPLIT[split])
         leaderboard[split] = f"""\n\n## Leaderboard ({split})
-|  | Name | Repos Resolved /{num_repos} | Test Duration (s) | Date | Analysis | |
-|--|------|-------------------------|--------------------|----------|----| |"""
+| Name | Repos Resolved (/{num_repos}) | Test Duration (s) | Date | Analysis | 
+|------|-------------------------|--------------------|----------|----| """
 
     for branch_name in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
         branch_name = os.path.basename(branch_name)
@@ -187,8 +191,8 @@ def render_mds(subfolder="docs"):
         submission_info = None
         submission_page = """# Submission Name: DISPLAYNAME_GOES_HERE (split: SPLIT_GOES_HERE)
 
-| | Repository | Resolved | Pass Rate | Test Duration (s) | Analysis | |
-|-|------------|---------|-----| -----|-----||"""
+| Repository | Resolved | Pass Rate | Test Duration (s) | Analysis | 
+|------------|---------|-----| -----|-----|"""
         for repo_file in glob.glob(
             os.path.join(analysis_files_path, branch_name, "*.json")
         ):
@@ -197,7 +201,6 @@ def render_mds(subfolder="docs"):
             )
             repo_metrics = json.load(open(repo_metrics_output_file))
             repo_name = os.path.basename(repo_file[: -len(".json")])
-            submission_repo_page = f"# Submission Name: {branch_name}\n# Repository: {repo_name}"
             if submission_info is None:
                 submission_info = repo_metrics["submission_info"]
                 split = submission_info["split"]
@@ -205,6 +208,7 @@ def render_mds(subfolder="docs"):
                 display_name = submission_info["display_name"]
                 submission_date = submission_info['submission_date']
                 submission_page = submission_page.replace("DISPLAYNAME_GOES_HERE", display_name).replace("SPLIT_GOES_HERE", split)
+            submission_repo_page = f"# Submission Name: {display_name}\n# Repository: {repo_name}"
             for pytest_group, pytest_info in repo_metrics.items():
                 if pytest_group == "submission_info": continue
                 pytest_group = os.path.basename(pytest_group.strip("/"))
@@ -217,7 +221,7 @@ def render_mds(subfolder="docs"):
                     pytest_details = "Pytest failed"
                     duration = "Failed."
                 else:
-                    submission_repo_page += f"""\n## Pytest Summary: {pytest_group}
+                    submission_repo_page += f"""\n## Pytest Summary
 | status   | count |
 |:---------|:-----:|
 """
@@ -229,7 +233,7 @@ def render_mds(subfolder="docs"):
                         else:
                             submission_repo_page += f"""| {category} | {float(count):.2f}s |\n"""
 
-                    submission_repo_page += f"\n## Failed pytest outputs: {pytest_group}\n\n"
+                    submission_repo_page += "\n## Failed pytest outputs\n\n"
                     for testname, failure in pytest_info["failures"].items():
                         shortened_testname = os.path.basename(testname)
                         submission_repo_page += (
@@ -241,8 +245,8 @@ def render_mds(subfolder="docs"):
                     pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
                     duration = f"{pytest_info['duration']:.2f}"
             submission_page +=f"""
-| | {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | (Analysis)(/{f'analysis_{branch_name}_{repo_name}'}) | |"""
-            back_button = f"[back to {branch_name} summary](/{f'analysis_{branch_name}'})\n\n"
+| {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | [Analysis](/{f'analysis_{branch_name}_{repo_name}'}) |"""
+            back_button = f"[back to {display_name} summary](/{f'analysis_{branch_name}'})\n\n"
             with open(
                 os.path.join(subfolder, f"analysis_{branch_name}_{repo_name}.md"), "w"
             ) as wf:
@@ -252,11 +256,12 @@ def render_mds(subfolder="docs"):
                     + patch_diff
                 )
         analysis_link = f"[Analysis](/{f'analysis_{branch_name}'})"
-        leaderboard[split] += f"\n||[{display_name}]({project_page_link})|" \
+        # f"\n|[{display_name}]({project_page_link})|" \
+        leaderboard[split] += f"\n|{display_name}|" \
                     f"{repos_resolved}|" \
                     f"{total_duration:.2f}|" \
                     f"{submission_date}|" \
-                    f"{analysis_link}||"
+                    f"{analysis_link}|"
 
 
         back_button = f"[back to all submissions](/{f'analysis'})\n\n"
@@ -358,7 +363,7 @@ def main(args):
 
             path_to_logs = f"{os.getcwd()}/logs/pytest/{repo_name}/{branch_name}"
             pytest_results = get_pytest_info(path_to_logs, repo_name, branch_name)
-            pytest_results["submission_info"] = {"branch": "reference", "display_name": "Reference (Gold)", "submission_date": "NA", "split": args.split, "project_page": "commit-0.github.io"}
+            pytest_results["submission_info"] = {"branch": "reference", "display_name": "Reference (Gold)", "submission_date": "NA", "split": args.split, "project_page": "https://commit-0.github.io"}
             json.dump(pytest_results, open(repo_metrics_output_file, "w"), indent=4)
 
     if args.analyze_submissions:
