@@ -8,7 +8,7 @@
 Commit-0 is a from scratch AI coding challenge.
 Can you create a library from commit 0?
 
-The benchmark consists of 57 core Python libraries.
+The benchmark consists of 54 core Python libraries.
 The challenge is to rebuild these libraries and
 pass their unit tests.  All libraries have:
 
