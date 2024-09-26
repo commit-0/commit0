@@ -37,9 +37,6 @@ packages = ["commit0", "agent"]
 [project.optional-dependencies]
 agent = []
 
-[tool.hatch.build.targets.wheel]
-packages = ["commit0", "agent"]
-
 [project.urls]
 Homepage = "https://commit-0.github.io/"
 Repository = "https://github.com/commit-0/commit0"
