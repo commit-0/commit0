@@ -120,11 +120,11 @@ class TerminalDisplay:
         self.layout["progress"]["pbar"].update(
             Panel(self.overall_progress, title="Overall Progress", border_style="blue")
         )
-        self.time_display = Text("Time Taken So Far: 0s", justify="center")
+        self.time_display = Text("0s", justify="center")
         self.layout["progress"]["time"].update(
-            Panel(self.time_display, title="Time", border_style="blue")
+            Panel(self.time_display, title="Time Taken", border_style="blue")
         )
-        self.money_display = Text("Money Spent So Far: $0.00", justify="center")
+        self.money_display = Text("$0.00", justify="center")
         self.layout["progress"]["money"].update(
             Panel(self.money_display, title="$$$$", border_style="blue")
         )
@@ -222,9 +222,9 @@ class TerminalDisplay:
         else:
             time_str = f"{seconds:02d}s"
         self.total_time_spent = time_in_seconds
-        self.time_display = Text(f"Time Spent So Far: {time_str}", justify="center")
+        self.time_display = Text(f"{time_str}", justify="center")
         self.layout["progress"]["time"].update(
-            Panel(self.time_display, title="Time", border_style="blue")
+            Panel(self.time_display, title="Time Taken", border_style="blue")
         )
 
     def update_backend_display(self, backend: str) -> None:
@@ -251,7 +251,7 @@ class TerminalDisplay:
             sum(repo_money.values()) for repo_money in self.repo_money_spent.values()
         )
         self.money_display = Text(
-            f"Money Spent So Far: ${total_money_spent_for_all_repos:.2f}",
+            f"${total_money_spent_for_all_repos:.2f}",
             justify="center",
         )
         self.layout["progress"]["money"].update(

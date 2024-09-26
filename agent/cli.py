@@ -190,52 +190,28 @@ def run(
         5,
         help="Display the agent progress",
     ),
-) -> None:
-    """Run the agent on the repository."""
-    run_agent(
-        branch,
-        override_previous_changes,
-        backend,
-        agent_config_file,
-        log_dir,
-        max_parallel_repos,
-        display_repo_progress_num,
-    )
-
-
-@agent_app.command()
-def run_test_no_rich(
-    branch: str = typer.Argument(
-        ...,
-        help="Branch name of current run",
-    ),
-    override_previous_changes: bool = typer.Option(
-        False,
-        help="If override the previous agent changes on `branch` or run the agent continuously on the new changes",
-    ),
-    backend: str = typer.Option(
-        "modal",
-        help="Test backend to run the agent on, ignore this option if you are not adding `test` option to agent",
-    ),
-    agent_config_file: str = typer.Option(
-        ".agent.yaml",
-        help="Path to the agent config file",
-    ),
-    log_dir: str = typer.Option(
-        str(RUN_AGENT_LOG_DIR.resolve()),
-        help="Log directory to store the logs",
-    ),
-    max_parallel_repos: int = typer.Option(
-        1,
-        help="Maximum number of repositories for agent to run in parallel",
+    show_rich_progress: bool = typer.Option(
+        True,
+        help="Display the agent progress with rich",
     ),
 ) -> None:
     """Run the agent on the repository."""
-    run_agent_no_rich(
-        branch,
-        override_previous_changes,
-        backend,
-        agent_config_file,
-        log_dir,
-        max_parallel_repos,
-    )
+    if show_rich_progress:
+        run_agent(
+            branch,
+            override_previous_changes,
+            backend,
+            agent_config_file,
+            log_dir,
+            max_parallel_repos,
+            display_repo_progress_num,
+        )
+    else:
+        run_agent_no_rich(
+            branch,
+            override_previous_changes,
+            backend,
+            agent_config_file,
+            log_dir,
+            max_parallel_repos,
+        )
