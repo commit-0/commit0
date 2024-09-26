@@ -164,7 +164,7 @@ def config(
 def run(
     branch: str = typer.Argument(
         ...,
-        help="Branch name of current run",
+        help="Branch for the agent to commit changes",
     ),
     override_previous_changes: bool = typer.Option(
         False,

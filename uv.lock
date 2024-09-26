@@ -421,7 +421,7 @@ wheels = [
 
 [[package]]
 name = "commit0"
-version = "0.0.1"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "aider-chat" },
@@ -447,7 +447,7 @@ requires-dist = [
     { name = "fastcore", specifier = ">=1.7.8" },
     { name = "ghapi", specifier = ">=1.0.6" },
     { name = "gitpython", specifier = ">=3.1.43" },
-    { name = "modal", specifier = ">=0.64.95" },
+    { name = "modal", specifier = "==0.64.95" },
     { name = "pre-commit", specifier = ">=3.8.0" },
     { name = "pymupdf", specifier = ">=1.24.5" },
     { name = "pytest", specifier = ">=8.3.3" },
