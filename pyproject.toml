@@ -28,13 +28,19 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
+[project.optional-dependencies]
+agent = []
+
+[tool.hatch.build.targets.wheel]
+packages = ["commit0", "agent"]
+
 [project.urls]
 Homepage = "https://commit-0.github.io/"
 Repository = "https://github.com/commit-0/commit0"
 Issues = "https://github.com/commit-0/commit0/issues"
 
 [tool.pyright]
-include = ["**/commit0"]
+include = ["**/commit0", "**/agent"]
 ignore = ["**/docs", "**/logs", "**/repos"]
 venvPath = "."
 venv = ".venv"
