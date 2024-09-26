@@ -164,7 +164,7 @@ def get_blank_repo_metrics(
 
 
 leaderboard_header = """\n\n## Leaderboard ({split})
-| Name | Repos Resolved (/{num_repos}) | Total Tests Passed (/{total_num_tests}) Test Duration (s) | Date | Analysis | Github | 
+| Name | Repos Resolved (/{num_repos}) | Total Tests Passed (/{total_num_tests}) Test Duration (s) | Date | Analysis | Github |
 |------|:-------------------------:|:--------------------:|:--------------------:|:----------:|----|----| """
 
 submission_table_header = """# Submission Name: **{display_name}** (split: {split})
