@@ -246,7 +246,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
                     submission_page = submission_table_header.format(
                         display_name=display_name, split=split
                     ) + (
-                        f"| {repo_name} | No; Failed to clone. | - | - | "
+                        f"\n| {repo_name} | No; Failed to clone. | - | - | "
                         f"[Analysis](/{f'analysis_{org_name}_{branch_name}_{repo_name}'}) | "
                         f"[Github]({github_hyperlink}) |"
                     )
@@ -331,7 +331,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
 
     leaderboard_filepath = os.path.join(subfolder, "analysis.md")
     with open(leaderboard_filepath, "w") as wf:
-        wf.write(leaderboard["lite"] + leaderboard["all"])
+        wf.write(leaderboard["lite"] + "\n\n" + leaderboard["all"])
 
 
 def get_args():
