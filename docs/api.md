@@ -128,7 +128,7 @@ Available options include:
 
 | Argument | Type | Description | Default |
 |----------|------|-------------|---------|
-| `branch` | str | Branch to run the agent on, you can specific the name of the branch | |
+| `branch` | str | Branch for the agent to commit changes | |
 | `--backend` | str | Test backend to run the agent on, ignore this option if you are not adding `run_tests` option to agent. | `modal` |
 | `--log-dir` | str | Log directory to store the logs. | `logs/aider` |
 | `--max-parallel-repos` | int | Maximum number of repositories for agent to run in parallel. Running in sequential if set to 1. | `1` |
