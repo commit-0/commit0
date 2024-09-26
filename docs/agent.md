@@ -42,6 +42,6 @@ Refer to `class Agents` in `agent/agents.py`. You can design your own agent by i
 
 
 * Aider automatically retries certain API errors. For details, see [here](https://github.com/paul-gauthier/aider/blob/75e1d519da9b328b0eca8a73ee27278f1289eadb/aider/sendchat.py#L17).
-* When increasing --max-parallel-repos, be mindful of aider's [60-second retry timeout](https://github.com/paul-gauthier/aider/blob/75e1d519da9b328b0eca8a73ee27278f1289eadb/aider/sendchat.py#L39). Set this value according to your API tier to avoid RateLimitErrors stopping processes.
+* When increasing `--max-parallel-repos`, be mindful of aider's [60-second retry timeout](https://github.com/paul-gauthier/aider/blob/75e1d519da9b328b0eca8a73ee27278f1289eadb/aider/sendchat.py#L39). Set this value according to your API tier to avoid RateLimitErrors stopping processes.
 * Currently, agent will skip file with more than 1500 lines. See `agent/agent_utils.py#L199` for details.
 * Running a full `all` commit0 split costs approximately $100 with Claude Sonnet 3.5.
