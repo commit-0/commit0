@@ -174,7 +174,7 @@ def render_mds(subfolder="docs"):
         num_repos = len(SPLIT[split])
         leaderboard[split] = f"""\n\n## Leaderboard ({split})
 |  | Name | Repos Resolved /{num_repos} | Test Duration (s) | Date | Analysis | |
-|--|------|-----------|------|----------|------|---|--------| |"""
+|--|------|-------------------------|--------------------|----------|----| |"""
 
     for branch_name in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
         branch_name = os.path.basename(branch_name)
@@ -185,7 +185,7 @@ def render_mds(subfolder="docs"):
         total_duration = 0.
         # TODO better way to have submission info loaded up before get into repos...
         submission_info = None
-        submission_page = """# Submission Name: DISPLAYNAME_GOES_HERE (SPLIT_GOES_HERE)
+        submission_page = """# Submission Name: DISPLAYNAME_GOES_HERE (split: SPLIT_GOES_HERE)
 
 | | Repository | Resolved | Pass Rate | Test Duration (s) | Analysis | |
 |-|------------|---------|-----| -----|-----||"""
@@ -241,8 +241,8 @@ def render_mds(subfolder="docs"):
                     pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
                     duration = f"{pytest_info['duration']:.2f}"
             submission_page +=f"""
-| | {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | {f'analysis_{branch_name}_{repo_name}'} | |"""
-            back_button = f"[back to {branch_name} summary]({f'analysis_{branch_name}'})\n\n"
+| | {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | (Analysis)(/{f'analysis_{branch_name}_{repo_name}'}) | |"""
+            back_button = f"[back to {branch_name} summary](/{f'analysis_{branch_name}'})\n\n"
             with open(
                 os.path.join(subfolder, f"analysis_{branch_name}_{repo_name}.md"), "w"
             ) as wf:
@@ -251,15 +251,15 @@ def render_mds(subfolder="docs"):
                     + submission_repo_page
                     + patch_diff
                 )
-        analysis_link = f"[Analysis]({f'analysis_{branch_name}'})"
+        analysis_link = f"[Analysis](/{f'analysis_{branch_name}'})"
         leaderboard[split] += f"\n||[{display_name}]({project_page_link})|" \
                     f"{repos_resolved}|" \
-                    f"{total_duration:.2f}" \
+                    f"{total_duration:.2f}|" \
                     f"{submission_date}|" \
                     f"{analysis_link}||"
 
 
-        back_button = f"[back to all submissions]({f'analysis'})\n\n"
+        back_button = f"[back to all submissions](/{f'analysis'})\n\n"
         with open(os.path.join(subfolder, f"analysis_{branch_name}.md"), "w") as wf:
             wf.write(back_button + "\n" + submission_page)
 
