@@ -75,7 +75,9 @@ def main(
             origin.push(refspec=f"{branch}:{branch}")
             logger.info(f"Pushed to {github_repo_url} on branch {branch}")
         except Exception as e:
-            raise Exception(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
+            logger.error(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
+            continue
+            # raise Exception(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
 
 
 __all__ = []
