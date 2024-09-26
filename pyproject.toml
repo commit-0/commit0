@@ -25,6 +25,7 @@ dependencies = [
 
 [project.scripts]
 commit0 = "commit0.__main__:main"
+agent = "agent.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["commit0", "agent"]
