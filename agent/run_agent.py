@@ -4,7 +4,6 @@ import multiprocessing
 from datasets import load_dataset
 from git import Repo
 from agent.agent_utils import (
-    args2string,
     create_branch,
     get_message,
     get_target_edit_files,
@@ -48,7 +47,7 @@ def run_agent_for_repo(
     agent_config: AgentConfig,
     example: RepoInstance,
     update_queue: multiprocessing.Queue,
-    branch: Optional[str] = None,
+    branch: str,
     override_previous_changes: bool = False,
     backend: str = "modal",
     log_dir: str = str(RUN_AGENT_LOG_DIR.resolve()),
@@ -88,9 +87,9 @@ def run_agent_for_repo(
             f"{agent_config.agent_name} is not implemented; please add your implementations in baselines/agents.py."
         )
 
-    # if branch_name is not provided, create a new branch name based on agent_config
-    if branch is None:
-        branch = args2string(agent_config)
+    # # if branch_name is not provided, create a new branch name based on agent_config
+    # if branch is None:
+    #     branch = args2string(agent_config)
 
     create_branch(local_repo, branch, example["base_commit"])
 
@@ -231,6 +230,7 @@ def run_agent(
             agent_config.use_spec_info,
             agent_config.use_lint_info,
         )
+        display.update_branch_display(branch)
         with multiprocessing.Manager() as manager:
             update_queue = manager.Queue()
             with multiprocessing.Pool(processes=max_parallel_repos) as pool:
