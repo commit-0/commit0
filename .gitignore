@@ -167,4 +167,4 @@ config.yml
 hydra_outputs/
 .commit0*
 .agent*
-docs/analysis_*.md
+docs/analysis*.md
