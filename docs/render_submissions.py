@@ -161,8 +161,8 @@ def get_blank_repo_metrics(
     return blank_repo_metrics
 
 leaderboard_header = """\n\n## Leaderboard ({split})
-| Name | Repos Resolved (/{num_repos}) | Test Duration (s) | Date | Analysis | Github | 
-|------|:-------------------------:|:--------------------:|:----------:|----|----| """
+| Name | Repos Resolved (/{num_repos}) | Total Tests Passed (/{total_num_tests}) Test Duration (s) | Date | Analysis | Github | 
+|------|:-------------------------:|:--------------------:|:--------------------:|:----------:|----|----| """
 
 submission_table_header = """# Submission Name: **{display_name}** (split: {split})
 
@@ -177,19 +177,25 @@ pytest_summary_table_header = """\n## Pytest Summary for test `{pytest_group}`
 def render_mds(overwrite_previous, subfolder="docs"):
     leaderboard = {}
 
+    split_to_total_tests = {"lite": 3628, "all": 140926} # hard-coded to skip running it later
     for split in tqdm.tqdm(["lite", "all"]):
         num_repos = len(SPLIT[split])
+        # total_num_tests = 0
+        # for repo_name in SPLIT[split]:
+        #     repo_tests = subprocess.run(['commit0', 'get-tests', repo_name], capture_output=True, text=True).stdout.strip()
+        #     total_num_tests += len(repo_tests.splitlines())
         leaderboard[
             split
-        ] = leaderboard_header.format(split=split, num_repos=num_repos)
+        ] = leaderboard_header.format(split=split, num_repos=num_repos, total_num_tests=split_to_total_tests[split])
         
     for org_path in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
         org_name = os.path.basename(org_path)
         if org_name in {"blank", "repos", "submission_repos"}:
             continue
-        repos_resolved = 0
-        total_duration = 0.0
         for branch_path in glob.glob(os.path.join(org_path, "*.json")):
+            cum_tests_passed = 0
+            repos_resolved = 0
+            total_duration = 0.0
             branch_metrics = json.load(open(branch_path))
             submission_info = branch_metrics["submission_info"]
             split = submission_info["split"]
@@ -262,6 +268,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
                                     f"### {shortened_testname}\n\n<details><summary> <pre>{shortened_testname}"
                                     f"</pre></summary><pre>\n{failure['failure_string']}\n</pre>\n</details>\n"
                                 )
+                        cum_tests_passed += pytest_info["summary"]["passed"]
                         total_duration += pytest_info["duration"]
                         repos_resolved += int(resolved)
                         if write_submission:
@@ -293,6 +300,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
             leaderboard[split] += (
                 f"\n|{display_name}|"
                 f"{repos_resolved}|"
+                f"{cum_tests_passed}|"
                 f"{total_duration:.2f}|"
                 f"{submission_date}|"
                 f"{analysis_link}|"
@@ -378,13 +386,17 @@ def main(args):
             json.dump(repo_metrics, open(repo_metrics_output_file, "w"), indent=4)
 
     if args.get_reference_details:
+        branch_name = "reference"
+        org_name = f"commit0_{args.split}"
+        commit0_dot_file_path = os.path.join(
+            analysis_files_path, "repos", org_name, branch_name, ".commit0.yaml"
+        )
+        submission_repos_path = os.path.join(analysis_files_path, "repos", org_name, branch_name)
         if args.do_setup:
             os.system(
-                f"commit0 setup {args.split} --base-dir {analysis_files_path}/repos "
-                f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
+                f"commit0 setup {args.split} --base-dir {submission_repos_path} "
+                f"--commit0-dot-file-path {commit0_dot_file_path}"
             )
-        branch_name = "reference"
-        org_name = "commit0"
         submission_metrics_output_file = os.path.join(
             analysis_files_path, org_name, f"{branch_name}.json"
         )
@@ -408,7 +420,7 @@ def main(args):
         if args.overwrite_previous_eval or need_re_eval:
             os.system(
                 "commit0 evaluate --reference "
-                f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
+                f"--commit0-dot-file-path {commit0_dot_file_path}"
             )
         # get coverage and pytest info for each repo
         for example in dataset:
