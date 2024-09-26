@@ -22,3 +22,10 @@ h2,
 h3 {
     color: #e4949e;
 }
+
+.md-nav__title {
+    display: none; /* Hide the text title */
+}
+.md-header__topic {
+    display: none; /* Hide the text title */
+}

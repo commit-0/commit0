@@ -1,3 +1,5 @@
+## Running
+
 Commit0 provides a command-line `agent` for configuring and
 running AI agents to assist with code development and testing.
 In this example we use [Aider](https://aider.chat/) as the
