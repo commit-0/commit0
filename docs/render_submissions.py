@@ -191,7 +191,7 @@ def render_mds(subfolder="docs"):
         total_duration = 0.0
         # TODO better way to have submission info loaded up before get into repos...
         submission_info = None
-        submission_page = """# Submission Name: DISPLAYNAME_GOES_HERE (split: SPLIT_GOES_HERE)
+        submission_page = """# Submission Name: **DISPLAYNAME_GOES_HERE** (split: SPLIT_GOES_HERE)
 
 | Repository | Resolved | Pass Rate | Test Duration (s) | Analysis | Github Link |
 |------------|---------|:-----:|:-----:|-----|-----|"""
@@ -206,6 +206,7 @@ def render_mds(subfolder="docs"):
             if submission_info is None:
                 submission_info = repo_metrics["submission_info"]
                 split = submission_info["split"]
+                org_name = submission_info["org_name"]
                 project_page_link = submission_info["project_page"]
                 display_name = submission_info["display_name"]
                 submission_date = submission_info["submission_date"]
@@ -214,14 +215,14 @@ def render_mds(subfolder="docs"):
                     "DISPLAYNAME_GOES_HERE", display_name
                 ).replace("SPLIT_GOES_HERE", split)
             submission_repo_page = (
-                f"# Submission Name: {display_name}\n# Repository: {repo_name}"
+                f"# **{display_name}**: {repo_name}"
             )
             for pytest_group, pytest_info in repo_metrics.items():
                 if pytest_group == "submission_info":
                     continue
                 pytest_group = os.path.basename(pytest_group.strip("/"))
                 patch_diff = (
-                    f"""\n\n### Patch diff\n```diff\n{pytest_info['patch_diff']}```"""
+                    f"""\n\n## Patch diff\n```diff\n{pytest_info['patch_diff']}```"""
                 )
                 if "failed_to_run" in pytest_info:
                     submission_repo_page += f"""\n## Failed to run pytests\n```\n{pytest_info['failed_to_run']}\n```"""
@@ -243,7 +244,7 @@ def render_mds(subfolder="docs"):
                                 f"""| {category} | {float(count):.2f}s |\n"""
                             )
 
-                    submission_repo_page += "\n## Failed pytest outputs\n\n"
+                    submission_repo_page += "\n## Failed pytest:\n\n"
                     for testname, failure in pytest_info["failures"].items():
                         shortened_testname = os.path.basename(testname)
                         submission_repo_page += (
@@ -256,16 +257,17 @@ def render_mds(subfolder="docs"):
                     repos_resolved += 1
                     pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
                     duration = f"{pytest_info['duration']:.2f}"
+            github_hyperlink = f"{project_page_link}/{repo_name}" if branch_name == "reference" else f"{project_page_link}/{repo_name}/tree/{branch_name}"
             submission_page += f"""
-| {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | [Analysis](/{f'analysis_{branch_name}_{repo_name}'}) | [Github]({project_page_link}/{repo_name}/tree/{branch_name}) |"""
+| {repo_name} | {'Yes' if resolved else 'No'} | {pytest_details} | {duration} | [Analysis](/{f'analysis_{org_name}_{branch_name}_{repo_name}'}) | [Github]({github_hyperlink}) |"""
             back_button = (
-                f"[back to {display_name} summary](/{f'analysis_{branch_name}'})\n\n"
+                f"[back to {display_name} summary](/{f'analysis_{org_name}_{branch_name}'})\n\n"
             )
             with open(
-                os.path.join(subfolder, f"analysis_{branch_name}_{repo_name}.md"), "w"
+                os.path.join(subfolder, f"analysis_{org_name}_{branch_name}_{repo_name}.md"), "w"
             ) as wf:
                 wf.write(back_button + submission_repo_page + patch_diff)
-        analysis_link = f"[Analysis](/{f'analysis_{branch_name}'})"
+        analysis_link = f"[Analysis](/{f'analysis_{org_name}_{branch_name}'})"
         github_link = f"[Github]({project_page_link})"
         leaderboard[split] += (
             f"\n|{display_name}|"
@@ -277,7 +279,7 @@ def render_mds(subfolder="docs"):
         )
 
         back_button = f"[back to all submissions](/{f'analysis'})\n\n"
-        with open(os.path.join(subfolder, f"analysis_{branch_name}.md"), "w") as wf:
+        with open(os.path.join(subfolder, f"analysis_{org_name}_{branch_name}.md"), "w") as wf:
             wf.write(back_button + "\n" + submission_page)
 
     with open(os.path.join(subfolder, "analysis.md"), "w") as wf:
@@ -376,6 +378,7 @@ def main(args):
             path_to_logs = f"{os.getcwd()}/logs/pytest/{repo_name}/{branch_name}"
             pytest_results = get_pytest_info(path_to_logs, repo_name, branch_name)
             pytest_results["submission_info"] = {
+                "org_name": "gold",
                 "branch": "reference",
                 "display_name": "Reference (Gold)",
                 "submission_date": "NA",
@@ -450,6 +453,7 @@ def main(args):
                 pytest_results["submission_info"] = submission
                 json.dump(pytest_results, open(repo_metrics_output_file, "w"), indent=4)
                 # json.dump(submission_details, open(repo_metrics_output_file, "w"), indent=4)
+            break
 
     if not args.keep_previous_eval:
         for analysis_file in glob.glob("docs/analysis*.md"):
