@@ -4,7 +4,6 @@ import multiprocessing
 from datasets import load_dataset
 from git import Repo
 from agent.agent_utils import (
-    args2string,
     create_branch,
     get_message,
     get_target_edit_files,
@@ -88,6 +87,10 @@ def run_agent_for_repo(
             f"{agent_config.agent_name} is not implemented; please add your implementations in baselines/agents.py."
         )
 
+    # # if branch_name is not provided, create a new branch name based on agent_config
+    # if branch is None:
+    #     branch = args2string(agent_config)
+
     create_branch(local_repo, branch, example["base_commit"])
 
     # in cases where the latest commit of branch is not commit 0
@@ -169,7 +172,7 @@ def run_agent_for_repo(
 
 
 def run_agent(
-    branch: Optional[str],
+    branch: str,
     override_previous_changes: bool,
     backend: str,
     agent_config_file: str,
@@ -203,10 +206,6 @@ def run_agent(
 
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
-
-    # if branch_name is not provided, create a new branch name based on agent_config
-    if branch is None:
-        branch = args2string(agent_config)
 
     with TerminalDisplay(len(filtered_dataset)) as display:
         not_started_repos = [

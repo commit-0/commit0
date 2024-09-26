@@ -163,7 +163,7 @@ def config(
 @agent_app.command()
 def run(
     branch: str = typer.Argument(
-        None,
+        ...,
         help="Branch name of current run",
     ),
     override_previous_changes: bool = typer.Option(
