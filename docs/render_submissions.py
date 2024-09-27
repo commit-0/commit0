@@ -268,9 +268,12 @@ def render_mds(overwrite_previous, subfolder="docs"):
                             pytest_details = "Pytest failed"
                             duration = "Failed."
                     else:
-                        resolved = ("failed" not in pytest_info["summary"]) or (
-                            pytest_info["summary"]["failed"] == 0
-                        )
+                        resolved = False
+                        if "passed" in pytest_info["summary"]:
+                            if "skipped" in pytest_info["summary"]:
+                                resolved = pytest_info["summary"]["passed"] + pytest_info["summary"]["skipped"] == pytest_info["summary"]["total"]
+                            else:
+                                resolved = pytest_info["summary"]["passed"] == pytest_info["summary"]["total"]
                         if write_submission:
                             submission_repo_page += pytest_summary_table_header.format(
                                 pytest_group=pytest_group
@@ -296,7 +299,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
                         total_duration += pytest_info["duration"]
                         repos_resolved += int(resolved)
                         if write_submission:
-                            pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['collected']}"
+                            pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['total']}"
                             duration = f"{pytest_info['duration']:.2f}"
                     break
                 if write_submission:
