@@ -6,7 +6,7 @@ nav:
   - Commit0: setupdist.md
   - Agent: agent.md
   - API: api.md
-  - Submission Analysis: analysis.md
+  - Leaderboard: analysis.md
 theme:
   name: material
   logo: "logo2.webp"
@@ -19,3 +19,7 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.highlight
   - pymdownx.superfences
+
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - javascripts/tablesort.js
