@@ -1,3 +1,4 @@
+import bz2
 import git
 import os
 import re
@@ -250,6 +251,9 @@ def get_message(
         repo_info = ""
 
     if agent_config.use_spec_info:
+        with bz2.open("spec.pdf.bz2", "rb") as in_file:
+            with open("spec.pdf", "wb") as out_file:
+                out_file.write(in_file.read())
         spec_info = (
             f"\n{SPEC_INFO_HEADER} "
             + get_specification(specification_pdf_path=Path(repo_path, "spec.pdf"))[
