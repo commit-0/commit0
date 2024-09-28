@@ -26,7 +26,7 @@ to design and test new agents. You can:
 To install run:
 
 ```bash
-pip install commit0
+pip install -U commit0
 ```
 
 ## Architecture
