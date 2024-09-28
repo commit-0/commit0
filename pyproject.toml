@@ -148,4 +148,4 @@ lint.unfixable = []
 "tests/**/*.py" = ["D"]
 
 [tool.uv.sources]
-aider-chat = { git = "https://github.com/paul-gauthier/aider.git", rev = "509c880b687ab52b960c1336f3f2db342620a59a" }
+aider-chat = { git = "https://github.com/wenting-zhao/aider.git" }
