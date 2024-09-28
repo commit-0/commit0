@@ -59,6 +59,16 @@ SPLIT_LITE = [
     "marshmallow",
     "jinja",
     "cookiecutter",
+    "moviepy",
+    "portalocker",
+    "dnspython",
+    "parsel",
+    "pyjwt",
+    "tlslite-ng",
+    "dulwich",
+    "chardet",
+    "babel",
+    "minitorch",
 ]
 SPLIT_ALL = [
     "statsmodels",
