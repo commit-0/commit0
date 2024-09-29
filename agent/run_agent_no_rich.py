@@ -61,14 +61,6 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
-    # get target files to edit and test files to run
-    target_edit_files = get_target_edit_files(
-        repo_path, example["src_dir"], example["test"]["test_dir"]
-    )
-    # Call the commit0 get-tests command to retrieve test files
-    test_files_str = get_tests(repo_name, verbose=0)
-    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
-
     try:
         local_repo = Repo(repo_path)
     except Exception:
@@ -94,6 +86,19 @@ def run_agent_for_repo(
     latest_commit = local_repo.commit(branch)
     if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
+
+    # get target files to edit and test files to run
+    target_edit_files = get_target_edit_files(
+        local_repo,
+        example["src_dir"],
+        example["test"]["test_dir"],
+        str(latest_commit),
+        str(example["reference_commit"]),
+    )
+
+    # Call the commit0 get-tests command to retrieve test files
+    test_files_str = get_tests(repo_name, verbose=0)
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     # prepare the log dir
     experiment_log_dir = (
