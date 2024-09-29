@@ -192,10 +192,11 @@ def _find_files_to_edit(base_dir: str, src_dir: str, test_dir: str) -> list[str]
     return files
 
 
-def ignore_cycles(graph: dict):
+def ignore_cycles(graph: dict) -> list[str]:
+    """Ignore the cycles in the graph."""
     ts = TopologicalSorter(graph)
     try:
-        return list(set(ts.static_order()))
+        return list(ts.static_order())
     except CycleError as e:
         # print(f"Cycle detected: {e.args[1]}")
         # You can either break the cycle by modifying the graph or handle it as needed.
@@ -231,7 +232,7 @@ def get_target_edit_files(
     reference_commit: str,
 ) -> list[str]:
     """Find the files with functions with the pass statement."""
-    target_dir = local_repo.working_dir
+    target_dir = str(local_repo.working_dir)
     files = _find_files_to_edit(target_dir, src_dir, test_dir)
     filtered_files = []
     for file_path in files:
@@ -241,10 +242,8 @@ def get_target_edit_files(
                 continue
             if "    pass" in content:
                 filtered_files.append(file_path)
-
     # Change to reference commit to get the correct dependencies
     local_repo.git.checkout(reference_commit)
-
     topological_sort_files = topological_sort_based_on_dependencies(filtered_files)
     if len(topological_sort_files) != len(filtered_files):
         if len(topological_sort_files) < len(filtered_files):

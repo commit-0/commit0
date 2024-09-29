@@ -87,8 +87,8 @@ def run_agent_for_repo(
 
     # in cases where the latest commit of branch is not commit 0
     # set it back to commit 0
-    latest_commit = local_repo.commit(branch)
-    if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
+    latest_commit = str(local_repo.commit(branch))
+    if latest_commit != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
 
     target_edit_files = get_target_edit_files(

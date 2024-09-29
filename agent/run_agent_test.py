@@ -1,7 +1,5 @@
 import os
 import yaml
-import multiprocessing
-from tqdm import tqdm
 from datasets import load_dataset
 from git import Repo
 from agent.agent_utils import (
@@ -13,7 +11,7 @@ from agent.agent_utils import (
     read_yaml_config,
 )
 from agent.agents import AiderAgents
-from typing import Optional, Type, cast
+from typing import Optional, Type
 from types import TracebackType
 from agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
@@ -89,7 +87,11 @@ def run_agent_for_repo(
 
     # get target files to edit and test files to run
     target_edit_files = get_target_edit_files(
-        local_repo, example["src_dir"], example["test"]["test_dir"], latest_commit, example["reference_commit"]
+        local_repo,
+        example["src_dir"],
+        example["test"]["test_dir"],
+        latest_commit,
+        example["reference_commit"],
     )
     print(target_edit_files)
     return
