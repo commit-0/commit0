@@ -216,8 +216,11 @@ def topological_sort_based_on_dependencies(pkg_paths: list[str]) -> list[str]:
     for path in sorted(module_set.by_path.keys()):
         module_name = ".".join(module_set.by_path[path].fqn)
         mod = module_set.by_name[module_name]
-        imports = module_set.get_imports(mod)
-        import_dependencies[path] = set([str(x) for x in imports])
+        try:
+            imports = module_set.get_imports(mod)
+            import_dependencies[path] = set([str(x) for x in imports])
+        except Exception:
+            import_dependencies[path] = set()
 
     import_dependencies_files = ignore_cycles(import_dependencies)
 
@@ -236,7 +239,7 @@ def get_target_edit_files(
     files = _find_files_to_edit(target_dir, src_dir, test_dir)
     filtered_files = []
     for file_path in files:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
+        with open(file_path, "r", encoding="utf-8-sig", errors="ignore") as file:
             content = file.read()
             if len(content.splitlines()) > 1500:
                 continue
@@ -244,6 +247,7 @@ def get_target_edit_files(
                 filtered_files.append(file_path)
     # Change to reference commit to get the correct dependencies
     local_repo.git.checkout(reference_commit)
+
     topological_sort_files = topological_sort_based_on_dependencies(filtered_files)
     if len(topological_sort_files) != len(filtered_files):
         if len(topological_sort_files) < len(filtered_files):
