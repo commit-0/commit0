@@ -86,6 +86,9 @@ class AiderAgents(Agents):
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
 
+        # Log the message
+        logging.info(f"Message Sent: {message} \n\n")
+
         # Redirect print statements to the log file
         sys.stdout = open(log_file, "a")
         sys.stderr = open(log_file, "a")
