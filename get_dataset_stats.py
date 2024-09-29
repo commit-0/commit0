@@ -324,7 +324,7 @@ def main(args):
             coverage_details[repo_name][testname] = []
             for fnname in fnnames:
                 if fnname in fnnames_to_impls:
-                    coverage_details[repo_name][testname].append(fnname, fnnames_to_impls[fnname])
+                    coverage_details[repo_name][testname].append((fnname, fnnames_to_impls[fnname]))
                 else:
                     coverage_details[repo_name][testname].append((fnname, None))
 
