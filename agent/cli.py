@@ -149,6 +149,7 @@ def config(
         "use_user_prompt": use_user_prompt,
         "user_prompt": user_prompt,
         "run_tests": run_tests,
+        "use_topo_sort_dependencies": topo_sort_dependencies,
         "max_iteration": max_iteration,
         "use_repo_info": use_repo_info,
         "max_repo_info_length": max_repo_info_length,
