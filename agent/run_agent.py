@@ -66,13 +66,6 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
-    target_edit_files = get_target_edit_files(
-        repo_path, example["src_dir"], example["test"]["test_dir"]
-    )
-    # Call the commit0 get-tests command to retrieve test files
-    test_files_str = get_tests(repo_name, verbose=0)
-    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
-
     try:
         local_repo = Repo(repo_path)
     except Exception:
@@ -90,7 +83,6 @@ def run_agent_for_repo(
     # # if branch_name is not provided, create a new branch name based on agent_config
     # if branch is None:
     #     branch = args2string(agent_config)
-
     create_branch(local_repo, branch, example["base_commit"])
 
     # in cases where the latest commit of branch is not commit 0
@@ -98,6 +90,17 @@ def run_agent_for_repo(
     latest_commit = local_repo.commit(branch)
     if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
+
+    target_edit_files = get_target_edit_files(
+        local_repo,
+        example["src_dir"],
+        example["test"]["test_dir"],
+        latest_commit,
+        example["reference_commit"],
+    )
+    # Call the commit0 get-tests command to retrieve test files
+    test_files_str = get_tests(repo_name, verbose=0)
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     # prepare the log dir
     experiment_log_dir = (

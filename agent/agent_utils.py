@@ -6,6 +6,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import List
 import fitz
+from import_deps import ModuleSet
+from graphlib import TopologicalSorter, CycleError
 import yaml
 
 from agent.class_types import AgentConfig
@@ -190,8 +192,46 @@ def _find_files_to_edit(base_dir: str, src_dir: str, test_dir: str) -> list[str]
     return files
 
 
-def get_target_edit_files(target_dir: str, src_dir: str, test_dir: str) -> list[str]:
+def ignore_cycles(graph: dict):
+    ts = TopologicalSorter(graph)
+    try:
+        return list(set(ts.static_order()))
+    except CycleError as e:
+        # print(f"Cycle detected: {e.args[1]}")
+        # You can either break the cycle by modifying the graph or handle it as needed.
+        # For now, let's just remove the first node in the cycle and try again.
+        cycle_nodes = e.args[1]
+        node_to_remove = cycle_nodes[0]
+        # print(f"Removing node {node_to_remove} to resolve cycle.")
+        graph.pop(node_to_remove, None)
+        return ignore_cycles(graph)
+
+
+def topological_sort_based_on_dependencies(pkg_paths: list[str]) -> list[str]:
+    """Topological sort based on dependencies."""
+    module_set = ModuleSet([str(p) for p in pkg_paths])
+
+    import_dependencies = {}
+    for path in sorted(module_set.by_path.keys()):
+        module_name = ".".join(module_set.by_path[path].fqn)
+        mod = module_set.by_name[module_name]
+        imports = module_set.get_imports(mod)
+        import_dependencies[path] = set([str(x) for x in imports])
+
+    import_dependencies_files = ignore_cycles(import_dependencies)
+
+    return import_dependencies_files
+
+
+def get_target_edit_files(
+    local_repo: git.Repo,
+    src_dir: str,
+    test_dir: str,
+    latest_commit: str,
+    reference_commit: str,
+) -> list[str]:
     """Find the files with functions with the pass statement."""
+    target_dir = local_repo.working_dir
     files = _find_files_to_edit(target_dir, src_dir, test_dir)
     filtered_files = []
     for file_path in files:
@@ -202,13 +242,33 @@ def get_target_edit_files(target_dir: str, src_dir: str, test_dir: str) -> list[
             if "    pass" in content:
                 filtered_files.append(file_path)
 
-    # Remove the base_dir prefix
-    filtered_files = [
-        file.replace(target_dir, "").lstrip("/") for file in filtered_files
-    ]
-    # Only keep python files
+    # Change to reference commit to get the correct dependencies
+    local_repo.git.checkout(reference_commit)
 
-    return filtered_files
+    topological_sort_files = topological_sort_based_on_dependencies(filtered_files)
+    if len(topological_sort_files) != len(filtered_files):
+        if len(topological_sort_files) < len(filtered_files):
+            # Find the missing elements
+            missing_files = set(filtered_files) - set(topological_sort_files)
+            # Add the missing files to the end of the list
+            topological_sort_files = topological_sort_files + list(missing_files)
+        else:
+            raise ValueError(
+                "topological_sort_files should not be longer than filtered_files"
+            )
+    assert len(topological_sort_files) == len(
+        filtered_files
+    ), "all files should be included"
+
+    # change to latest commit
+    local_repo.git.checkout(latest_commit)
+
+    # Remove the base_dir prefix
+    topological_sort_files = [
+        file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
+    ]
+
+    return topological_sort_files
 
 
 def get_message(
