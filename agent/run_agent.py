@@ -98,6 +98,7 @@ def run_agent_for_repo(
         example["test"]["test_dir"],
         str(latest_commit),
         example["reference_commit"],
+        agent_config.use_topo_sort_dependencies,
     )
     # Call the commit0 get-tests command to retrieve test files
     test_files_str = get_tests(repo_name, verbose=0)
@@ -232,6 +233,7 @@ def run_agent(
             agent_config.agent_name,
             agent_config.model_name,
             agent_config.run_tests,
+            agent_config.use_topo_sort_dependencies,
             agent_config.use_repo_info,
             agent_config.use_unit_tests_info,
             agent_config.use_spec_info,

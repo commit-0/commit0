@@ -236,6 +236,7 @@ def get_target_edit_files(
     test_dir: str,
     latest_commit: str,
     reference_commit: str,
+    use_topo_sort_dependencies: bool = True,
 ) -> tuple[list[str], dict]:
     """Find the files with functions with the pass statement."""
     target_dir = str(local_repo.working_dir)
@@ -249,41 +250,51 @@ def get_target_edit_files(
             if "    pass" in content:
                 filtered_files.append(file_path)
     # Change to reference commit to get the correct dependencies
-    local_repo.git.checkout(reference_commit)
+    if use_topo_sort_dependencies:
+        local_repo.git.checkout(reference_commit)
 
-    topological_sort_files, import_dependencies = (
-        topological_sort_based_on_dependencies(filtered_files)
-    )
-    if len(topological_sort_files) != len(filtered_files):
-        if len(topological_sort_files) < len(filtered_files):
-            # Find the missing elements
-            missing_files = set(filtered_files) - set(topological_sort_files)
-            # Add the missing files to the end of the list
-            topological_sort_files = topological_sort_files + list(missing_files)
-        else:
-            raise ValueError(
-                "topological_sort_files should not be longer than filtered_files"
+        topological_sort_files, import_dependencies = (
+            topological_sort_based_on_dependencies(filtered_files)
+        )
+        if len(topological_sort_files) != len(filtered_files):
+            if len(topological_sort_files) < len(filtered_files):
+                # Find the missing elements
+                missing_files = set(filtered_files) - set(topological_sort_files)
+                # Add the missing files to the end of the list
+                topological_sort_files = topological_sort_files + list(missing_files)
+            else:
+                raise ValueError(
+                    "topological_sort_files should not be longer than filtered_files"
+                )
+        assert len(topological_sort_files) == len(
+            filtered_files
+        ), "all files should be included"
+
+        # change to latest commit
+        local_repo.git.checkout(latest_commit)
+
+        # Remove the base_dir prefix
+        topological_sort_files = [
+            file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
+        ]
+
+        # Remove the base_dir prefix from import dependencies
+        import_dependencies_without_prefix = {}
+        for key, value in import_dependencies.items():
+            key_without_prefix = key.replace(target_dir, "").lstrip("/")
+            value_without_prefix = [
+                v.replace(target_dir, "").lstrip("/") for v in value
+            ]
+            import_dependencies_without_prefix[key_without_prefix] = (
+                value_without_prefix
             )
-    assert len(topological_sort_files) == len(
-        filtered_files
-    ), "all files should be included"
 
-    # change to latest commit
-    local_repo.git.checkout(latest_commit)
-
-    # Remove the base_dir prefix
-    topological_sort_files = [
-        file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
-    ]
-
-    # Remove the base_dir prefix from import dependencies
-    import_dependencies_without_prefix = {}
-    for key, value in import_dependencies.items():
-        key_without_prefix = key.replace(target_dir, "").lstrip("/")
-        value_without_prefix = [v.replace(target_dir, "").lstrip("/") for v in value]
-        import_dependencies_without_prefix[key_without_prefix] = value_without_prefix
-
-    return topological_sort_files, import_dependencies_without_prefix
+        return topological_sort_files, import_dependencies_without_prefix
+    else:
+        filtered_files = [
+            file.replace(target_dir, "").lstrip("/") for file in filtered_files
+        ]
+        return filtered_files, {}
 
 
 def get_message(
