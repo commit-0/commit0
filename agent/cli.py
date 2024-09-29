@@ -178,6 +178,10 @@ def run(
         ".agent.yaml",
         help="Path to the agent config file",
     ),
+    commit0_config_file: str = typer.Option(
+        ".commit0.yaml",
+        help="Path to the commit0 config file",
+    ),
     log_dir: str = typer.Option(
         str(RUN_AGENT_LOG_DIR.resolve()),
         help="Log directory to store the logs",
@@ -202,6 +206,7 @@ def run(
             override_previous_changes,
             backend,
             agent_config_file,
+            commit0_config_file,
             log_dir,
             max_parallel_repos,
             display_repo_progress_num,
@@ -212,6 +217,7 @@ def run(
             override_previous_changes,
             backend,
             agent_config_file,
+            commit0_config_file,
             log_dir,
             max_parallel_repos,
         )

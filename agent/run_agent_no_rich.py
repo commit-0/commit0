@@ -9,6 +9,7 @@ from agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
+    update_message_with_dependencies,
     get_lint_cmd,
     read_yaml_config,
 )
@@ -61,14 +62,6 @@ def run_agent_for_repo(
     repo_path = os.path.join(repo_base_dir, repo_name)
     repo_path = os.path.abspath(repo_path)
 
-    # get target files to edit and test files to run
-    target_edit_files = get_target_edit_files(
-        repo_path, example["src_dir"], example["test"]["test_dir"]
-    )
-    # Call the commit0 get-tests command to retrieve test files
-    test_files_str = get_tests(repo_name, verbose=0)
-    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
-
     try:
         local_repo = Repo(repo_path)
     except Exception:
@@ -94,6 +87,19 @@ def run_agent_for_repo(
     latest_commit = local_repo.commit(branch)
     if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
+
+    # get target files to edit and test files to run
+    target_edit_files, import_dependencies = get_target_edit_files(
+        local_repo,
+        example["src_dir"],
+        example["test"]["test_dir"],
+        str(latest_commit),
+        str(example["reference_commit"]),
+    )
+
+    # Call the commit0 get-tests command to retrieve test files
+    test_files_str = get_tests(repo_name, verbose=0)
+    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     # prepare the log dir
     experiment_log_dir = (
@@ -139,6 +145,8 @@ def run_agent_for_repo(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
             for f in target_edit_files:
+                dependencies = import_dependencies[f]
+                message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
@@ -151,6 +159,7 @@ def run_agent(
     override_previous_changes: bool,
     backend: str,
     agent_config_file: str,
+    commit0_config_file: str,
     log_dir: str,
     max_parallel_repos: int,
 ) -> None:
@@ -162,7 +171,7 @@ def run_agent(
 
     agent_config = AgentConfig(**config)
 
-    commit0_config = read_commit0_dot_file(".commit0.yaml")
+    commit0_config = read_commit0_dot_file(commit0_config_file)
 
     dataset = load_dataset(
         commit0_config["dataset_name"], split=commit0_config["dataset_split"]

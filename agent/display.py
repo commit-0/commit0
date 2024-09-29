@@ -17,6 +17,8 @@ from rich.rule import Rule
 from rich.align import Align
 from collections import OrderedDict
 from types import TracebackType
+import json
+from datetime import datetime
 
 
 class RepoBox:
@@ -404,3 +406,29 @@ class TerminalDisplay:
             f"{'Total':<30} {self.total_time_spent:>13.2f}s {total_files:>18} {total_money:>13.2f}$"
         )
         print("-" * 80)
+
+        # Write summary to JSON file
+
+        summary_data = {
+            "timestamp": datetime.now().isoformat(),
+            "total_time_spent": self.total_time_spent,
+            "total_files_processed": total_files,
+            "total_money_spent": total_money,
+            "repositories": [
+                {
+                    "name": repo_name,
+                    "time_spent": self.end_time_per_repo[repo_name]
+                    - self.start_time_per_repo[repo_name],
+                    "files_processed": self.total_files_per_repo[repo_name],
+                    "money_spent": sum(
+                        self.repo_money_spent.get(repo_name, {}).values()
+                    ),
+                }
+                for repo_name in self.end_time_per_repo
+            ],
+        }
+
+        with open("processing_summary.json", "w") as json_file:
+            json.dump(summary_data, json_file, indent=4)
+
+        print("\nSummary has been written to processing_summary.json")

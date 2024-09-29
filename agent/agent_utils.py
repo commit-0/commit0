@@ -6,6 +6,8 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import List
 import fitz
+from import_deps import ModuleSet
+from graphlib import TopologicalSorter, CycleError
 import yaml
 
 from agent.class_types import AgentConfig
@@ -16,6 +18,7 @@ REPO_INFO_HEADER = "\n\n>>> Here is the Repository Information:\n"
 UNIT_TESTS_INFO_HEADER = "\n\n>>> Here are the Unit Tests Information:\n"
 LINT_INFO_HEADER = "\n\n>>> Here is the Lint Information:\n"
 SPEC_INFO_HEADER = "\n\n>>> Here is the Specification Information:\n"
+IMPORT_DEPENDENCIES_HEADER = "\n\n>>> Here are the Import Dependencies:\n"
 # prefix components:
 space = "    "
 branch = "│   "
@@ -190,25 +193,97 @@ def _find_files_to_edit(base_dir: str, src_dir: str, test_dir: str) -> list[str]
     return files
 
 
-def get_target_edit_files(target_dir: str, src_dir: str, test_dir: str) -> list[str]:
+def ignore_cycles(graph: dict) -> list[str]:
+    """Ignore the cycles in the graph."""
+    ts = TopologicalSorter(graph)
+    try:
+        return list(ts.static_order())
+    except CycleError as e:
+        # print(f"Cycle detected: {e.args[1]}")
+        # You can either break the cycle by modifying the graph or handle it as needed.
+        # For now, let's just remove the first node in the cycle and try again.
+        cycle_nodes = e.args[1]
+        node_to_remove = cycle_nodes[0]
+        # print(f"Removing node {node_to_remove} to resolve cycle.")
+        graph.pop(node_to_remove, None)
+        return ignore_cycles(graph)
+
+
+def topological_sort_based_on_dependencies(
+    pkg_paths: list[str],
+) -> tuple[list[str], dict]:
+    """Topological sort based on dependencies."""
+    module_set = ModuleSet([str(p) for p in pkg_paths])
+
+    import_dependencies = {}
+    for path in sorted(module_set.by_path.keys()):
+        module_name = ".".join(module_set.by_path[path].fqn)
+        mod = module_set.by_name[module_name]
+        try:
+            imports = module_set.get_imports(mod)
+            import_dependencies[path] = set([str(x) for x in imports])
+        except Exception:
+            import_dependencies[path] = set()
+
+    import_dependencies_files = ignore_cycles(import_dependencies)
+
+    return import_dependencies_files, import_dependencies
+
+
+def get_target_edit_files(
+    local_repo: git.Repo,
+    src_dir: str,
+    test_dir: str,
+    latest_commit: str,
+    reference_commit: str,
+) -> tuple[list[str], dict]:
     """Find the files with functions with the pass statement."""
+    target_dir = str(local_repo.working_dir)
     files = _find_files_to_edit(target_dir, src_dir, test_dir)
     filtered_files = []
     for file_path in files:
-        with open(file_path, "r", encoding="utf-8", errors="ignore") as file:
+        with open(file_path, "r", encoding="utf-8-sig", errors="ignore") as file:
             content = file.read()
             if len(content.splitlines()) > 1500:
                 continue
             if "    pass" in content:
                 filtered_files.append(file_path)
+    # Change to reference commit to get the correct dependencies
+    local_repo.git.checkout(reference_commit)
+
+    topological_sort_files, import_dependencies = (
+        topological_sort_based_on_dependencies(filtered_files)
+    )
+    if len(topological_sort_files) != len(filtered_files):
+        if len(topological_sort_files) < len(filtered_files):
+            # Find the missing elements
+            missing_files = set(filtered_files) - set(topological_sort_files)
+            # Add the missing files to the end of the list
+            topological_sort_files = topological_sort_files + list(missing_files)
+        else:
+            raise ValueError(
+                "topological_sort_files should not be longer than filtered_files"
+            )
+    assert len(topological_sort_files) == len(
+        filtered_files
+    ), "all files should be included"
+
+    # change to latest commit
+    local_repo.git.checkout(latest_commit)
 
     # Remove the base_dir prefix
-    filtered_files = [
-        file.replace(target_dir, "").lstrip("/") for file in filtered_files
+    topological_sort_files = [
+        file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
     ]
-    # Only keep python files
 
-    return filtered_files
+    # Remove the base_dir prefix from import dependencies
+    import_dependencies_without_prefix = {}
+    for key, value in import_dependencies.items():
+        key_without_prefix = key.replace(target_dir, "").lstrip("/")
+        value_without_prefix = [v.replace(target_dir, "").lstrip("/") for v in value]
+        import_dependencies_without_prefix[key_without_prefix] = value_without_prefix
+
+    return topological_sort_files, import_dependencies_without_prefix
 
 
 def get_message(
@@ -266,6 +341,20 @@ def get_message(
     message_to_agent = prompt + repo_info + unit_tests_info + spec_info
 
     return message_to_agent
+
+
+def update_message_with_dependencies(message: str, dependencies: list[str]) -> str:
+    """Update the message with the dependencies."""
+    if len(dependencies) == 0:
+        return message
+    import_dependencies_info = f"\n{IMPORT_DEPENDENCIES_HEADER}"
+    for dependency in dependencies:
+        with open(dependency, "r") as file:
+            import_dependencies_info += (
+                f"\nHere is the content of the file {dependency}:\n{file.read()}"
+            )
+    message += import_dependencies_info
+    return message
 
 
 def get_specification(specification_pdf_path: Path) -> str:
