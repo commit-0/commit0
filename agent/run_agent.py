@@ -7,6 +7,7 @@ from agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
+    update_message_with_dependencies,
     get_lint_cmd,
     read_yaml_config,
 )
@@ -91,7 +92,7 @@ def run_agent_for_repo(
     if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
 
-    target_edit_files = get_target_edit_files(
+    target_edit_files, import_dependencies = get_target_edit_files(
         local_repo,
         example["src_dir"],
         example["test"]["test_dir"],
@@ -161,6 +162,8 @@ def run_agent_for_repo(
             )
             for f in target_edit_files:
                 update_queue.put(("set_current_file", (repo_name, f)))
+                dependencies = import_dependencies[f]
+                message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
@@ -179,6 +182,7 @@ def run_agent(
     override_previous_changes: bool,
     backend: str,
     agent_config_file: str,
+    commit0_config_file: str,
     log_dir: str,
     max_parallel_repos: int,
     display_repo_progress_num: int,
@@ -188,7 +192,7 @@ def run_agent(
 
     agent_config = AgentConfig(**config)
 
-    commit0_config = read_commit0_dot_file(".commit0.yaml")
+    commit0_config = read_commit0_dot_file(commit0_config_file)
 
     dataset = load_dataset(
         commit0_config["dataset_name"], split=commit0_config["dataset_split"]

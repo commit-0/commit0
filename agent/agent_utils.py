@@ -18,6 +18,7 @@ REPO_INFO_HEADER = "\n\n>>> Here is the Repository Information:\n"
 UNIT_TESTS_INFO_HEADER = "\n\n>>> Here are the Unit Tests Information:\n"
 LINT_INFO_HEADER = "\n\n>>> Here is the Lint Information:\n"
 SPEC_INFO_HEADER = "\n\n>>> Here is the Specification Information:\n"
+IMPORT_DEPENDENCIES_HEADER = "\n\n>>> Here are the Import Dependencies:\n"
 # prefix components:
 space = "    "
 branch = "│   "
@@ -208,7 +209,9 @@ def ignore_cycles(graph: dict) -> list[str]:
         return ignore_cycles(graph)
 
 
-def topological_sort_based_on_dependencies(pkg_paths: list[str]) -> list[str]:
+def topological_sort_based_on_dependencies(
+    pkg_paths: list[str],
+) -> tuple[list[str], dict]:
     """Topological sort based on dependencies."""
     module_set = ModuleSet([str(p) for p in pkg_paths])
 
@@ -224,7 +227,7 @@ def topological_sort_based_on_dependencies(pkg_paths: list[str]) -> list[str]:
 
     import_dependencies_files = ignore_cycles(import_dependencies)
 
-    return import_dependencies_files
+    return import_dependencies_files, import_dependencies
 
 
 def get_target_edit_files(
@@ -233,7 +236,7 @@ def get_target_edit_files(
     test_dir: str,
     latest_commit: str,
     reference_commit: str,
-) -> list[str]:
+) -> tuple[list[str], dict]:
     """Find the files with functions with the pass statement."""
     target_dir = str(local_repo.working_dir)
     files = _find_files_to_edit(target_dir, src_dir, test_dir)
@@ -248,7 +251,9 @@ def get_target_edit_files(
     # Change to reference commit to get the correct dependencies
     local_repo.git.checkout(reference_commit)
 
-    topological_sort_files = topological_sort_based_on_dependencies(filtered_files)
+    topological_sort_files, import_dependencies = (
+        topological_sort_based_on_dependencies(filtered_files)
+    )
     if len(topological_sort_files) != len(filtered_files):
         if len(topological_sort_files) < len(filtered_files):
             # Find the missing elements
@@ -271,7 +276,14 @@ def get_target_edit_files(
         file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
     ]
 
-    return topological_sort_files
+    # Remove the base_dir prefix from import dependencies
+    import_dependencies_without_prefix = {}
+    for key, value in import_dependencies.items():
+        key_without_prefix = key.replace(target_dir, "").lstrip("/")
+        value_without_prefix = [v.replace(target_dir, "").lstrip("/") for v in value]
+        import_dependencies_without_prefix[key_without_prefix] = value_without_prefix
+
+    return topological_sort_files, import_dependencies_without_prefix
 
 
 def get_message(
@@ -329,6 +341,20 @@ def get_message(
     message_to_agent = prompt + repo_info + unit_tests_info + spec_info
 
     return message_to_agent
+
+
+def update_message_with_dependencies(message: str, dependencies: list[str]) -> str:
+    """Update the message with the dependencies."""
+    if len(dependencies) == 0:
+        return message
+    import_dependencies_info = f"\n{IMPORT_DEPENDENCIES_HEADER}"
+    for dependency in dependencies:
+        with open(dependency, "r") as file:
+            import_dependencies_info += (
+                f"\nHere is the content of the file {dependency}:\n{file.read()}"
+            )
+    message += import_dependencies_info
+    return message
 
 
 def get_specification(specification_pdf_path: Path) -> str:
