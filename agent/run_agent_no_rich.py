@@ -93,8 +93,8 @@ def run_agent_for_repo(
         local_repo,
         example["src_dir"],
         example["test"]["test_dir"],
-        str(latest_commit),
-        str(example["reference_commit"]),
+        branch,
+        example["reference_commit"],
         agent_config.use_topo_sort_dependencies,
     )
 

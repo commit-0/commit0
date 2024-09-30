@@ -234,7 +234,7 @@ def get_target_edit_files(
     local_repo: git.Repo,
     src_dir: str,
     test_dir: str,
-    latest_commit: str,
+    branch: str,
     reference_commit: str,
     use_topo_sort_dependencies: bool = True,
 ) -> tuple[list[str], dict]:
@@ -271,7 +271,7 @@ def get_target_edit_files(
         ), "all files should be included"
 
         # change to latest commit
-        local_repo.git.checkout(latest_commit)
+        local_repo.git.checkout(branch)
 
         # Remove the base_dir prefix
         topological_sort_files = [
