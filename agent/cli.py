@@ -87,6 +87,10 @@ def config(
         True,
         help="Topologically sort the dependencies of the repository",
     ),
+    add_import_module_to_context: bool = typer.Option(
+        True,
+        help="Add the import module code to the context",
+    ),
     run_tests: bool = typer.Option(
         False,
         help="Run the tests after the agent is done",
@@ -150,6 +154,7 @@ def config(
         "user_prompt": user_prompt,
         "run_tests": run_tests,
         "use_topo_sort_dependencies": topo_sort_dependencies,
+        "add_import_module_to_context": add_import_module_to_context,
         "max_iteration": max_iteration,
         "use_repo_info": use_repo_info,
         "max_repo_info_length": max_repo_info_length,

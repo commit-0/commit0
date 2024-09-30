@@ -8,6 +8,7 @@ class AgentConfig:
     use_user_prompt: bool
     user_prompt: str
     use_topo_sort_dependencies: bool
+    add_import_module_to_context: bool
     use_repo_info: bool
     max_repo_info_length: int
     use_unit_tests_info: bool

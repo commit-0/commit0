@@ -119,8 +119,6 @@ class AiderAgents(Agents):
             test_errors = coder.commands.cmd_test(test_cmd)
             if test_errors:
                 coder.run(test_errors)
-        if lint_first:
-            coder.commands.cmd_lint(fnames=fnames)
         else:
             coder.run(message)
 

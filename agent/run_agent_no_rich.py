@@ -155,7 +155,9 @@ def run_agent_for_repo(
             )
             for f in target_edit_files:
                 dependencies = import_dependencies.get(f, [])
-                message = update_message_with_dependencies(message, dependencies)
+                if agent_config.add_import_module_to_context:
+                    dependencies = import_dependencies.get(f, [])
+                    message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
@@ -211,7 +213,6 @@ def run_agent(
             print(f"Error installing Chrome for Playwright: {e}")
         except FileNotFoundError:
             print("Playwright not found. Make sure it's installed and in your PATH.")
-
 
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"

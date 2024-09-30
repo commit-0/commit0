@@ -169,8 +169,9 @@ def run_agent_for_repo(
             update_queue.put(("start_repo", (repo_name, len(target_edit_files))))
             for f in target_edit_files:
                 update_queue.put(("set_current_file", (repo_name, f)))
-                dependencies = import_dependencies.get(f, [])
-                message = update_message_with_dependencies(message, dependencies)
+                if agent_config.add_import_module_to_context:
+                    dependencies = import_dependencies.get(f, [])
+                    message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
