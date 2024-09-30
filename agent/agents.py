@@ -86,14 +86,12 @@ class AiderAgents(Agents):
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
 
+        with open(log_file, "a") as f:
+            f.write(message)
+
         # Redirect print statements to the log file
         sys.stdout = open(log_file, "a")
         sys.stderr = open(log_file, "a")
-
-        # Log the message
-        agent_message_log_file = log_dir / "agent_message.log"
-        with open(agent_message_log_file, "a") as f:
-            f.write(f"Message Sent: {message}\n\n")
 
         # Configure httpx and backoff logging
         handle_logging("httpx", log_file)

@@ -80,6 +80,13 @@ def run_agent_for_repo(
     if branch is None:
         branch = args2string(agent_config)
 
+    # Check if there are changes in the current branch
+    if local_repo.is_dirty():
+        # Stage all changes
+        local_repo.git.add(A=True)
+        # Commit changes with the message "left from last change"
+        local_repo.index.commit("left from last change")
+
     create_branch(local_repo, branch, example["base_commit"])
 
     # in cases where the latest commit of branch is not commit 0
@@ -146,7 +153,7 @@ def run_agent_for_repo(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
             for f in target_edit_files:
-                dependencies = import_dependencies[f]
+                dependencies = import_dependencies.get(f, [])
                 message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name

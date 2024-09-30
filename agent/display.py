@@ -435,7 +435,10 @@ class TerminalDisplay:
             ],
         }
 
-        with open("processing_summary.json", "w") as json_file:
+        with open(
+            f"processing_summary_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json",
+            "w",
+        ) as json_file:
             json.dump(summary_data, json_file, indent=4)
 
         print("\nSummary has been written to processing_summary.json")

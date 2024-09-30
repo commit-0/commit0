@@ -58,8 +58,7 @@ def run_agent_for_repo(
     _, repo_name = example["repo"].split("/")
 
     # before starting, display all information to terminal
-    original_repo_name = repo_name
-    update_queue.put(("start_repo", (original_repo_name, 0)))
+    update_queue.put(("start_repo", (repo_name, 0)))
 
     # repo_name = repo_name.lower()
     # repo_name = repo_name.replace(".", "-")
@@ -84,6 +83,14 @@ def run_agent_for_repo(
     # # if branch_name is not provided, create a new branch name based on agent_config
     # if branch is None:
     #     branch = args2string(agent_config)
+
+    # Check if there are changes in the current branch
+    if local_repo.is_dirty():
+        # Stage all changes
+        local_repo.git.add(A=True)
+        # Commit changes with the message "left from last change"
+        local_repo.index.commit("left from last change")
+
     create_branch(local_repo, branch, example["base_commit"])
 
     # in cases where the latest commit of branch is not commit 0
@@ -126,7 +133,7 @@ def run_agent_for_repo(
             raise ValueError("Invalid input")
 
         if agent_config.run_tests:
-            update_queue.put(("start_repo", (original_repo_name, len(test_files))))
+            update_queue.put(("start_repo", (repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
@@ -158,12 +165,10 @@ def run_agent_for_repo(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
 
-            update_queue.put(
-                ("start_repo", (original_repo_name, len(target_edit_files)))
-            )
+            update_queue.put(("start_repo", (repo_name, len(target_edit_files))))
             for f in target_edit_files:
                 update_queue.put(("set_current_file", (repo_name, f)))
-                dependencies = import_dependencies[f]
+                dependencies = import_dependencies.get(f, [])
                 message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
@@ -175,7 +180,7 @@ def run_agent_for_repo(
                         (repo_name, file_name, agent_return.last_cost),
                     )
                 )
-    update_queue.put(("finish_repo", original_repo_name))
+    update_queue.put(("finish_repo", repo_name))
 
 
 def run_agent(
@@ -194,7 +199,6 @@ def run_agent(
     agent_config = AgentConfig(**config)
 
     commit0_config = read_commit0_dot_file(commit0_config_file)
-
     dataset = load_dataset(
         commit0_config["dataset_name"], split=commit0_config["dataset_split"]
     )
