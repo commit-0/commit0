@@ -1,6 +1,6 @@
 ### Updates
 #### Sep 28, 2024:
-If you want to use agent with the OpenAI o1 models, please run these installation commands to update packages ``pip install aider-chat==0.57.1; pip install git+https://github.com/wenting-zhao/aider.git``.
+If you want to use agent with the OpenAI o1 models, please run these installation commands to update packages ``pip install git+https://github.com/wenting-zhao/aider.git``.
 
 ---
 
