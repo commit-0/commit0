@@ -480,7 +480,7 @@ def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
     """
     lint_cmd = "python -m commit0 lint "
     if use_lint_info:
-        lint_cmd += repo_name + " --files "
+        lint_cmd += repo_name + " --commit0-dot-file-path ../../.commit0.yaml --files "
     else:
         lint_cmd = ""
     return lint_cmd
