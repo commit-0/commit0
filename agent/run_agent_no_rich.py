@@ -13,6 +13,7 @@ from agent.agent_utils import (
     get_lint_cmd,
     read_yaml_config,
 )
+import subprocess
 from agent.agents import AiderAgents
 from typing import Optional, Type, cast
 from types import TracebackType
@@ -200,6 +201,17 @@ def run_agent(
 
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
+
+    if agent_config.use_topo_sort_dependencies:
+        # Install Chrome for Playwright for browser-based agents
+        try:
+            subprocess.run(["playwright", "install", "chromium"], check=True)
+            print("Chrome installed successfully for Playwright")
+        except subprocess.CalledProcessError as e:
+            print(f"Error installing Chrome for Playwright: {e}")
+        except FileNotFoundError:
+            print("Playwright not found. Make sure it's installed and in your PATH.")
+
 
     with tqdm(
         total=len(filtered_dataset), smoothing=0, desc="Running Aider for repos"
