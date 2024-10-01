@@ -9,6 +9,7 @@ from agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
+    get_changed_files_from_commits,
     update_message_with_dependencies,
     get_lint_cmd,
     read_yaml_config,
@@ -106,6 +107,9 @@ def run_agent_for_repo(
         agent_config.use_topo_sort_dependencies,
     )
 
+    lint_files = get_changed_files_from_commits(
+        local_repo, "HEAD", example["base_commit"]
+    )
     # Call the commit0 get-tests command to retrieve test files
     test_files_str = get_tests(repo_name, verbose=0)
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
@@ -148,6 +152,22 @@ def run_agent_for_repo(
                     test_first=True,
                 )
                 # cost = agent_return.last_cost
+        elif agent_config.run_entire_dir_lint:
+            # when unit test feedback is available, iterate over test files
+            for lint_file in lint_files:
+                lint_file_name = lint_file.replace(".py", "").replace("/", "__")
+                lint_log_dir = experiment_log_dir / lint_file_name
+                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+
+                # display the test file to terminal
+                _ = agent.run(
+                    "",
+                    "",
+                    lint_cmd,
+                    [lint_file],
+                    lint_log_dir,
+                    lint_first=True,
+                )
         else:
             # when unit test feedback is not available, iterate over target files to edit
             message = get_message(

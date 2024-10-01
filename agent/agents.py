@@ -63,6 +63,7 @@ class AiderAgents(Agents):
         fnames: list[str],
         log_dir: Path,
         test_first: bool = False,
+        lint_first: bool = False,
     ) -> AgentReturn:
         """Start aider agent"""
         if test_cmd:
@@ -111,14 +112,15 @@ class AiderAgents(Agents):
             test_cmd=test_cmd,
             io=io,
         )
-        coder.max_reflection = self.max_iteration
+        coder.max_reflections = self.max_iteration
         coder.stream = True
-
         # Run the agent
         if test_first:
             test_errors = coder.commands.cmd_test(test_cmd)
             if test_errors:
                 coder.run(test_errors)
+        elif lint_first:
+            coder.commands.cmd_lint(fnames=fnames)
         else:
             coder.run(message)
 

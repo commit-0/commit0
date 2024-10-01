@@ -7,6 +7,7 @@ from agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
+    get_changed_files_from_commits,
     update_message_with_dependencies,
     get_lint_cmd,
     read_yaml_config,
@@ -109,6 +110,9 @@ def run_agent_for_repo(
         agent_config.use_topo_sort_dependencies,
     )
     # Call the commit0 get-tests command to retrieve test files
+    lint_files = get_changed_files_from_commits(
+        local_repo, "HEAD", example["base_commit"]
+    )
     test_files_str = get_tests(repo_name, verbose=0)
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
@@ -136,9 +140,12 @@ def run_agent_for_repo(
         if agent_config.run_tests:
             update_queue.put(("start_repo", (repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
+            # REMOVE LATER
+            if agent_config.max_iteration == 10 and repo_name == "simpy":
+                test_files = test_files[6:]
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-dot-file-path {commit0_dot_file_path}"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-dot-file-path {commit0_dot_file_path} --timeout 100"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
@@ -146,7 +153,7 @@ def run_agent_for_repo(
 
                 # display the test file to terminal
                 agent_return = agent.run(
-                    message,
+                    "",
                     test_cmd,
                     lint_cmd,
                     target_edit_files,
@@ -158,6 +165,31 @@ def run_agent_for_repo(
                     (
                         "update_money_display",
                         (repo_name, test_file, agent_return.last_cost),
+                    )
+                )
+        elif agent_config.run_entire_dir_lint:
+            update_queue.put(("start_repo", (repo_name, len(lint_files))))
+            # when unit test feedback is available, iterate over test files
+            for lint_file in lint_files:
+                update_queue.put(("set_current_file", (repo_name, lint_file)))
+                lint_file_name = lint_file.replace(".py", "").replace("/", "__")
+                lint_log_dir = experiment_log_dir / lint_file_name
+                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+
+                # display the test file to terminal
+                agent_return = agent.run(
+                    "",
+                    "",
+                    lint_cmd,
+                    [lint_file],
+                    lint_log_dir,
+                    lint_first=True,
+                )
+                # after running the agent, update the money display
+                update_queue.put(
+                    (
+                        "update_money_display",
+                        (repo_name, lint_file, agent_return.last_cost),
                     )
                 )
         else:
@@ -218,8 +250,18 @@ def run_agent(
     ]
     assert len(filtered_dataset) > 0, "No examples available"
 
+    if (
+        commit0_config["base_dir"] == "/home/nan/commit0/repos_D_L_T_10_lite"
+        and agent_config.max_iteration == 10
+    ):
+        filtered_dataset = [filtered_dataset[1]]
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
+    if (
+        commit0_config["base_dir"] == "/home/nan/commit0/repos_deepseek_D_lite"
+        and agent_config.model_name == "deepseek/deepseek-coder"
+    ):
+        filtered_dataset = [filtered_dataset[8], filtered_dataset[11]]
 
     if agent_config.use_topo_sort_dependencies:
         # Install Chrome for Playwright for browser-based agents

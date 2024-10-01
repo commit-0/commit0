@@ -131,6 +131,10 @@ def config(
         10000,
         help="Maximum length of the lint information to use",
     ),
+    run_entire_dir_lint: bool = typer.Option(
+        False,
+        help="Run the lint on the entire directory",
+    ),
     pre_commit_config_path: str = typer.Option(
         ".pre-commit-config.yaml",
         help="Path to the pre-commit config file",
@@ -164,6 +168,7 @@ def config(
         "max_spec_info_length": max_spec_info_length,
         "use_lint_info": use_lint_info,
         "max_lint_info_length": max_lint_info_length,
+        "run_entire_dir_lint": run_entire_dir_lint,
         "pre_commit_config_path": pre_commit_config_path,
     }
 

@@ -340,11 +340,8 @@ def get_message(
         with bz2.open("spec.pdf.bz2", "rb") as in_file:
             with open("spec.pdf", "wb") as out_file:
                 out_file.write(in_file.read())
-        spec_info = (
-            f"\n{SPEC_INFO_HEADER} "
-            + get_specification(specification_pdf_path=Path(repo_path, "spec.pdf"))[
-                : agent_config.max_spec_info_length
-            ]
+        spec_info = f"\n{SPEC_INFO_HEADER} " + get_specification(
+            specification_pdf_path=Path(repo_path, "spec.pdf")
         )
     else:
         spec_info = ""
@@ -374,8 +371,6 @@ def get_specification(specification_pdf_path: Path) -> str:
     # Open the specified PDF file
     document = fitz.open(specification_pdf_path)
     text = ""
-
-    # Iterate through the pages
     for page_num in range(len(document)):
         page = document.load_page(page_num)  # loads the specified page
         text += page.get_text()  # type: ignore
@@ -414,6 +409,33 @@ def create_branch(repo: git.Repo, branch: str, from_commit: str) -> None:
             repo.git.checkout("-b", branch)
     except git.exc.GitCommandError as e:  # type: ignore
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
+
+
+def get_changed_files_from_commits(
+    repo: git.Repo, commit1: str, commit2: str
+) -> list[str]:
+    """Get the changed files from two commits."""
+    try:
+        # Get the commit objects
+        commit1_obj = repo.commit(commit1)
+        commit2_obj = repo.commit(commit2)
+
+        # Get the diff between the two commits
+        diff = commit1_obj.diff(commit2_obj)
+
+        # Extract the changed file paths
+        changed_files = [item.a_path for item in diff]
+
+        # Check if each changed file is a Python file
+        python_files = [file for file in changed_files if file.endswith(".py")]
+
+        # Update the changed_files list to only include Python files
+        changed_files = python_files
+
+        return changed_files
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
 
 
 def args2string(agent_config: AgentConfig) -> str:

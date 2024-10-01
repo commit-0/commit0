@@ -16,6 +16,7 @@ class AgentConfig:
     use_spec_info: bool
     max_spec_info_length: int
     use_lint_info: bool
+    run_entire_dir_lint: bool
     max_lint_info_length: int
     pre_commit_config_path: str
     run_tests: bool
