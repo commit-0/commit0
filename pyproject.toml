@@ -45,7 +45,7 @@ Issues = "https://github.com/commit-0/commit0/issues"
 
 [tool.pyright]
 include = ["**/commit0", "**/agent"]
-ignore = ["**/docs", "**/logs", "**/repos"]
+ignore = ["**/docs", "**/logs"]
 venvPath = "."
 venv = ".venv"
 reportUnknownMemberType = "none"
@@ -67,7 +67,6 @@ exclude = [
     "**/.venv/**",
     "__pycache__",
     "**/docs/**/*",
-    "**/repos/**/*",
     "**/logs/**/*",
 ]
 
