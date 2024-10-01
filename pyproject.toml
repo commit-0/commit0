@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "commit0"
-version = "0.1.4"
+version = "0.1.5"
 description = "A development and evaluation framework for using language models to generate libraries."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -46,7 +46,7 @@ Issues = "https://github.com/commit-0/commit0/issues"
 
 [tool.pyright]
 include = ["**/commit0", "**/agent"]
-ignore = ["**/docs", "**/logs", "**/repos"]
+ignore = ["**/docs", "**/logs"]
 venvPath = "."
 venv = ".venv"
 reportUnknownMemberType = "none"
@@ -68,7 +68,6 @@ exclude = [
     "**/.venv/**",
     "__pycache__",
     "**/docs/**/*",
-    "**/repos/**/*",
     "**/logs/**/*",
 ]
 
