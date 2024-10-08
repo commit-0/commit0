@@ -129,7 +129,7 @@ def run_agent_for_repo(
         yaml.dump(agent_config, agent_config_file)
 
     # TODO: make this path more general
-    commit0_dot_file_path = str(Path(repo_path).parent.parent / ".commit0.yaml")
+    commit0_config_file = str(Path(repo_path).parent.parent / ".commit0.yaml")
 
     with DirContext(repo_path):
         if agent_config is None:
@@ -138,10 +138,12 @@ def run_agent_for_repo(
         if agent_config.run_tests:
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-dot-file-path {commit0_dot_file_path}"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file}"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
-                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(
+                    repo_name, agent_config.use_lint_info, commit0_config_file
+                )
                 message = get_message(agent_config, repo_path, test_file=test_file)
                 _ = agent.run(
                     message,
@@ -157,7 +159,9 @@ def run_agent_for_repo(
             for lint_file in lint_files:
                 lint_file_name = lint_file.replace(".py", "").replace("/", "__")
                 lint_log_dir = experiment_log_dir / lint_file_name
-                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(
+                    repo_name, agent_config.use_lint_info, commit0_config_file
+                )
 
                 # display the test file to terminal
                 _ = agent.run(
@@ -180,7 +184,9 @@ def run_agent_for_repo(
                     message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
-                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(
+                    repo_name, agent_config.use_lint_info, commit0_config_file
+                )
                 _ = agent.run(message, "", lint_cmd, [f], file_log_dir)
                 # cost = agent_return.last_cost
 

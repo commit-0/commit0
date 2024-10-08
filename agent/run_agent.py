@@ -54,6 +54,7 @@ def run_agent_for_repo(
     override_previous_changes: bool = False,
     backend: str = "modal",
     log_dir: str = str(RUN_AGENT_LOG_DIR.resolve()),
+    commit0_config_file: str = "",
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info
@@ -130,9 +131,6 @@ def run_agent_for_repo(
     with open(agent_config_log_file, "w") as agent_config_file:
         yaml.dump(agent_config, agent_config_file)
 
-    # TODO: make this path more general
-    commit0_dot_file_path = str(Path(repo_path).parent.parent / ".commit0.yaml")
-
     with DirContext(repo_path):
         if agent_config is None:
             raise ValueError("Invalid input")
@@ -145,10 +143,12 @@ def run_agent_for_repo(
                 test_files = test_files[6:]
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-dot-file-path {commit0_dot_file_path} --timeout 100"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
-                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(
+                    repo_name, agent_config.use_lint_info, commit0_config_file
+                )
                 message = get_message(agent_config, repo_path, test_file=test_file)
 
                 # display the test file to terminal
@@ -174,7 +174,9 @@ def run_agent_for_repo(
                 update_queue.put(("set_current_file", (repo_name, lint_file)))
                 lint_file_name = lint_file.replace(".py", "").replace("/", "__")
                 lint_log_dir = experiment_log_dir / lint_file_name
-                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(
+                    repo_name, agent_config.use_lint_info, commit0_config_file
+                )
 
                 # display the test file to terminal
                 agent_return = agent.run(
@@ -206,7 +208,9 @@ def run_agent_for_repo(
                     message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
-                lint_cmd = get_lint_cmd(repo_name, agent_config.use_lint_info)
+                lint_cmd = get_lint_cmd(
+                    repo_name, agent_config.use_lint_info, commit0_config_file
+                )
                 agent_return = agent.run(message, "", lint_cmd, [f], file_log_dir)
                 update_queue.put(
                     (
@@ -231,7 +235,7 @@ def run_agent(
     config = read_yaml_config(agent_config_file)
 
     agent_config = AgentConfig(**config)
-
+    commit0_config_file = os.path.abspath(commit0_config_file)
     commit0_config = read_commit0_dot_file(commit0_config_file)
     dataset = load_dataset(
         commit0_config["dataset_name"], split=commit0_config["dataset_split"]
@@ -250,18 +254,8 @@ def run_agent(
     ]
     assert len(filtered_dataset) > 0, "No examples available"
 
-    if (
-        commit0_config["base_dir"] == "/home/nan/commit0/repos_D_L_T_10_lite"
-        and agent_config.max_iteration == 10
-    ):
-        filtered_dataset = [filtered_dataset[1]]
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
-    if (
-        commit0_config["base_dir"] == "/home/nan/commit0/repos_deepseek_D_lite"
-        and agent_config.model_name == "deepseek/deepseek-coder"
-    ):
-        filtered_dataset = [filtered_dataset[8], filtered_dataset[11]]
 
     if agent_config.use_topo_sort_dependencies:
         # Install Chrome for Playwright for browser-based agents
@@ -316,6 +310,7 @@ def run_agent(
                             override_previous_changes,
                             backend,
                             log_dir,
+                            commit0_config_file,
                         ),
                     )
                     results.append(result)

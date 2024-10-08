@@ -250,51 +250,46 @@ def get_target_edit_files(
             if "    pass" in content:
                 filtered_files.append(file_path)
     # Change to reference commit to get the correct dependencies
-    if use_topo_sort_dependencies:
-        local_repo.git.checkout(reference_commit)
+    local_repo.git.checkout(reference_commit)
 
-        topological_sort_files, import_dependencies = (
-            topological_sort_based_on_dependencies(filtered_files)
-        )
-        if len(topological_sort_files) != len(filtered_files):
-            if len(topological_sort_files) < len(filtered_files):
-                # Find the missing elements
-                missing_files = set(filtered_files) - set(topological_sort_files)
-                # Add the missing files to the end of the list
-                topological_sort_files = topological_sort_files + list(missing_files)
-            else:
-                raise ValueError(
-                    "topological_sort_files should not be longer than filtered_files"
-                )
-        assert len(topological_sort_files) == len(
-            filtered_files
-        ), "all files should be included"
-
-        # change to latest commit
-        local_repo.git.checkout(branch)
-
-        # Remove the base_dir prefix
-        topological_sort_files = [
-            file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
-        ]
-
-        # Remove the base_dir prefix from import dependencies
-        import_dependencies_without_prefix = {}
-        for key, value in import_dependencies.items():
-            key_without_prefix = key.replace(target_dir, "").lstrip("/")
-            value_without_prefix = [
-                v.replace(target_dir, "").lstrip("/") for v in value
-            ]
-            import_dependencies_without_prefix[key_without_prefix] = (
-                value_without_prefix
+    topological_sort_files, import_dependencies = (
+        topological_sort_based_on_dependencies(filtered_files)
+    )
+    if len(topological_sort_files) != len(filtered_files):
+        if len(topological_sort_files) < len(filtered_files):
+            # Find the missing elements
+            missing_files = set(filtered_files) - set(topological_sort_files)
+            # Add the missing files to the end of the list
+            topological_sort_files = topological_sort_files + list(missing_files)
+        else:
+            raise ValueError(
+                "topological_sort_files should not be longer than filtered_files"
             )
+    assert len(topological_sort_files) == len(
+        filtered_files
+    ), "all files should be included"
 
+    # change to latest commit
+    local_repo.git.checkout(branch)
+
+    # Remove the base_dir prefix
+    topological_sort_files = [
+        file.replace(target_dir, "").lstrip("/") for file in topological_sort_files
+    ]
+
+    # Remove the base_dir prefix from import dependencies
+    import_dependencies_without_prefix = {}
+    for key, value in import_dependencies.items():
+        key_without_prefix = key.replace(target_dir, "").lstrip("/")
+        value_without_prefix = [v.replace(target_dir, "").lstrip("/") for v in value]
+        import_dependencies_without_prefix[key_without_prefix] = value_without_prefix
+    if use_topo_sort_dependencies:
         return topological_sort_files, import_dependencies_without_prefix
     else:
         filtered_files = [
             file.replace(target_dir, "").lstrip("/") for file in filtered_files
         ]
-        return filtered_files, {}
+        return filtered_files, import_dependencies_without_prefix
 
 
 def get_message(
@@ -486,13 +481,14 @@ def get_changed_files(repo: git.Repo) -> list[str]:
     return files_changed
 
 
-def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
+def get_lint_cmd(repo_name: str, use_lint_info: bool, commit0_config_file: str) -> str:
     """Generate a linting command based on whether to include files.
 
     Args:
     ----
         repo_name (str): The name of the repository.
         use_lint_info (bool): A flag indicating whether to include changed files in the lint command.
+        commit0_config_file (str): The path to the commit0 dot file.
 
     Returns:
     -------
@@ -502,7 +498,9 @@ def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
     """
     lint_cmd = "python -m commit0 lint "
     if use_lint_info:
-        lint_cmd += repo_name + " --commit0-dot-file-path ../../.commit0.yaml --files "
+        lint_cmd += (
+            repo_name + " --commit0-config-file " + commit0_config_file + " --files "
+        )
     else:
         lint_cmd = ""
     return lint_cmd
