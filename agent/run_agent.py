@@ -138,9 +138,6 @@ def run_agent_for_repo(
         if agent_config.run_tests:
             update_queue.put(("start_repo", (repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
-            # REMOVE LATER
-            if agent_config.max_iteration == 10 and repo_name == "simpy":
-                test_files = test_files[6:]
             for test_file in test_files:
                 update_queue.put(("set_current_file", (repo_name, test_file)))
                 test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
@@ -257,7 +254,7 @@ def run_agent(
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
 
-    if agent_config.use_topo_sort_dependencies:
+    if agent_config.add_import_module_to_context:
         # Install Chrome for Playwright for browser-based agents
         try:
             subprocess.run(["playwright", "install", "chromium"], check=True)

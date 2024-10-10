@@ -5,7 +5,6 @@ from tqdm import tqdm
 from datasets import load_dataset
 from git import Repo
 from agent.agent_utils import (
-    args2string,
     create_branch,
     get_message,
     get_target_edit_files,
@@ -48,10 +47,11 @@ def run_agent_for_repo(
     repo_base_dir: str,
     agent_config: AgentConfig,
     example: RepoInstance,
-    branch: Optional[str] = None,
+    branch: str,
     override_previous_changes: bool = False,
     backend: str = "modal",
     log_dir: str = str(RUN_AGENT_LOG_DIR.resolve()),
+    commit0_config_file: str = "",
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info
@@ -79,8 +79,8 @@ def run_agent_for_repo(
         )
 
     # if branch_name is not provided, create a new branch name based on agent_config
-    if branch is None:
-        branch = args2string(agent_config)
+    # if branch is None:
+    #     branch = args2string(agent_config)
 
     # Check if there are changes in the current branch
     if local_repo.is_dirty():
@@ -128,9 +128,6 @@ def run_agent_for_repo(
     with open(agent_config_log_file, "w") as agent_config_file:
         yaml.dump(agent_config, agent_config_file)
 
-    # TODO: make this path more general
-    commit0_config_file = str(Path(repo_path).parent.parent / ".commit0.yaml")
-
     with DirContext(repo_path):
         if agent_config is None:
             raise ValueError("Invalid input")
@@ -138,13 +135,14 @@ def run_agent_for_repo(
         if agent_config.run_tests:
             # when unit test feedback is available, iterate over test files
             for test_file in test_files:
-                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file}"
+                test_cmd = f"python -m commit0 test {repo_path} {test_file} --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
                 test_file_name = test_file.replace(".py", "").replace("/", "__")
                 test_log_dir = experiment_log_dir / test_file_name
                 lint_cmd = get_lint_cmd(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
                 message = get_message(agent_config, repo_path, test_file=test_file)
+
                 _ = agent.run(
                     message,
                     test_cmd,
@@ -178,7 +176,6 @@ def run_agent_for_repo(
                 agent_config, repo_path, test_dir=example["test"]["test_dir"]
             )
             for f in target_edit_files:
-                dependencies = import_dependencies.get(f, [])
                 if agent_config.add_import_module_to_context:
                     dependencies = import_dependencies.get(f, [])
                     message = update_message_with_dependencies(message, dependencies)
@@ -208,6 +205,7 @@ def run_agent(
 
     agent_config = AgentConfig(**config)
 
+    commit0_config_file = os.path.abspath(commit0_config_file)
     commit0_config = read_commit0_dot_file(commit0_config_file)
 
     dataset = load_dataset(
@@ -230,7 +228,7 @@ def run_agent(
     # if len(filtered_dataset) > 1:
     #     sys.stdout = open(os.devnull, "w")
 
-    if agent_config.use_topo_sort_dependencies:
+    if agent_config.add_import_module_to_context:
         # Install Chrome for Playwright for browser-based agents
         try:
             subprocess.run(["playwright", "install", "chromium"], check=True)
@@ -258,6 +256,7 @@ def run_agent(
                         override_previous_changes,
                         backend,
                         log_dir,
+                        commit0_config_file,
                     ),
                     callback=lambda _: pbar.update(
                         1

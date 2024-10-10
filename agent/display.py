@@ -96,6 +96,7 @@ class TerminalDisplay:
         self.start_time_per_repo = {}
         self.end_time_per_repo = {}
         self.total_time_spent = 0
+        self.branch_name = ""
 
         self.overall_progress = Progress(
             SpinnerColumn(),
@@ -243,6 +244,7 @@ class TerminalDisplay:
 
     def update_branch_display(self, branch: str) -> None:
         """Update the branch display with the given branch."""
+        self.branch_name = branch
         self.branch_display = Text(f"{branch}", justify="center")
         self.layout["info"]["other_info"]["branch"].update(
             Panel(self.branch_display, title="Branch", border_style="blue")
@@ -436,7 +438,7 @@ class TerminalDisplay:
         }
 
         with open(
-            f"processing_summary_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.json",
+            f"processing_summary_{self.branch_name}.json",
             "w",
         ) as json_file:
             json.dump(summary_data, json_file, indent=4)

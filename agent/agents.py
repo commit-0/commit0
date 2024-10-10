@@ -24,6 +24,22 @@ def handle_logging(logging_name: str, log_file: Path) -> None:
 class AgentReturn(ABC):
     def __init__(self, log_file: Path):
         self.log_file = log_file
+        self.last_cost = 0.0
+
+
+class Agents(ABC):
+    def __init__(self, max_iteration: int):
+        self.max_iteration = max_iteration
+
+    @abstractmethod
+    def run(self) -> AgentReturn:
+        """Start agent"""
+        raise NotImplementedError
+
+
+class AiderReturn(AgentReturn):
+    def __init__(self, log_file: Path):
+        super().__init__(log_file)
         self.last_cost = self.get_money_cost()
 
     def get_money_cost(self) -> float:
@@ -38,16 +54,6 @@ class AgentReturn(ABC):
                     if match:
                         last_cost = float(match.group(1))
         return last_cost
-
-
-class Agents(ABC):
-    def __init__(self, max_iteration: int):
-        self.max_iteration = max_iteration
-
-    @abstractmethod
-    def run(self) -> AgentReturn:
-        """Start agent"""
-        raise NotImplementedError
 
 
 class AiderAgents(Agents):
@@ -86,10 +92,6 @@ class AiderAgents(Agents):
             level=logging.INFO,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
-
-        with open(log_file, "a") as f:
-            f.write(message)
-
         # Redirect print statements to the log file
         sys.stdout = open(log_file, "a")
         sys.stderr = open(log_file, "a")
@@ -124,20 +126,6 @@ class AiderAgents(Agents):
         else:
             coder.run(message)
 
-        # #### TMP
-
-        # #### TMP
-        # import time
-        # import random
-
-        # time.sleep(random.random() * 5)
-        # n = random.random() / 10
-        # with open(log_file, "a") as f:
-        #     f.write(
-        #         f"> Tokens: 33k sent, 1.3k received. Cost: $0.12 message, ${n} session.  \n"
-        #     )
-        # #### TMP
-
         # Close redirected stdout and stderr
         sys.stdout.close()
         sys.stderr.close()
@@ -145,4 +133,4 @@ class AiderAgents(Agents):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-        return AgentReturn(log_file)
+        return AiderReturn(log_file)
