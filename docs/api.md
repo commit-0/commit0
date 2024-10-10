@@ -13,7 +13,7 @@ Available options include:
 | `--dataset-name` | str | Name of the Huggingface dataset | `wentingzhao/commit0_combined` |
 | `--dataset-split` | str | Split of the Huggingface dataset | `test` |
 | `--base-dir` | str | Base directory to clone repos to | `repos/` |
-| `--commit0-dot-file-path` | str | Storing path for stateful commit0 configs | `.commit0.yaml` |
+| `--commit0-config-file` | str | Storing path for stateful commit0 configs | `.commit0.yaml` |
 
 ### Build
 
@@ -23,7 +23,7 @@ Available options include:
 | Argument | Type | Description | Default |
 |----------|------|-------------|---------|
 | `--num-workers` | int | Number of workers | `8` |
-| `--commit0-dot-file-path` | str | Path to the commit0 dot file | `.commit0.yaml` |
+| `--commit0-config-file` | str | Path to the commit0 dot file | `.commit0.yaml` |
 | `--verbose` | int | Verbosity level (1 or 2) | `1` |
 
 ### Get Tests
@@ -50,7 +50,7 @@ Available options include:
 | `--reference` | bool | Test the reference commit | `False` |
 | `--coverage` | bool | Get coverage information | `False` |
 | `--rebuild` | bool | Rebuild an image | `False` |
-| `--commit0-dot-file-path` | str | Path to the commit0 dot file | `.commit0.yaml` |
+| `--commit0-config-file` | str | Path to the commit0 dot file | `.commit0.yaml` |
 | `--verbose` | int | Verbosity level (1 or 2) | `1` |
 | `--stdin` | bool | Read test names from stdin | `False` |
 
@@ -68,7 +68,7 @@ Available options include:
 | `--num-workers` | int | Number of workers to use | `8` |
 | `--reference` | bool | Evaluate the reference commit | `False` |
 | `--coverage` | bool | Get coverage information | `False` |
-| `--commit0-dot-file-path` | str | Path to the commit0 dot file | `.commit0.yaml` |
+| `--commit0-config-file` | str | Path to the commit0 dot file | `.commit0.yaml` |
 | `--rebuild` | bool | Rebuild images | `False` |
 
 ### Lint
@@ -80,7 +80,7 @@ Available options include:
 |----------|------|-------------|---------|
 | `repo_or_repo_dir` | str | Directory of the repository to test | |
 | `--files` | List[Path] | Files to lint (optional) | |
-| `--commit0-dot-file-path` | str | Path to the commit0 dot file | `.commit0.yaml` |
+| `--commit0-config-file` | str | Path to the commit0 dot file | `.commit0.yaml` |
 | `--verbose` | int | Verbosity level (1 or 2) | `1` |
 
 ### Save
@@ -93,7 +93,7 @@ Available options include:
 | `owner` | str | Owner of the repository | |
 | `branch` | str | Branch to save | |
 | `--github-token` | str | GitHub token for authentication | |
-| `--commit0-dot-file-path` | str | Path to the commit0 dot file | `.commit0.yaml` |
+| `--commit0-config-file` | str | Path to the commit0 dot file | `.commit0.yaml` |
 
 ## Agent
 

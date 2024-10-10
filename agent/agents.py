@@ -24,6 +24,22 @@ def handle_logging(logging_name: str, log_file: Path) -> None:
 class AgentReturn(ABC):
     def __init__(self, log_file: Path):
         self.log_file = log_file
+        self.last_cost = 0.0
+
+
+class Agents(ABC):
+    def __init__(self, max_iteration: int):
+        self.max_iteration = max_iteration
+
+    @abstractmethod
+    def run(self) -> AgentReturn:
+        """Start agent"""
+        raise NotImplementedError
+
+
+class AiderReturn(AgentReturn):
+    def __init__(self, log_file: Path):
+        super().__init__(log_file)
         self.last_cost = self.get_money_cost()
 
     def get_money_cost(self) -> float:
@@ -40,16 +56,6 @@ class AgentReturn(ABC):
         return last_cost
 
 
-class Agents(ABC):
-    def __init__(self, max_iteration: int):
-        self.max_iteration = max_iteration
-
-    @abstractmethod
-    def run(self) -> AgentReturn:
-        """Start agent"""
-        raise NotImplementedError
-
-
 class AiderAgents(Agents):
     def __init__(self, max_iteration: int, model_name: str):
         super().__init__(max_iteration)
@@ -63,6 +69,7 @@ class AiderAgents(Agents):
         fnames: list[str],
         log_dir: Path,
         test_first: bool = False,
+        lint_first: bool = False,
     ) -> AgentReturn:
         """Start aider agent"""
         if test_cmd:
@@ -85,15 +92,9 @@ class AiderAgents(Agents):
             level=logging.INFO,
             format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         )
-
         # Redirect print statements to the log file
         sys.stdout = open(log_file, "a")
         sys.stderr = open(log_file, "a")
-
-        # Log the message
-        agent_message_log_file = log_dir / "agent_message.log"
-        with open(agent_message_log_file, "a") as f:
-            f.write(f"Message Sent: {message}\n\n")
 
         # Configure httpx and backoff logging
         handle_logging("httpx", log_file)
@@ -113,30 +114,17 @@ class AiderAgents(Agents):
             test_cmd=test_cmd,
             io=io,
         )
-        coder.max_reflection = self.max_iteration
+        coder.max_reflections = self.max_iteration
         coder.stream = True
-
         # Run the agent
         if test_first:
             test_errors = coder.commands.cmd_test(test_cmd)
             if test_errors:
                 coder.run(test_errors)
+        elif lint_first:
+            coder.commands.cmd_lint(fnames=fnames)
         else:
             coder.run(message)
-
-        # #### TMP
-
-        # #### TMP
-        # import time
-        # import random
-
-        # time.sleep(random.random() * 5)
-        # n = random.random() / 10
-        # with open(log_file, "a") as f:
-        #     f.write(
-        #         f"> Tokens: 33k sent, 1.3k received. Cost: $0.12 message, ${n} session.  \n"
-        #     )
-        # #### TMP
 
         # Close redirected stdout and stderr
         sys.stdout.close()
@@ -145,4 +133,4 @@ class AiderAgents(Agents):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-        return AgentReturn(log_file)
+        return AiderReturn(log_file)

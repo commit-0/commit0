@@ -385,7 +385,7 @@ def main(args):
         if args.do_setup:
             os.system(
                 f"commit0 setup {args.split} --base-dir {analysis_files_path}/repos "
-                f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
+                f"--commit0-config-file {analysis_files_path}/repos/.commit0.yaml"
             )
         branch_name = "blank"
         if args.overwrite_previous_eval:
@@ -420,7 +420,7 @@ def main(args):
     if args.get_reference_details:
         branch_name = "reference"
         org_name = f"commit0_{args.split}"
-        commit0_dot_file_path = os.path.join(
+        commit0_config_file = os.path.join(
             analysis_files_path, "repos", org_name, branch_name, ".commit0.yaml"
         )
         submission_repos_path = os.path.join(
@@ -429,7 +429,7 @@ def main(args):
         if args.do_setup:
             os.system(
                 f"commit0 setup {args.split} --base-dir {submission_repos_path} "
-                f"--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-config-file {commit0_config_file}"
             )
         submission_metrics_output_file = os.path.join(
             analysis_files_path, org_name, f"{branch_name}.json"
@@ -456,7 +456,7 @@ def main(args):
         if args.overwrite_previous_eval or need_re_eval:
             os.system(
                 "commit0 evaluate --reference "
-                f"--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-config-file {commit0_config_file}"
             )
         # get coverage and pytest info for each repo
         for example in dataset:
@@ -494,7 +494,7 @@ def main(args):
             if os.path.exists(submission_repos_path):
                 shutil.rmtree(submission_repos_path)
             os.makedirs(os.path.join(analysis_files_path, org_name), exist_ok=True)
-            commit0_dot_file_path = os.path.join(
+            commit0_config_file = os.path.join(
                 analysis_files_path,
                 "submission_repos",
                 org_name,
@@ -520,7 +520,7 @@ def main(args):
                         shutil.rmtree(clone_dir)
             # after successfully setup, write the commit0 dot file
             write_commit0_dot_file(
-                commit0_dot_file_path,
+                commit0_config_file,
                 {
                     "dataset_name": commit0_dataset_name,
                     "dataset_split": "test",
@@ -531,7 +531,7 @@ def main(args):
             # run pytests
             os.system(
                 f"commit0 evaluate --branch {branch_name} "
-                f"--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-config-file {commit0_config_file}"
             )
             for example in dataset:
                 repo_name = example["repo"].split("/")[-1]
