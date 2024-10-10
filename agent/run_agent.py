@@ -7,6 +7,7 @@ from agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
+    get_target_edit_files_from_patch,
     get_changed_files_from_commits,
     update_message_with_dependencies,
     get_lint_cmd,
@@ -26,6 +27,7 @@ from datetime import datetime
 from agent.display import TerminalDisplay
 import queue
 import time
+import ast
 
 
 class DirContext:
@@ -58,7 +60,13 @@ def run_agent_for_repo(
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info
-    _, repo_name = example["repo"].split("/")
+    commit0_config = read_commit0_dot_file(commit0_config_file)
+    if "SWE-bench" in commit0_config["dataset_name"]:
+        repo_name = example["instance_id"]
+    elif "commit0" in commit0_config["dataset_name"]:
+        _, repo_name = example["repo"].split("/")
+    else:
+        raise ValueError(f"Dataset {commit0_config['dataset_name']} is not supported")
 
     # before starting, display all information to terminal
     update_queue.put(("start_repo", (repo_name, 0)))
@@ -102,20 +110,34 @@ def run_agent_for_repo(
     if latest_commit.hexsha != example["base_commit"] and override_previous_changes:
         local_repo.git.reset("--hard", example["base_commit"])
 
-    target_edit_files, import_dependencies = get_target_edit_files(
-        local_repo,
-        example["src_dir"],
-        example["test"]["test_dir"],
-        branch,
-        example["reference_commit"],
-        agent_config.use_topo_sort_dependencies,
-    )
-    # Call the commit0 get-tests command to retrieve test files
-    lint_files = get_changed_files_from_commits(
-        local_repo, "HEAD", example["base_commit"]
-    )
-    test_files_str = get_tests(repo_name, verbose=0)
-    test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
+    if "SWE-bench" in commit0_config["dataset_name"]:
+        target_edit_files, import_dependencies = get_target_edit_files_from_patch(
+            local_repo, example["patch"], agent_config.use_topo_sort_dependencies
+        )
+        lint_files = []
+        test_files_str = ast.literal_eval(example["FAIL_TO_PASS"]) + ast.literal_eval(
+            example["PASS_TO_PASS"]
+        )
+        test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
+    elif "commit0" in commit0_config["dataset_name"]:
+        # get target files to edit and test files to run
+        target_edit_files, import_dependencies = get_target_edit_files(
+            local_repo,
+            example["src_dir"],
+            example["test"]["test_dir"],
+            branch,
+            example["reference_commit"],
+            agent_config.use_topo_sort_dependencies,
+        )
+
+        lint_files = get_changed_files_from_commits(
+            local_repo, "HEAD", example["base_commit"]
+        )
+        # Call the commit0 get-tests command to retrieve test files
+        test_files_str = get_tests(repo_name, verbose=0)
+        test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
+    else:
+        raise ValueError(f"Dataset {commit0_config['dataset_name']} is not supported")
 
     # prepare the log dir
     experiment_log_dir = (
@@ -135,6 +157,10 @@ def run_agent_for_repo(
         if agent_config is None:
             raise ValueError("Invalid input")
 
+        # update prompt
+        if "SWE-bench" in commit0_config["dataset_name"]:
+            agent_config.user_prompt = example["text"]
+
         if agent_config.run_tests:
             update_queue.put(("start_repo", (repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
@@ -146,7 +172,7 @@ def run_agent_for_repo(
                 lint_cmd = get_lint_cmd(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
-                message = get_message(agent_config, repo_path, test_file=test_file)
+                message = get_message(agent_config, repo_path, test_files=[test_file])
 
                 # display the test file to terminal
                 agent_return = agent.run(
@@ -193,9 +219,7 @@ def run_agent_for_repo(
                 )
         else:
             # when unit test feedback is not available, iterate over target files to edit
-            message = get_message(
-                agent_config, repo_path, test_dir=example["test"]["test_dir"]
-            )
+            message = get_message(agent_config, repo_path, test_files=test_files)
 
             update_queue.put(("start_repo", (repo_name, len(target_edit_files))))
             for f in target_edit_files:

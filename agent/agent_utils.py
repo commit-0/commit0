@@ -292,31 +292,81 @@ def get_target_edit_files(
         return filtered_files, import_dependencies_without_prefix
 
 
+def get_target_edit_files_from_patch(
+    local_repo: git.Repo, patch: str, use_topo_sort_dependencies: bool = True
+) -> tuple[list[str], dict]:
+    """Get the target files from the patch."""
+    working_dir = str(local_repo.working_dir)
+    target_files = set()
+    for line in patch.split("\n"):
+        if line.startswith("+++") or line.startswith("---"):
+            file_path = line.split()[1]
+            if file_path.startswith("a/"):
+                file_path = file_path[2:]
+            if file_path.startswith("b/"):
+                file_path = file_path[2:]
+            target_files.add(file_path)
+
+    target_files_list = list(target_files)
+    target_files_list = [
+        os.path.join(working_dir, file_path) for file_path in target_files_list
+    ]
+
+    if use_topo_sort_dependencies:
+        topological_sort_files, import_dependencies = (
+            topological_sort_based_on_dependencies(target_files_list)
+        )
+        if len(topological_sort_files) != len(target_files_list):
+            if len(topological_sort_files) < len(target_files_list):
+                missing_files = set(target_files_list) - set(topological_sort_files)
+                topological_sort_files = topological_sort_files + list(missing_files)
+            else:
+                raise ValueError(
+                    "topological_sort_files should not be longer than target_files_list"
+                )
+        assert len(topological_sort_files) == len(
+            target_files_list
+        ), "all files should be included"
+
+        topological_sort_files = [
+            file.replace(working_dir, "").lstrip("/") for file in topological_sort_files
+        ]
+        for key, value in import_dependencies.items():
+            import_dependencies[key] = [
+                v.replace(working_dir, "").lstrip("/") for v in value
+            ]
+        return topological_sort_files, import_dependencies
+    else:
+        target_files_list = [
+            file.replace(working_dir, "").lstrip("/") for file in target_files_list
+        ]
+        return target_files_list, {}
+
+
 def get_message(
     agent_config: AgentConfig,
     repo_path: str,
-    test_dir: str | None = None,
-    test_file: str | None = None,
+    test_files: list[str] | None = None,
 ) -> str:
     """Get the message to Aider."""
     prompt = f"{PROMPT_HEADER}" + agent_config.user_prompt
 
-    if agent_config.use_unit_tests_info and test_dir:
-        unit_tests_info = (
-            f"\n{UNIT_TESTS_INFO_HEADER} "
-            + get_dir_info(
-                dir_path=Path(os.path.join(repo_path, test_dir)),
-                prefix="",
-                include_stubs=True,
-            )[: agent_config.max_unit_tests_info_length]
-        )
-    elif agent_config.use_unit_tests_info and test_file:
-        unit_tests_info = (
-            f"\n{UNIT_TESTS_INFO_HEADER} "
-            + get_file_info(
+    # if agent_config.use_unit_tests_info and test_dir:
+    #     unit_tests_info = (
+    #         f"\n{UNIT_TESTS_INFO_HEADER} "
+    #         + get_dir_info(
+    #             dir_path=Path(os.path.join(repo_path, test_dir)),
+    #             prefix="",
+    #             include_stubs=True,
+    #         )[: agent_config.max_unit_tests_info_length]
+    #     )
+    if agent_config.use_unit_tests_info and test_files:
+        unit_tests_info = f"\n{UNIT_TESTS_INFO_HEADER} "
+        for test_file in test_files:
+            unit_tests_info += get_file_info(
                 file_path=Path(os.path.join(repo_path, test_file)), prefix=""
-            )[: agent_config.max_unit_tests_info_length]
-        )
+            )
+        unit_tests_info = unit_tests_info[: agent_config.max_unit_tests_info_length]
     else:
         unit_tests_info = ""
 
