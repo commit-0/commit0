@@ -96,6 +96,7 @@ class TerminalDisplay:
         self.start_time_per_repo = {}
         self.end_time_per_repo = {}
         self.total_time_spent = 0
+        self.branch_name = ""
 
         self.overall_progress = Progress(
             SpinnerColumn(),
@@ -144,6 +145,7 @@ class TerminalDisplay:
             Layout(name="agent_name", ratio=1),
             Layout(name="model_name", ratio=1),
             Layout(name="run_tests", ratio=1),
+            Layout(name="use_topo_sort_dependencies", ratio=1),
             Layout(name="use_repo_info", ratio=1),
             Layout(name="use_unit_tests_info", ratio=1),
             Layout(name="use_spec_info", ratio=1),
@@ -192,6 +194,7 @@ class TerminalDisplay:
         agent_name: str,
         model_name: str,
         run_tests: bool,
+        use_topo_sort_dependencies: bool,
         use_repo_info: bool,
         use_unit_tests_info: bool,
         use_spec_info: bool,
@@ -202,6 +205,11 @@ class TerminalDisplay:
             ("agent_name", "Agent", agent_name),
             ("model_name", "Model", model_name),
             ("run_tests", "Run Tests", run_tests),
+            (
+                "use_topo_sort_dependencies",
+                "Topo Sort Dependencies",
+                use_topo_sort_dependencies,
+            ),
             ("use_repo_info", "Use Repo Info", use_repo_info),
             ("use_unit_tests_info", "Use Unit Tests", use_unit_tests_info),
             ("use_spec_info", "Use Spec", use_spec_info),
@@ -236,6 +244,7 @@ class TerminalDisplay:
 
     def update_branch_display(self, branch: str) -> None:
         """Update the branch display with the given branch."""
+        self.branch_name = branch
         self.branch_display = Text(f"{branch}", justify="center")
         self.layout["info"]["other_info"]["branch"].update(
             Panel(self.branch_display, title="Branch", border_style="blue")
@@ -428,7 +437,10 @@ class TerminalDisplay:
             ],
         }
 
-        with open("processing_summary.json", "w") as json_file:
+        with open(
+            f"processing_summary_{self.branch_name}.json",
+            "w",
+        ) as json_file:
             json.dump(summary_data, json_file, indent=4)
 
         print("\nSummary has been written to processing_summary.json")

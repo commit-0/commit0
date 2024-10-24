@@ -385,7 +385,7 @@ def main(args):
         if args.do_setup:
             os.system(
                 f"commit0 setup {args.split} --base-dir {analysis_files_path}/repos "
-                f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
+                f"--commit0-config-file {analysis_files_path}/repos/.commit0.yaml"
             )
         branch_name = "blank"
         if args.overwrite_previous_eval:
@@ -429,7 +429,7 @@ def main(args):
         if args.do_setup:
             os.system(
                 f"commit0 setup {args.split} --base-dir {submission_repos_path} "
-                f"--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-config-file {commit0_dot_file_path}"
             )
         submission_metrics_output_file = os.path.join(
             analysis_files_path, org_name, f"{branch_name}.json"
@@ -456,7 +456,7 @@ def main(args):
         if args.overwrite_previous_eval or need_re_eval:
             os.system(
                 "commit0 evaluate --reference "
-                f"--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-config-file {commit0_dot_file_path}"
             )
         # get coverage and pytest info for each repo
         for example in dataset:
@@ -531,7 +531,7 @@ def main(args):
             # run pytests
             os.system(
                 f"commit0 evaluate --branch {branch_name} "
-                f"--commit0-dot-file-path {commit0_dot_file_path}"
+                f"--commit0-config-file {commit0_dot_file_path}"
             )
             for example in dataset:
                 repo_name = example["repo"].split("/")[-1]

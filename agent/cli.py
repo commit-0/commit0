@@ -83,6 +83,14 @@ def config(
         "Here is your task:\nYou need to complete the implementations for all functions (i.e., those with pass statements) and pass the unit tests.\nDo not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.\nWhen you generate code, you must maintain the original formatting of the function stubs (such as whitespaces), otherwise we will not able to search/replace blocks for code modifications, and therefore you will receive a score of 0 for your generated code.",
         help="User prompt to use",
     ),
+    topo_sort_dependencies: bool = typer.Option(
+        True,
+        help="Topologically sort the dependencies of the repository",
+    ),
+    add_import_module_to_context: bool = typer.Option(
+        True,
+        help="Add the import module code to the context",
+    ),
     run_tests: bool = typer.Option(
         False,
         help="Run the tests after the agent is done",
@@ -123,6 +131,10 @@ def config(
         10000,
         help="Maximum length of the lint information to use",
     ),
+    run_entire_dir_lint: bool = typer.Option(
+        False,
+        help="Run the lint on the entire directory",
+    ),
     pre_commit_config_path: str = typer.Option(
         ".pre-commit-config.yaml",
         help="Path to the pre-commit config file",
@@ -145,6 +157,8 @@ def config(
         "use_user_prompt": use_user_prompt,
         "user_prompt": user_prompt,
         "run_tests": run_tests,
+        "use_topo_sort_dependencies": topo_sort_dependencies,
+        "add_import_module_to_context": add_import_module_to_context,
         "max_iteration": max_iteration,
         "use_repo_info": use_repo_info,
         "max_repo_info_length": max_repo_info_length,
@@ -154,6 +168,7 @@ def config(
         "max_spec_info_length": max_spec_info_length,
         "use_lint_info": use_lint_info,
         "max_lint_info_length": max_lint_info_length,
+        "run_entire_dir_lint": run_entire_dir_lint,
         "pre_commit_config_path": pre_commit_config_path,
     }
 
