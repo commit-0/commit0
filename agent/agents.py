@@ -7,6 +7,7 @@ from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
 import re
+import os
 
 
 def handle_logging(logging_name: str, log_file: Path) -> None:
@@ -60,6 +61,22 @@ class AiderAgents(Agents):
     def __init__(self, max_iteration: int, model_name: str):
         super().__init__(max_iteration)
         self.model = Model(model_name)
+
+        # Check if API key is set for the model
+        if "gpt" in model_name:
+            api_key = os.environ.get("OPENAI_API_KEY", None)
+        elif "claude" in model_name:
+            api_key = os.environ.get("ANTHROPIC_API_KEY", None)
+        elif "gemini" in model_name:
+            api_key = os.environ.get("API_KEY", None)
+        else:
+            raise ValueError(f"Unsupported model: {model_name}")
+        
+        if not api_key:
+            raise ValueError(
+                "API Key Error: There is no API key associated with the model for this agent. "
+                "Edit model_name parameter in .agent.yaml, export API key for that model, and try again."
+            )
 
     def run(
         self,
