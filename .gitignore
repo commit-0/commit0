@@ -168,3 +168,4 @@ hydra_outputs/
 .commit0*
 .agent*
 docs/analysis*.md
+.aider*
