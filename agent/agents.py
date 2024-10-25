@@ -57,6 +57,101 @@ class AiderReturn(AgentReturn):
                         last_cost = float(match.group(1))
         return last_cost
 
+class AgentTeams(Agents):
+    def __init__(self, max_iteration: int, model_name: str):
+        super().__init__(max_iteration)
+        self.model = Model(model_name)
+    def run(
+        self,
+        message: str,
+        test_cmd: str,
+        lint_cmd: str,
+        fnames: list[str],
+        log_dir: Path,
+        test_first: bool = False,
+    ) -> AgentReturn:
+        """Start agent team"""
+        if test_cmd:
+            auto_test = True
+        else:
+            auto_test = False
+        if lint_cmd:
+            auto_lint = True
+        else:
+            auto_lint = False
+        log_dir = log_dir.resolve()
+        log_dir.mkdir(parents=True, exist_ok=True)
+        input_history_file = log_dir / ".team.input.history"
+        chat_history_file = log_dir / ".team.chat.history.md"
+
+        # Set up logging
+        log_file = log_dir / "team.log"
+        logging.basicConfig(
+            filename=log_file,
+            level=logging.INFO,
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        )
+
+        # Redirect print statements to the log file
+        sys.stdout = open(log_file, "a")
+        sys.stderr = open(log_file, "a")
+
+        # Log the message
+        agent_message_log_file = log_dir / "agent_message.log"
+        with open(agent_message_log_file, "a") as f:
+            f.write(f"Message Sent: {message}\n\n")
+
+        # Configure httpx and backoff logging
+        handle_logging("httpx", log_file)
+        handle_logging("backoff", log_file)
+
+        io = InputOutput(
+            yes=True,
+            input_history_file=input_history_file,
+            chat_history_file=chat_history_file,
+        )
+        manager = Coder.create(
+            main_model=self.model,
+            fnames=fnames,
+            auto_lint=auto_lint,
+            auto_test=auto_test,
+            lint_cmds={"python": lint_cmd},
+            test_cmd=test_cmd,
+            io=io,
+        )
+        manager.max_reflection = 1
+        manager.stream = True
+
+        # Run the agent
+        manager_message = "First, add every file in the repo to your conversation. Second, write a plan of attack to implement the entire repo and return this plan."
+        manager.run(manager_message)
+
+
+        coder = Coder.create(
+            main_model=self.model,
+            fnames=fnames,
+            auto_lint=auto_lint,
+            auto_test=auto_test,
+            lint_cmds={"python": lint_cmd},
+            test_cmd=test_cmd,
+            io=io,
+        )
+        coder.max_reflection = self.max_iteration
+        coder.stream = True
+
+        # Run the agent
+        with open(chat_history_file, 'r', encoding='utf-8') as file:
+            plan = file.read()
+        coder_message = "follow this implementation plan: "+plan
+        coder.run(coder_message)
+
+        sys.stdout.close()
+        sys.stderr.close()
+        # Restore original stdout and stderr
+        sys.stdout = sys.__stdout__
+        sys.stderr = sys.__stderr__
+
+        return AgentReturn(log_file)
 
 class AiderAgents(Agents):
     def __init__(self, max_iteration: int, model_name: str):
