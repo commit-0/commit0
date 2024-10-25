@@ -234,8 +234,9 @@ def get_target_edit_files(
     local_repo: git.Repo,
     src_dir: str,
     test_dir: str,
-    latest_commit: str,
+    branch: str,
     reference_commit: str,
+    use_topo_sort_dependencies: bool = True,
 ) -> tuple[list[str], dict]:
     """Find the files with functions with the pass statement."""
     target_dir = str(local_repo.working_dir)
@@ -269,7 +270,7 @@ def get_target_edit_files(
     ), "all files should be included"
 
     # change to latest commit
-    local_repo.git.checkout(latest_commit)
+    local_repo.git.checkout(branch)
 
     # Remove the base_dir prefix
     topological_sort_files = [
@@ -282,35 +283,88 @@ def get_target_edit_files(
         key_without_prefix = key.replace(target_dir, "").lstrip("/")
         value_without_prefix = [v.replace(target_dir, "").lstrip("/") for v in value]
         import_dependencies_without_prefix[key_without_prefix] = value_without_prefix
+    if use_topo_sort_dependencies:
+        return topological_sort_files, import_dependencies_without_prefix
+    else:
+        filtered_files = [
+            file.replace(target_dir, "").lstrip("/") for file in filtered_files
+        ]
+        return filtered_files, import_dependencies_without_prefix
 
-    return topological_sort_files, import_dependencies_without_prefix
+
+def get_target_edit_files_from_patch(
+    local_repo: git.Repo, patch: str, use_topo_sort_dependencies: bool = True
+) -> tuple[list[str], dict]:
+    """Get the target files from the patch."""
+    working_dir = str(local_repo.working_dir)
+    target_files = set()
+    for line in patch.split("\n"):
+        if line.startswith("+++") or line.startswith("---"):
+            file_path = line.split()[1]
+            if file_path.startswith("a/"):
+                file_path = file_path[2:]
+            if file_path.startswith("b/"):
+                file_path = file_path[2:]
+            target_files.add(file_path)
+
+    target_files_list = list(target_files)
+    target_files_list = [
+        os.path.join(working_dir, file_path) for file_path in target_files_list
+    ]
+
+    if use_topo_sort_dependencies:
+        topological_sort_files, import_dependencies = (
+            topological_sort_based_on_dependencies(target_files_list)
+        )
+        if len(topological_sort_files) != len(target_files_list):
+            if len(topological_sort_files) < len(target_files_list):
+                missing_files = set(target_files_list) - set(topological_sort_files)
+                topological_sort_files = topological_sort_files + list(missing_files)
+            else:
+                raise ValueError(
+                    "topological_sort_files should not be longer than target_files_list"
+                )
+        assert len(topological_sort_files) == len(
+            target_files_list
+        ), "all files should be included"
+
+        topological_sort_files = [
+            file.replace(working_dir, "").lstrip("/") for file in topological_sort_files
+        ]
+        for key, value in import_dependencies.items():
+            import_dependencies[key] = [
+                v.replace(working_dir, "").lstrip("/") for v in value
+            ]
+        return topological_sort_files, import_dependencies
+    else:
+        target_files_list = [
+            file.replace(working_dir, "").lstrip("/") for file in target_files_list
+        ]
+        return target_files_list, {}
 
 
 def get_message(
     agent_config: AgentConfig,
     repo_path: str,
-    test_dir: str | None = None,
-    test_file: str | None = None,
+    test_files: list[str] | None = None,
 ) -> str:
     """Get the message to Aider."""
     prompt = f"{PROMPT_HEADER}" + agent_config.user_prompt
 
-    if agent_config.use_unit_tests_info and test_dir:
-        unit_tests_info = (
-            f"\n{UNIT_TESTS_INFO_HEADER} "
-            + get_dir_info(
-                dir_path=Path(os.path.join(repo_path, test_dir)),
-                prefix="",
-                include_stubs=True,
-            )[: agent_config.max_unit_tests_info_length]
-        )
-    elif agent_config.use_unit_tests_info and test_file:
-        unit_tests_info = (
-            f"\n{UNIT_TESTS_INFO_HEADER} "
-            + get_file_info(
+    #    if agent_config.use_unit_tests_info and test_file:
+    #         unit_tests_info = (
+    #             f"\n{UNIT_TESTS_INFO_HEADER} "
+    #             + get_file_info(
+    #                 file_path=Path(os.path.join(repo_path, test_file)), prefix=""
+    #             )[: agent_config.max_unit_tests_info_length]
+    #         )
+    if agent_config.use_unit_tests_info and test_files:
+        unit_tests_info = f"\n{UNIT_TESTS_INFO_HEADER} "
+        for test_file in test_files:
+            unit_tests_info += get_file_info(
                 file_path=Path(os.path.join(repo_path, test_file)), prefix=""
-            )[: agent_config.max_unit_tests_info_length]
-        )
+            )
+        unit_tests_info = unit_tests_info[: agent_config.max_unit_tests_info_length]
     else:
         unit_tests_info = ""
 
@@ -405,6 +459,33 @@ def create_branch(repo: git.Repo, branch: str, from_commit: str) -> None:
         raise RuntimeError(f"Failed to create or switch to branch '{branch}': {e}")
 
 
+def get_changed_files_from_commits(
+    repo: git.Repo, commit1: str, commit2: str
+) -> list[str]:
+    """Get the changed files from two commits."""
+    try:
+        # Get the commit objects
+        commit1_obj = repo.commit(commit1)
+        commit2_obj = repo.commit(commit2)
+
+        # Get the diff between the two commits
+        diff = commit1_obj.diff(commit2_obj)
+
+        # Extract the changed file paths
+        changed_files = [item.a_path for item in diff]
+
+        # Check if each changed file is a Python file
+        python_files = [file for file in changed_files if file.endswith(".py")]
+
+        # Update the changed_files list to only include Python files
+        changed_files = python_files
+
+        return changed_files
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return []
+
+
 def args2string(agent_config: AgentConfig) -> str:
     """Converts specific fields from an `AgentConfig` object into a formatted string.
 
@@ -453,13 +534,14 @@ def get_changed_files(repo: git.Repo) -> list[str]:
     return files_changed
 
 
-def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
+def get_lint_cmd(repo_name: str, use_lint_info: bool, commit0_config_file: str) -> str:
     """Generate a linting command based on whether to include files.
 
     Args:
     ----
         repo_name (str): The name of the repository.
         use_lint_info (bool): A flag indicating whether to include changed files in the lint command.
+        commit0_config_file (str): The path to the commit0 dot file.
 
     Returns:
     -------
@@ -469,7 +551,9 @@ def get_lint_cmd(repo_name: str, use_lint_info: bool) -> str:
     """
     lint_cmd = "python -m commit0 lint "
     if use_lint_info:
-        lint_cmd += repo_name + " --files "
+        lint_cmd += (
+            repo_name + " --commit0-config-file " + commit0_config_file + " --files "
+        )
     else:
         lint_cmd = ""
     return lint_cmd
