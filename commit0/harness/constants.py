@@ -4,6 +4,7 @@ from typing import Dict, TypedDict
 
 
 class RepoInstance(TypedDict):
+    instance_id: str
     repo: str
     base_commit: str
     reference_commit: str

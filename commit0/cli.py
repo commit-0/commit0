@@ -2,7 +2,6 @@ import typer
 from pathlib import Path
 from typing import Union, List
 from typing_extensions import Annotated
-from datasets import load_dataset
 import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
 import commit0.harness.build
@@ -119,10 +118,7 @@ def setup(
 ) -> None:
     """Commit0 clone a repo split."""
     check_commit0_path()
-    if "swe" in dataset_name.lower():
-        SWE_SPLIT = load_dataset(dataset_name, split=dataset_split)["instance_id"]
-        check_valid(repo_split, SWE_SPLIT)
-    else:
+    if "commit0" in dataset_name.lower():
         check_valid(repo_split, SPLIT)
 
     base_dir = str(Path(base_dir).resolve())
@@ -173,12 +169,7 @@ def build(
     check_commit0_path()
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(
-            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
-        )["instance_id"]
-        check_valid(commit0_config["repo_split"], SWE_SPLIT)
-    else:
+    if "commit0" in commit0_config["dataset_name"].lower():
         check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(
@@ -210,10 +201,7 @@ def get_tests(
 ) -> None:
     """Get tests for a Commit0 repository."""
     check_commit0_path()
-    SWE_SPLIT = load_dataset("princeton-nlp/SWE-bench_Verified", split="test")[
-        "instance_id"
-    ]
-    check_valid(repo_name, SPLIT_ALL + SWE_SPLIT)
+    check_valid(repo_name, SPLIT_ALL)
 
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
@@ -264,12 +252,7 @@ def test(
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     if repo_or_repo_path.endswith("/"):
         repo_or_repo_path = repo_or_repo_path[:-1]
-    if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(
-            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
-        )["instance_id"]
-        check_valid(repo_or_repo_path.split("/")[-1], SWE_SPLIT)
-    else:
+    if "commit0" in commit0_config["dataset_name"].lower():
         check_valid(repo_or_repo_path.split("/")[-1], SPLIT)
 
     if reference:
@@ -335,12 +318,7 @@ def evaluate(
         branch = "reference"
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(
-            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
-        )["instance_id"]
-        check_valid(commit0_config["repo_split"], SWE_SPLIT)
-    else:
+    if "commit0" in commit0_config["dataset_name"].lower():
         check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(f"Evaluating repository split: {commit0_config['repo_split']}")
@@ -416,12 +394,7 @@ def save(
     """Save Commit0 split you choose in Setup Stage to GitHub."""
     check_commit0_path()
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(
-            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
-        )["instance_id"]
-        check_valid(commit0_config["repo_split"], SWE_SPLIT)
-    else:
+    if "commit0" in commit0_config["dataset_name"].lower():
         check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(f"Saving repository split: {commit0_config['repo_split']}")
