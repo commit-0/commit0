@@ -98,6 +98,8 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
     repo = instance["repo"]
     env_setup_commit = instance["reference_commit"]
     base_commit = instance["base_commit"]
+    if float(specs['python']) < 3.7:
+        specs['python'] = 3.7
 
     setup_commands = [
         f"git clone -o origin https://github.com/{repo} {repo_directory}",
@@ -126,9 +128,21 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
 
     # Install dependencies
     if "packages" in specs and specs["packages"] is not None:
-        for package in specs["packages"]:
-            cmd = f"uv pip install -r {package}"
+        if isinstance(specs["packages"], list):
+            for package in specs["packages"]:
+                if ".txt" in package:
+                    cmd = f"uv pip install -r {package}"
+                else:
+                    cmd = f"uv pip install '{package}'"
+                setup_commands.append(cmd)
+        elif isinstance(specs["packages"], str):
+            if ".txt" in specs["packages"]:
+                cmd = f"uv pip install -r {specs['packages']}"
+            else:
+                cmd = f"uv pip install {specs['packages']}"
             setup_commands.append(cmd)
+        else:
+            raise TypeError(f"{specs['packages']} has a type other than string and list so couldn't be parsed.")
 
     # Install additional packages if specified
     if "pip_packages" in specs and specs["pip_packages"] is not None:
@@ -142,9 +156,11 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
             specs["install"] = specs["install"].replace("python -m ", "")
         if specs["install"].startswith("pip"):
             install = "uv " + specs["install"]
+        elif specs["install"].startswith("python setup.py"):
+            install = specs["install"].replace("python ", "uv run ")
         else:
             raise ValueError(
-                f"install command should always start with pip, but you have {specs['install']}"
+                f"install command should always start with pip or python setup.py, but you have {specs['install']}"
             )
         setup_commands.append(install)
     setup_commands.append(
@@ -178,7 +194,7 @@ def make_spec(instance: RepoInstance) -> Spec:
     eval_script_list = make_eval_script_list(instance, repo_directory)
 
     return Spec(
-        repo=instance["repo"],
+        repo=instance["instance_id"],
         repo_directory=repo_directory,
         repo_script_list=repo_script_list,
         eval_script_list=eval_script_list,
