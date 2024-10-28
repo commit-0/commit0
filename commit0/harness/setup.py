@@ -28,8 +28,12 @@ def main(
         if repo_split != "all" and repo_name not in SPLIT[repo_split]:
             continue
         clone_url = f"https://github.com/{example['repo']}.git"
-        clone_dir = os.path.abspath(os.path.join(base_dir, repo_name))
-        branch = dataset_name.split("/")[-1]
+        if "swe" in dataset_name.lower():
+            clone_dir = os.path.abspath(os.path.join(base_dir, example["instance_id"]))
+            branch = example["base_commit"]
+        else:
+            clone_dir = os.path.abspath(os.path.join(base_dir, repo_name))
+            branch = dataset_name.split("/")[-1]
         repo = clone_repo(clone_url, clone_dir, branch, logger)
         if BASE_BRANCH in repo.branches:
             repo.git.branch("-d", BASE_BRANCH)
