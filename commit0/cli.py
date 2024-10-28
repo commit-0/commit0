@@ -174,7 +174,9 @@ def build(
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(commit0_config["dataset_name"], split=commit0_config["dataset_split"])["instance_id"]
+        SWE_SPLIT = load_dataset(
+            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
+        )["instance_id"]
         check_valid(commit0_config["repo_split"], SWE_SPLIT)
     else:
         check_valid(commit0_config["repo_split"], SPLIT)
@@ -208,8 +210,10 @@ def get_tests(
 ) -> None:
     """Get tests for a Commit0 repository."""
     check_commit0_path()
-    SWE_SPLIT = load_dataset("princeton-nlp/SWE-bench_Verified", split="test")["instance_id"]
-    check_valid(repo_name, SPLIT_ALL+SWE_SPLIT)
+    SWE_SPLIT = load_dataset("princeton-nlp/SWE-bench_Verified", split="test")[
+        "instance_id"
+    ]
+    check_valid(repo_name, SPLIT_ALL + SWE_SPLIT)
 
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
@@ -261,7 +265,9 @@ def test(
     if repo_or_repo_path.endswith("/"):
         repo_or_repo_path = repo_or_repo_path[:-1]
     if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(commit0_config["dataset_name"], split=commit0_config["dataset_split"])["instance_id"]
+        SWE_SPLIT = load_dataset(
+            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
+        )["instance_id"]
         check_valid(repo_or_repo_path.split("/")[-1], SWE_SPLIT)
     else:
         check_valid(repo_or_repo_path.split("/")[-1], SPLIT)
@@ -330,7 +336,9 @@ def evaluate(
 
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(commit0_config["dataset_name"], split=commit0_config["dataset_split"])["instance_id"]
+        SWE_SPLIT = load_dataset(
+            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
+        )["instance_id"]
         check_valid(commit0_config["repo_split"], SWE_SPLIT)
     else:
         check_valid(commit0_config["repo_split"], SPLIT)
@@ -409,7 +417,9 @@ def save(
     check_commit0_path()
     commit0_config = read_commit0_dot_file(commit0_dot_file_path)
     if "swe" in commit0_config["dataset_name"].lower():
-        SWE_SPLIT = load_dataset(commit0_config["dataset_name"], split=commit0_config["dataset_split"])["instance_id"]
+        SWE_SPLIT = load_dataset(
+            commit0_config["dataset_name"], split=commit0_config["dataset_split"]
+        )["instance_id"]
         check_valid(commit0_config["repo_split"], SWE_SPLIT)
     else:
         check_valid(commit0_config["repo_split"], SPLIT)
