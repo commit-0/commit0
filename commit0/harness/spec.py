@@ -138,6 +138,8 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         setup_commands.append(cmd)
 
     if "install" in specs and specs["install"] is not None:
+        if specs["install"].startswith("python -m pip install"):
+            specs["install"] = specs["install"].replace("python -m ", "")
         if specs["install"].startswith("pip"):
             install = "uv " + specs["install"]
         else:

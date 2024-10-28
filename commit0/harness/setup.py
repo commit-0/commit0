@@ -25,13 +25,15 @@ def main(
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
-        if repo_split != "all" and repo_name not in SPLIT[repo_split]:
-            continue
         clone_url = f"https://github.com/{example['repo']}.git"
         if "swe" in dataset_name.lower():
+            if repo_split != "all" and example["instance_id"] != repo_split:
+                continue
             clone_dir = os.path.abspath(os.path.join(base_dir, example["instance_id"]))
             branch = example["base_commit"]
         else:
+            if repo_split != "all" and repo_name not in SPLIT[repo_split]:
+                continue
             clone_dir = os.path.abspath(os.path.join(base_dir, repo_name))
             branch = dataset_name.split("/")[-1]
         repo = clone_repo(clone_url, clone_dir, branch, logger)

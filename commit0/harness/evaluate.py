@@ -37,8 +37,12 @@ def main(
     log_dirs = []
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
-        if repo_split != "all" and repo_name not in SPLIT[repo_split]:
-            continue
+        if "swe" in dataset_name.lower():
+            if repo_split != "all" and example["instance_id"] != repo_split:
+                continue
+        else:
+            if repo_split != "all" and repo_name not in SPLIT[repo_split]:
+                continue
         hashed_test_ids = get_hash_string(example["test"]["test_dir"])
         if branch is None:
             git_path = os.path.join(base_dir, repo_name)
