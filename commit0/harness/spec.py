@@ -98,8 +98,8 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
     repo = instance["repo"]
     env_setup_commit = instance["reference_commit"]
     base_commit = instance["base_commit"]
-    if float(specs['python']) < 3.7:
-        specs['python'] = 3.7
+    if float(specs["python"]) < 3.7:
+        specs["python"] = 3.7
 
     setup_commands = [
         f"git clone -o origin https://github.com/{repo} {repo_directory}",
@@ -142,7 +142,9 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
                 cmd = f"uv pip install {specs['packages']}"
             setup_commands.append(cmd)
         else:
-            raise TypeError(f"{specs['packages']} has a type other than string and list so couldn't be parsed.")
+            raise TypeError(
+                f"{specs['packages']} has a type other than string and list so couldn't be parsed."
+            )
 
     # Install additional packages if specified
     if "pip_packages" in specs and specs["pip_packages"] is not None:
