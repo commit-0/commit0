@@ -98,7 +98,8 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
     repo = instance["repo"]
     env_setup_commit = instance["reference_commit"]
     base_commit = instance["base_commit"]
-    if float(specs["python"]) < 3.7:
+    version = int(specs["python"].split(".")[-1])
+    if version < 7:
         specs["python"] = 3.7
 
     setup_commands = [
