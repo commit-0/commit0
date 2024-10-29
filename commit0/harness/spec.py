@@ -134,7 +134,7 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
                 if ".txt" in package:
                     cmd = f"uv pip install -r {package}"
                 else:
-                    package = package.split(';')[0].strip()
+                    package = package.split(";")[0].strip()
                     cmd = f"uv pip install '{package}'"
                 setup_commands.append(cmd)
         elif isinstance(specs["packages"], str):
@@ -150,7 +150,7 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
 
     # Install additional packages if specified
     if "pip_packages" in specs and specs["pip_packages"] is not None:
-        pip_packages = [one.split(';')[0].strip() for one in specs["pip_packages"]]
+        pip_packages = [one.split(";")[0].strip() for one in specs["pip_packages"]]
         pip_packages = [f'"{one}"' for one in pip_packages]
         pip_packages = " ".join(pip_packages)
         cmd = f"uv pip install {pip_packages}"
