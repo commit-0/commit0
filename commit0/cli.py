@@ -168,7 +168,7 @@ def build(
     """Build Commit0 split you choose in Setup Stage."""
     check_commit0_path()
 
-    commit0_config = read_commit0_dot_file(commit0_config_file)
+    commit0_config = read_commit0_config_file(commit0_config_file)
     if "commit0" in commit0_config["dataset_name"].lower():
         check_valid(commit0_config["repo_split"], SPLIT)
 
