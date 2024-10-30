@@ -14,33 +14,17 @@ from agent.agent_utils import (
     read_yaml_config,
 )
 import subprocess
+import json
 from agent.agents import AiderAgents
-from typing import Optional, Type, cast
-from types import TracebackType
+from typing import cast
 from agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AGENT_LOG_DIR, RepoInstance
-from commit0.cli import read_commit0_dot_file
+from commit0.cli import read_commit0_config_file
 from pathlib import Path
 from datetime import datetime
-
-
-class DirContext:
-    def __init__(self, d: str):
-        self.dir = d
-        self.cwd = os.getcwd()
-
-    def __enter__(self):
-        os.chdir(self.dir)
-
-    def __exit__(
-        self,
-        exctype: Optional[Type[BaseException]],
-        excinst: Optional[BaseException],
-        exctb: Optional[TracebackType],
-    ) -> None:
-        os.chdir(self.cwd)
+from agent.run_agent import DirContext, run_eval_after_each_commit
 
 
 def run_agent_for_repo(
@@ -55,7 +39,7 @@ def run_agent_for_repo(
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info
-    commit0_config = read_commit0_dot_file(commit0_config_file)
+    commit0_config = read_commit0_config_file(commit0_config_file)
 
     assert "commit0" in commit0_config["dataset_name"]
     _, repo_name = example["repo"].split("/")
@@ -123,6 +107,7 @@ def run_agent_for_repo(
         / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     )
     experiment_log_dir.mkdir(parents=True, exist_ok=True)
+    eval_results = {}
 
     # write agent_config to .agent.yaml in the log_dir for record
     agent_config_log_file = experiment_log_dir / ".agent.yaml"
@@ -153,6 +138,11 @@ def run_agent_for_repo(
                     test_log_dir,
                     test_first=True,
                 )
+                if agent_config.record_test_for_each_commit:
+                    current_commit = local_repo.head.commit.hexsha
+                    eval_results[current_commit] = run_eval_after_each_commit(
+                        branch, backend, commit0_config_file
+                    )
         elif agent_config.run_entire_dir_lint:
             # when unit test feedback is available, iterate over test files
             for lint_file in lint_files:
@@ -171,6 +161,11 @@ def run_agent_for_repo(
                     lint_log_dir,
                     lint_first=True,
                 )
+                if agent_config.record_test_for_each_commit:
+                    current_commit = local_repo.head.commit.hexsha
+                    eval_results[current_commit] = run_eval_after_each_commit(
+                        branch, backend, commit0_config_file
+                    )
         else:
             # when unit test feedback is not available, iterate over target files to edit
             message = get_message(agent_config, repo_path, test_files=test_files)
@@ -185,6 +180,14 @@ def run_agent_for_repo(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
                 _ = agent.run(message, "", lint_cmd, [f], file_log_dir)
+                if agent_config.record_test_for_each_commit:
+                    current_commit = local_repo.head.commit.hexsha
+                    eval_results[current_commit] = run_eval_after_each_commit(
+                        branch, backend, commit0_config_file
+                    )
+    if agent_config.record_test_for_each_commit:
+        with open(experiment_log_dir / "eval_results.json", "w") as f:
+            json.dump(eval_results, f)
 
 
 def run_agent(
@@ -205,7 +208,7 @@ def run_agent(
     agent_config = AgentConfig(**config)
 
     commit0_config_file = os.path.abspath(commit0_config_file)
-    commit0_config = read_commit0_dot_file(commit0_config_file)
+    commit0_config = read_commit0_config_file(commit0_config_file)
 
     dataset = load_dataset(
         commit0_config["dataset_name"], split=commit0_config["dataset_split"]
