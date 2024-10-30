@@ -112,13 +112,16 @@ def build_image(
         close_logger(logger)  # functions that create loggers should close them
 
 
-def build_base_images(client: docker.DockerClient, dataset: list, dataset_type: str) -> None:
+def build_base_images(
+    client: docker.DockerClient, dataset: list, dataset_type: str
+) -> None:
     """Builds the base images required for the dataset if they do not already exist.
 
     Args:
     ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
+        dataset_type(str): The type of dataset. Choices are commit0 and swebench
 
     """
     # Get the base images to build from the dataset
@@ -150,9 +153,7 @@ def build_base_images(client: docker.DockerClient, dataset: list, dataset_type: 
 
 
 def get_repo_configs_to_build(
-    client: docker.DockerClient,
-    dataset: list,
-    dataset_type: str
+    client: docker.DockerClient, dataset: list, dataset_type: str
 ) -> dict[str, Any]:
     """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
@@ -161,6 +162,7 @@ def get_repo_configs_to_build(
     ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
+        dataset_type(str): The type of dataset. Choices are commit0 and swebench
 
     """
     image_scripts = dict()
@@ -206,6 +208,7 @@ def build_repo_images(
     ----
         client (docker.DockerClient): Docker client to use for building the images
         dataset (list): List of test specs or dataset to build images for
+        dataset_type(str): The type of dataset. Choices are commit0 and swebench
         max_workers (int): Maximum number of workers to use for building images
         verbose (int): Level of verbosity
 

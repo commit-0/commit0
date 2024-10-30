@@ -53,7 +53,7 @@ class Spec(ABC):
         hash_object.update(str(self.setup_script).encode("utf-8"))
         hash_value = hash_object.hexdigest()
         val = hash_value[:22]  # 22 characters is still very likely to be unique
-        repo = self.repo.split("/")[-1].split('__')[-1].split('-')[0]
+        repo = self.repo.split("/")[-1].split("__")[-1].split("-")[0]
         # this is the image name created locally
         # once this image created, it will be tagged with repo_image_tag
         return f"commit0.repo.{repo}.{val}:v0".lower()
@@ -63,8 +63,8 @@ class Spec(ABC):
         """Repo image tag that will be used throughout."""
         repo = self.repo.split("/")[-1]
         tag = f"wentingzhao/{repo}:v0".lower()
-        if '__' in repo:  # this is a swebench instance
-            repo = repo.split('__')[-1].split('-')[0]
+        if "__" in repo:  # this is a swebench instance
+            repo = repo.split("__")[-1].split("-")[0]
             hash_object = hashlib.sha256()
             hash_object.update(str(self.setup_script).encode("utf-8"))
             hash_value = hash_object.hexdigest()
@@ -183,7 +183,6 @@ class SWEBenchSpec(Spec):
         specs = self.instance["setup"]
         repo = self.instance["repo"]
         env_setup_commit = self.instance["reference_commit"]
-        base_commit = self.instance["base_commit"]
         version = int(str(specs["python"]).split(".")[-1])
         if version < 7:
             specs["python"] = 3.7
@@ -192,6 +191,7 @@ class SWEBenchSpec(Spec):
             f"git clone -o origin https://github.com/{repo} {self.repo_directory}",
             f"chmod -R 777 {self.repo_directory}",  # So nonroot user can run tests
             f"cd {self.repo_directory}",
+            f"git reset --hard {env_setup_commit}",
             # Remove the remote so the agent won't see newer commits.
             "git remote remove origin",
             f"uv venv --python {specs['python']}",
@@ -244,13 +244,12 @@ class SWEBenchSpec(Spec):
         )
         return setup_commands
 
-
     def make_eval_script_list(self) -> list[str]:
         """Run the tests."""
         specs = self.instance["setup"]
+        results = []
         if "install" in specs and specs["install"] is not None:
-            installs = specs["install"].split('; ')
-            results = []
+            installs = specs["install"].split("; ")
             for one in installs:
                 if one.startswith("python -m pip install"):
                     install = one.replace("python -m ", "")
@@ -261,27 +260,35 @@ class SWEBenchSpec(Spec):
                 elif install.startswith("python setup.py"):
                     install = install.replace("python ", "uv run ")
                 results.append(install)
-        eval_script_list = [
-            f"cd {self.repo_directory}",
-            "source .venv/bin/activate",
-            f"git reset --hard {self.instance['base_commit']}",
-            "git apply --allow-empty -v /patch.diff",
-        ] + results + [
-            "git status",
-            f"{self.instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors{{coverage}} {{test_ids}} > test_output.txt 2>&1",
-            "echo $? > pytest_exit_code.txt",
-        ]
+        eval_script_list = (
+            [
+                f"cd {self.repo_directory}",
+                "source .venv/bin/activate",
+                f"git reset --hard {self.instance['base_commit']}",
+                "git apply --allow-empty -v /patch.diff",
+            ]
+            + results
+            + [
+                "git status",
+                f"{self.instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors{{coverage}} {{test_ids}} > test_output.txt 2>&1",
+                "echo $? > pytest_exit_code.txt",
+            ]
+        )
         return eval_script_list
 
 
 def get_specs_from_dataset(
-    dataset: Union[list[RepoInstance], list[Spec]],
-    dataset_type: str
+    dataset: Union[list[RepoInstance], list[Spec]], dataset_type: str
 ) -> list[Spec]:
     """Idempotent function that converts a list of RepoInstance objects to a list of Spec objects."""
     if isinstance(dataset[0], Spec):
         return cast(list[Spec], dataset)
-    return list(map(lambda instance: make_spec(instance, dataset_type), cast(list["RepoInstance"], dataset)))
+    return list(
+        map(
+            lambda instance: make_spec(instance, dataset_type),
+            cast(list["RepoInstance"], dataset),
+        )
+    )
 
 
 def make_spec(instance: RepoInstance, dataset_type: str) -> Spec:
@@ -301,7 +308,9 @@ def make_spec(instance: RepoInstance, dataset_type: str) -> Spec:
             instance=instance,
         )
     else:
-        raise NotImplementedError(f"{dataset_type} is not supported.\nWe only support commit0 and swebench instances for now.")
+        raise NotImplementedError(
+            f"{dataset_type} is not supported.\nWe only support commit0 and swebench instances for now."
+        )
 
 
 __all__ = []

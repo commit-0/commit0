@@ -39,7 +39,7 @@ def main(
         specs.append(spec)
 
     client = docker.from_env()
-    build_repo_images(client, specs, num_workers, verbose)
+    build_repo_images(client, specs, dataset_type, num_workers, verbose)
     for spec in specs:
         image = client.images.get(spec.repo_image_key)
         repository, tag = spec.repo_image_tag.split(":")
