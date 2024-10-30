@@ -51,7 +51,7 @@ class Spec:
         hash_object.update(str(self.setup_script).encode("utf-8"))
         hash_value = hash_object.hexdigest()
         val = hash_value[:22]  # 22 characters is still very likely to be unique
-        repo = self.repo.split("/")[-1]
+        repo = self.repo.split("/")[-1].split('__')[-1].split('-')[0]
         # this is the image name created locally
         # once this image created, it will be tagged with repo_image_tag
         return f"commit0.repo.{repo}.{val}:v0".lower()
@@ -60,7 +60,15 @@ class Spec:
     def repo_image_tag(self) -> str:
         """Repo image tag that will be used throughout."""
         repo = self.repo.split("/")[-1]
-        return f"wentingzhao/{repo}:v0".lower()
+        tag = f"wentingzhao/{repo}:v0".lower()
+        if '__' in repo:  # this is a swebench instance
+            repo = repo.split('__')[-1].split('-')[0]
+            hash_object = hashlib.sha256()
+            hash_object.update(str(self.setup_script).encode("utf-8"))
+            hash_value = hash_object.hexdigest()
+            val = hash_value[:22]  # 22 characters is still very likely to be unique
+            tag = f"wentingzhao/{repo}.{val}:v0".lower()
+        return tag
 
     def get_container_name(self, run_id: Optional[str] = None) -> str:
         repo = self.repo.split("/")[-1]
@@ -106,7 +114,6 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         f"git clone -o origin https://github.com/{repo} {repo_directory}",
         f"chmod -R 777 {repo_directory}",  # So nonroot user can run tests
         f"cd {repo_directory}",
-        f"git reset --hard {env_setup_commit}",
         # Remove the remote so the agent won't see newer commits.
         "git remote remove origin",
         f"uv venv --python {specs['python']}",
@@ -155,33 +162,34 @@ def make_repo_script_list(instance: RepoInstance, repo_directory: str) -> list[s
         pip_packages = " ".join(pip_packages)
         cmd = f"uv pip install {pip_packages}"
         setup_commands.append(cmd)
-
-    if "install" in specs and specs["install"] is not None:
-        if specs["install"].startswith("python -m pip install"):
-            specs["install"] = specs["install"].replace("python -m ", "")
-        if specs["install"].startswith("pip"):
-            install = "uv " + specs["install"]
-        elif specs["install"].startswith("python setup.py"):
-            install = specs["install"].replace("python ", "uv run ")
-        else:
-            raise ValueError(
-                f"install command should always start with pip or python setup.py, but you have {specs['install']}"
-            )
-        setup_commands.append(install)
     setup_commands.append(
         "uv pip install -U pytest pytest-cov coverage pytest-json-report"
     )
-    setup_commands.append(f"git reset --hard {base_commit}")
     return setup_commands
 
 
 def make_eval_script_list(instance: RepoInstance, repo_directory: str) -> list[str]:
     """Run the tests."""
+    specs = instance["setup"]
+    if "install" in specs and specs["install"] is not None:
+        installs = specs["install"].split('; ')
+        results = []
+        for one in installs:
+            if one.startswith("python -m pip install"):
+                install = one.replace("python -m ", "")
+            else:
+                install = one
+            if install.startswith("pip"):
+                install = "uv " + install
+            elif install.startswith("python setup.py"):
+                install = install.replace("python ", "uv run ")
+            results.append(install)
     eval_script_list = [
         f"cd {repo_directory}",
         "source .venv/bin/activate",
         f"git reset --hard {instance['base_commit']}",
         "git apply --allow-empty -v /patch.diff",
+    ] + results + [
         "git status",
         f"{instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors{{coverage}} {{test_ids}} > test_output.txt 2>&1",
         "echo $? > pytest_exit_code.txt",
