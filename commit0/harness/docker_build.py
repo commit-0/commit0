@@ -112,7 +112,7 @@ def build_image(
         close_logger(logger)  # functions that create loggers should close them
 
 
-def build_base_images(client: docker.DockerClient, dataset: list) -> None:
+def build_base_images(client: docker.DockerClient, dataset: list, dataset_type: str) -> None:
     """Builds the base images required for the dataset if they do not already exist.
 
     Args:
@@ -122,7 +122,7 @@ def build_base_images(client: docker.DockerClient, dataset: list) -> None:
 
     """
     # Get the base images to build from the dataset
-    test_specs = get_specs_from_dataset(dataset)
+    test_specs = get_specs_from_dataset(dataset, dataset_type)
     base_images = {
         x.base_image_key: (x.base_dockerfile, x.platform) for x in test_specs
     }
@@ -152,6 +152,7 @@ def build_base_images(client: docker.DockerClient, dataset: list) -> None:
 def get_repo_configs_to_build(
     client: docker.DockerClient,
     dataset: list,
+    dataset_type: str
 ) -> dict[str, Any]:
     """Returns a dictionary of image names to build scripts and dockerfiles for repo images.
     Returns only the repo images that need to be built.
@@ -163,7 +164,7 @@ def get_repo_configs_to_build(
 
     """
     image_scripts = dict()
-    test_specs = get_specs_from_dataset(dataset)
+    test_specs = get_specs_from_dataset(dataset, dataset_type)
 
     for test_spec in test_specs:
         # Check if the base image exists
@@ -195,6 +196,7 @@ def get_repo_configs_to_build(
 def build_repo_images(
     client: docker.DockerClient,
     dataset: list,
+    dataset_type: str,
     max_workers: int = 4,
     verbose: int = 1,
 ) -> tuple[list[str], list[str]]:
@@ -213,8 +215,8 @@ def build_repo_images(
         failed: a list of docker image keys for which build failed
 
     """
-    build_base_images(client, dataset)
-    configs_to_build = get_repo_configs_to_build(client, dataset)
+    build_base_images(client, dataset, dataset_type)
+    configs_to_build = get_repo_configs_to_build(client, dataset, dataset_type)
     if len(configs_to_build) == 0:
         print("No repo images need to be built.")
         return [], []

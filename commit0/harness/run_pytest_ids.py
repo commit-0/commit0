@@ -51,12 +51,14 @@ def main(
     example = None
     repo_name = None
     for example in dataset:
-        if "swe" in dataset_name.lower():
-            repo_name = example["instance_id"]
-        else:
-            repo_name = example["repo"].split("/")[-1]
         if repo_or_repo_dir.endswith("/"):
             repo_or_repo_dir = repo_or_repo_dir[:-1]
+        if "swe" in dataset_name.lower():
+            repo_name = example["instance_id"]
+            dataset_type = "swebench"
+        else:
+            repo_name = example["repo"].split("/")[-1]
+            dataset_type = "commit0"
         if repo_name in os.path.basename(repo_or_repo_dir):
             spec = make_spec(example)
             break

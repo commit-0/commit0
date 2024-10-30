@@ -23,6 +23,10 @@ def main(
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
+    if "swe" in dataset_name.lower():
+        dataset_type = "swebench"
+    else:
+        dataset_type = "commit0"
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         if "swe" in dataset_name.lower():
@@ -31,7 +35,7 @@ def main(
         else:
             if repo_split != "all" and repo_name not in SPLIT[repo_split]:
                 continue
-        spec = make_spec(example)
+        spec = make_spec(example, dataset_type)
         specs.append(spec)
 
     client = docker.from_env()
