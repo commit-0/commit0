@@ -135,6 +135,10 @@ def config(
         False,
         help="Run the lint on the entire directory",
     ),
+    record_test_for_each_commit: bool = typer.Option(
+        False,
+        help="Record the test for each commit",
+    ),
     pre_commit_config_path: str = typer.Option(
         ".pre-commit-config.yaml",
         help="Path to the pre-commit config file",
@@ -170,6 +174,7 @@ def config(
         "max_lint_info_length": max_lint_info_length,
         "run_entire_dir_lint": run_entire_dir_lint,
         "pre_commit_config_path": pre_commit_config_path,
+        "record_test_for_each_commit": record_test_for_each_commit,
     }
 
     write_agent_config(agent_config_file, agent_config)

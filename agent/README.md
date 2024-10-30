@@ -38,6 +38,8 @@ Available options include:
 `--max-lint-info-length: int`: Maximum length of the lint information to use. [Default: `10000`]
 `--pre-commit-config-path: str`: Path to the pre-commit config file. This is needed for running `lint`. [Default: `.pre-commit-config.yaml`]
 `--agent-config-file: str`: Path to write the agent config. [Default: `.agent.yaml`]
+`--add-import-module-to-context: bool`: Add import module to context. [Default: `False`]
+`--record-test-for-each-commit: bool`: Record test results for each commit. [Default: `False`], if set to `True`, the test results will be saved in `experiment_log_dir/eval_results.json`
 
 ## Running Agent
 Use `agent run [OPTIONS] BRANCH` to execute an agent on a specific branch.
