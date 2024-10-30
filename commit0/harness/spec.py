@@ -182,7 +182,6 @@ class SWEBenchSpec(Spec):
         """
         specs = self.instance["setup"]
         repo = self.instance["repo"]
-        env_setup_commit = self.instance["reference_commit"]
         version = int(str(specs["python"]).split(".")[-1])
         if version < 7:
             specs["python"] = 3.7
@@ -191,7 +190,6 @@ class SWEBenchSpec(Spec):
             f"git clone -o origin https://github.com/{repo} {self.repo_directory}",
             f"chmod -R 777 {self.repo_directory}",  # So nonroot user can run tests
             f"cd {self.repo_directory}",
-            f"git reset --hard {env_setup_commit}",
             # Remove the remote so the agent won't see newer commits.
             "git remote remove origin",
             f"uv venv --python {specs['python']}",
