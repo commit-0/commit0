@@ -21,3 +21,4 @@ class AgentConfig:
     pre_commit_config_path: str
     run_tests: bool
     max_iteration: int
+    record_test_for_each_commit: bool

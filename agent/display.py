@@ -443,4 +443,6 @@ class TerminalDisplay:
         ) as json_file:
             json.dump(summary_data, json_file, indent=4)
 
-        print("\nSummary has been written to processing_summary.json")
+        print(
+            f"\nSummary has been written to processing_summary_{self.branch_name}.json"
+        )

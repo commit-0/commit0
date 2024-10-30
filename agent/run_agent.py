@@ -20,7 +20,7 @@ from agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AGENT_LOG_DIR, RepoInstance
-from commit0.cli import read_commit0_dot_file
+from commit0.cli import read_commit0_config_file
 from pathlib import Path
 from datetime import datetime
 from agent.display import TerminalDisplay
@@ -45,6 +45,23 @@ class DirContext:
         os.chdir(self.cwd)
 
 
+def run_eval_after_each_commit(
+    branch: str, backend: str, commit0_config_file: str, file_log_dir: Path
+) -> None:
+    """Run the eval command after each commit."""
+    eval_cmd = f"python -m commit0 evaluate --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
+    try:
+        result = subprocess.run(
+            eval_cmd, shell=True, capture_output=True, text=True, check=True
+        )
+        with open(file_log_dir / "current_commit_eval_result.txt", "w") as f:
+            f.write(result.stdout)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running eval command: {e}")
+        with open(file_log_dir / "current_commit_eval_result.txt", "w") as f:
+            f.write(e.stdout if e.stdout else str(e))
+
+
 def run_agent_for_repo(
     repo_base_dir: str,
     agent_config: AgentConfig,
@@ -58,7 +75,7 @@ def run_agent_for_repo(
 ) -> None:
     """Run Aider for a given repository."""
     # get repo info
-    commit0_config = read_commit0_dot_file(commit0_config_file)
+    commit0_config = read_commit0_config_file(commit0_config_file)
 
     assert "commit0" in commit0_config["dataset_name"]
     _, repo_name = example["repo"].split("/")
@@ -161,6 +178,11 @@ def run_agent_for_repo(
                     test_log_dir,
                     test_first=True,
                 )
+                if agent_config.record_test_for_each_commit:
+                    run_eval_after_each_commit(
+                        branch, backend, commit0_config_file, test_log_dir
+                    )
+
                 # after running the agent, update the money display
                 update_queue.put(
                     (
@@ -188,6 +210,11 @@ def run_agent_for_repo(
                     lint_log_dir,
                     lint_first=True,
                 )
+                if agent_config.record_test_for_each_commit:
+                    run_eval_after_each_commit(
+                        branch, backend, commit0_config_file, lint_log_dir
+                    )
+
                 # after running the agent, update the money display
                 update_queue.put(
                     (
@@ -211,6 +238,11 @@ def run_agent_for_repo(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
                 agent_return = agent.run(message, "", lint_cmd, [f], file_log_dir)
+                if agent_config.record_test_for_each_commit:
+                    run_eval_after_each_commit(
+                        branch, backend, commit0_config_file, file_log_dir
+                    )
+
                 update_queue.put(
                     (
                         "update_money_display",
@@ -236,7 +268,7 @@ def run_agent(
     agent_config = AgentConfig(**config)
 
     commit0_config_file = os.path.abspath(commit0_config_file)
-    commit0_config = read_commit0_dot_file(commit0_config_file)
+    commit0_config = read_commit0_config_file(commit0_config_file)
 
     dataset = load_dataset(
         commit0_config["dataset_name"], split=commit0_config["dataset_split"]
