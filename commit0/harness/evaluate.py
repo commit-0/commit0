@@ -53,7 +53,12 @@ def main(
         if branch is None:
             git_path = os.path.join(base_dir, example["instance_id"])
             branch = get_active_branch(git_path)
-        log_dir = RUN_PYTEST_LOG_DIR / example["instance_id"] / branch / hashed_test_ids
+        log_dir = (
+            RUN_PYTEST_LOG_DIR
+            / example["instance_id"].split("/")[-1]
+            / branch
+            / hashed_test_ids
+        )
         log_dirs.append(str(log_dir))
         triples.append((example["instance_id"], example["test"]["test_dir"], branch))
 

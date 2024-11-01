@@ -238,7 +238,7 @@ class SWEBenchSpec(Spec):
             cmd = f"uv pip install {pip_packages}"
             setup_commands.append(cmd)
         setup_commands.append(
-            "uv pip install -U pytest pytest-cov coverage pytest-json-report"
+            "uv pip install pytest pytest-cov coverage pytest-json-report"
         )
         return setup_commands
 
