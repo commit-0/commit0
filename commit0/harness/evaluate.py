@@ -39,7 +39,6 @@ def main(
             repos = [repo_split]
     else:
         repos = SPLIT[repo_split]
-    print("!"*100, repos)
     triples = []
     log_dirs = []
     for example in dataset:
