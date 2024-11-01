@@ -32,7 +32,14 @@ def main(
     rebuild_image: bool,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
-    repos = SPLIT[repo_split]
+    if "swe" in dataset_name.lower():
+        if repo_split == "all":
+            repos = dataset["instance_id"]
+        else:
+            repos = [repo_split]
+    else:
+        repos = SPLIT[repo_split]
+    print("!"*100, repos)
     triples = []
     log_dirs = []
     for example in dataset:
@@ -45,11 +52,11 @@ def main(
                 continue
         hashed_test_ids = get_hash_string(example["test"]["test_dir"])
         if branch is None:
-            git_path = os.path.join(base_dir, repo_name)
+            git_path = os.path.join(base_dir, example["instance_id"])
             branch = get_active_branch(git_path)
-        log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
+        log_dir = RUN_PYTEST_LOG_DIR / example["instance_id"] / branch / hashed_test_ids
         log_dirs.append(str(log_dir))
-        triples.append((repo_name, example["test"]["test_dir"], branch))
+        triples.append((example["instance_id"], example["test"]["test_dir"], branch))
 
     with tqdm(total=len(repos), smoothing=0, desc="Evaluating repos") as pbar:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -82,6 +89,7 @@ def main(
         report_file = os.path.join(name, "report.json")
         name = name.split("/")[2]
         test_ids = get_tests(name, verbose=0)
+        test_ids = [xx for x in test_ids for xx in x]
         if not os.path.exists(report_file):
             out.append(
                 {

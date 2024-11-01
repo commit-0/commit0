@@ -201,7 +201,6 @@ def get_tests(
 ) -> None:
     """Get tests for a Commit0 repository."""
     check_commit0_path()
-    check_valid(repo_name, SPLIT_ALL)
 
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
