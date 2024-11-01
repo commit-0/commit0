@@ -116,7 +116,7 @@ def main(
         local_repo, example["base_commit"], commit_id
     )
     patch_file = Path(log_dir / "patch.diff")
-    patch_file.write_text(patch, encoding='utf-8', errors='ignore')
+    patch_file.write_text(patch, encoding="utf-8", errors="ignore")
 
     # make eval file
     if coverage:

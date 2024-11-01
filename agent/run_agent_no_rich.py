@@ -96,7 +96,7 @@ def run_agent_for_repo(
         local_repo, "HEAD", example["base_commit"]
     )
     # Call the commit0 get-tests command to retrieve test files
-    test_files_str = get_tests(repo_name, verbose=0)
+    test_files_str = [xx for x in get_tests(repo_name, verbose=0) for xx in x]
     test_files = sorted(list(set([i.split(":")[0] for i in test_files_str])))
 
     # prepare the log dir

@@ -34,7 +34,7 @@ def main(
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     if "swe" in dataset_name.lower():
         if repo_split == "all":
-            repos = dataset["instance_id"]
+            repos = dataset["instance_id"]  # type: ignore
         else:
             repos = [repo_split]
     else:
