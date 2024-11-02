@@ -112,9 +112,18 @@ def main(
                     break  # Stop checking other remotes if branch is found
             if not found_remote_branch:
                 raise Exception(f"Branch {branch} does not exist locally or remotely.")
-    patch = generate_patch_between_commits(
-        local_repo, example["base_commit"], commit_id
-    )
+    if "swe" in dataset_name.lower():
+        if branch == "reference":
+            patch = example["test"]["patch"] + "\n\n" + example["test"]["test_patch"]
+        else:
+            patch = generate_patch_between_commits(
+                local_repo, example["base_commit"], commit_id
+            )
+            patch += "\n\n" + example["test"]["test_patch"]
+    else:
+        patch = generate_patch_between_commits(
+            local_repo, example["base_commit"], commit_id
+        )
     patch_file = Path(log_dir / "patch.diff")
     patch_file.write_text(patch, encoding="utf-8", errors="ignore")
 
