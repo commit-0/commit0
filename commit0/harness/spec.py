@@ -249,14 +249,15 @@ class SWEBenchSpec(Spec):
         if "install" in specs and specs["install"] is not None:
             installs = specs["install"].split("; ")
             for one in installs:
-                if one.startswith("python -m pip install"):
-                    install = one.replace("python -m ", "")
+                if "python -m pip install" in one:
+                    install = one.replace("python -m ", "uv run python -m ")
+                    install = "uv pip install pip && " + install
                 else:
                     install = one
                 if install.startswith("pip"):
                     install = "uv " + install
                 elif install.startswith("python setup.py"):
-                    install = install.replace("python ", "uv run ")
+                    install = install.replace("python ", "uv run python ")
                 results.append(install)
         eval_script_list = (
             [
