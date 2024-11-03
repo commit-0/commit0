@@ -173,6 +173,7 @@ def main(
             output, timed_out, total_runtime = context.exec_run_with_timeout(
                 "/bin/bash /eval.sh"
             )
+            logger.info(output)
             if timed_out:
                 raise EvaluationError(
                     repo_name,
