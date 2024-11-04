@@ -36,7 +36,7 @@ def main(
         if repo_split == "all":
             repos = dataset["instance_id"]  # type: ignore
         else:
-            repos = [repo_split]
+            repos = [one for one in dataset["instance_id"] if repo_split in one]  # type: ignore
     else:
         repos = SPLIT[repo_split]
     triples = []
@@ -44,7 +44,7 @@ def main(
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         if "swe" in dataset_name.lower():
-            if repo_split != "all" and example["instance_id"] != repo_split:
+            if repo_split != "all" and repo_split not in example["instance_id"]:
                 continue
         else:
             if repo_split != "all" and repo_name not in SPLIT[repo_split]:

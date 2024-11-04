@@ -27,7 +27,7 @@ def main(
         repo_name = example["repo"].split("/")[-1]
         clone_url = f"https://github.com/{example['repo']}.git"
         if "swe" in dataset_name.lower():
-            if repo_split != "all" and example["instance_id"] != repo_split:
+            if repo_split != "all" and repo_split not in example["instance_id"]:
                 continue
             clone_dir = os.path.abspath(os.path.join(base_dir, example["instance_id"]))
             branch = example["base_commit"]
