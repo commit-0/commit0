@@ -24,7 +24,7 @@ from commit0.harness.constants import RUN_AGENT_LOG_DIR, RepoInstance
 from commit0.cli import read_commit0_config_file
 from pathlib import Path
 from datetime import datetime
-from agent.run_agent import DirContext, run_eval_after_each_commit
+from agent.run_agent import DirContext, run_eval_after_all_changes
 
 
 def run_agent_for_repo(
@@ -138,11 +138,6 @@ def run_agent_for_repo(
                     test_log_dir,
                     test_first=True,
                 )
-                if agent_config.record_test_for_each_commit:
-                    current_commit = local_repo.head.commit.hexsha
-                    eval_results[current_commit] = run_eval_after_each_commit(
-                        branch, backend, commit0_config_file
-                    )
         elif agent_config.run_entire_dir_lint:
             # when unit test feedback is available, iterate over test files
             for lint_file in lint_files:
@@ -161,11 +156,6 @@ def run_agent_for_repo(
                     lint_log_dir,
                     lint_first=True,
                 )
-                if agent_config.record_test_for_each_commit:
-                    current_commit = local_repo.head.commit.hexsha
-                    eval_results[current_commit] = run_eval_after_each_commit(
-                        branch, backend, commit0_config_file
-                    )
         else:
             # when unit test feedback is not available, iterate over target files to edit
             message = get_message(agent_config, repo_path, test_files=test_files)
@@ -180,12 +170,10 @@ def run_agent_for_repo(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
                 _ = agent.run(message, "", lint_cmd, [f], file_log_dir)
-                if agent_config.record_test_for_each_commit:
-                    current_commit = local_repo.head.commit.hexsha
-                    eval_results[current_commit] = run_eval_after_each_commit(
-                        branch, backend, commit0_config_file
-                    )
     if agent_config.record_test_for_each_commit:
+        eval_results = run_eval_after_all_changes(
+            local_repo, example["base_commit"], branch, backend, commit0_config_file
+        )
         with open(experiment_log_dir / "eval_results.json", "w") as f:
             json.dump(eval_results, f)
 
