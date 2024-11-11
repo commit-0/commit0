@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from collections import Counter
@@ -105,8 +106,18 @@ def main(
                 }
             )
             continue
-        report = load_dataset("json", data_files=report_file, split="train")  # type: ignore
-        tests = {x["nodeid"]: x["call"] for x in report["tests"][0] if "call" in x}  # type: ignore
+        with open(report_file, "r") as file:
+            report = json.load(file)
+        # new version of pytest json
+        if "created" in report:
+            tests = {x["nodeid"]: x["call"] for x in report["tests"] if "call" in x}
+        # old version of pytest json
+        else:
+            tests = {
+                x["nodeid"]: {"outcome": x["outcome"], "duration": x["duration"]}
+                for x in report
+                if x["when"] == "call"
+            }
         status = []
         runtimes = []
         no_runs = 0
