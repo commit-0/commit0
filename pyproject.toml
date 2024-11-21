@@ -30,7 +30,6 @@ classifiers = [
 
 [project.scripts]
 commit0 = "commit0.__main__:main"
-agent = "commit0.optional.agent.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["commit0"]

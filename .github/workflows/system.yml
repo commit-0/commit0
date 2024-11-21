@@ -61,24 +61,24 @@ jobs:
       - name: Install the project (core)
         run: uv pip install -e .[core]
       - name: Set up commit0
-        run: uv run commit0-core setup simpy
+        run: uv run commit0 setup simpy
       - name: Build docker images
-        run: uv run commit0-core build
+        run: uv run commit0 build
       - name: Get tests
-        run: uv run commit0-core get-tests simpy
+        run: uv run commit0 get-tests simpy
       - name: Test
         env:
           MODAL_TOKEN_ID: ${{secrets.MODAL_TOKEN_ID}}
           MODAL_TOKEN_SECRET: ${{secrets.MODAL_TOKEN_SECRET}}
         run: |
-          uv run commit0-core test simpy tests/test_event.py::test_succeed --reference --rebuild
-          uv run commit0-core test simpy tests/test_event.py::test_succeed --reference
+          uv run commit0 test simpy tests/test_event.py::test_succeed --reference --rebuild
+          uv run commit0 test simpy tests/test_event.py::test_succeed --reference
       - name: Evaluate
         env:
           MODAL_TOKEN_ID: ${{secrets.MODAL_TOKEN_ID}}
           MODAL_TOKEN_SECRET: ${{secrets.MODAL_TOKEN_SECRET}}
         run: |
-          uv run commit0-core evaluate --reference  --rebuild
-          uv run commit0-core evaluate --reference
+          uv run commit0 evaluate --reference  --rebuild
+          uv run commit0 evaluate --reference
       - name: Lint
-        run: uv run commit0-core lint commit0/harness/
+        run: uv run commit0 lint commit0/harness/
