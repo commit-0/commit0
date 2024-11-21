@@ -22,7 +22,6 @@ dependencies = [
     "gitpython>=3.1.43",
     "pytest>=8.3.3",
     "datasets==3.0.1",
-    "aider-chat",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -36,7 +35,10 @@ agent = "agent.__main__:main"
 packages = ["commit0", "agent"]
 
 [project.optional-dependencies]
-agent = []
+agent = [
+    "aider-chat",
+]
+core = []
 
 [project.urls]
 Homepage = "https://commit-0.github.io/"
