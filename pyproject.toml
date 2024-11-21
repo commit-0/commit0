@@ -35,7 +35,6 @@ packages = ["commit0", "agent"]
 agent = [
     "import-deps>=0.3.0",
     "PyMuPDF>=1.24.5",
-    "tenacity>=8.5.0",
     "aider-chat",
 ]
 
