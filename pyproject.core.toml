@@ -1,0 +1,143 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "commit0-core"
+version = "0.1.6"
+description = "Core functionality of commit0 - A development and evaluation framework for using language models to generate libraries."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ruff>=0.6.4",
+    "pre-commit>=3.8.0",
+    "import-deps>=0.3.0",
+    "PyMuPDF>=1.24.5",
+    "modal>=0.64.95",
+    "typer>=0.12.0",
+    "tenacity>=8.5.0",
+    "docker>=7.1.0",
+    "fastcore>=1.7.8",
+    "ghapi>=1.0.6",
+    "gitpython>=3.1.43",
+    "pytest>=8.3.3",
+    "datasets==3.0.1",
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+]
+
+[project.scripts]
+commit0-core = "commit0.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["commit0"]
+
+[project.urls]
+Homepage = "https://commit-0.github.io/"
+Repository = "https://github.com/commit-0/commit0"
+Issues = "https://github.com/commit-0/commit0/issues"
+
+[tool.pyright]
+include = ["**/commit0"]
+ignore = ["**/docs", "**/logs", "**/agent"]
+venvPath = "."
+venv = ".venv"
+reportUnknownMemberType = "none"
+reportUnknownParameterType = "none"
+reportUnknownArgumentType = "none"
+reportUnknownVariableType = "none"
+reportMissingTypeArgument = "none"
+reportMissingTypeStubs = "none"
+reportUnusedExpression = "none"
+reportUnknownLambdaType = "none"
+reportIncompatibleMethodOverride = "none"
+reportPrivateUsage = "none"
+reportMissingParameterType = "error"
+
+[tool.ruff]
+exclude = [
+    ".git",
+    "**/.venv/**",
+    "__pycache__",
+    "**/docs/**/*",
+    "**/logs/**/*",
+    "**/agent/**/*",
+]
+
+lint.ignore = [
+    "ANN101",
+    "ANN401",
+    "N801",
+    "E203",
+    "E266",
+    "E501",
+    "E741",
+    "N803",
+    "N802",
+    "N806",
+    "D400",
+    "D401",
+    "D105",
+    "D415",
+    "D402",
+    "D205",
+    "D100",
+    "D101",
+    "D107",
+    "D203",
+    "D213",
+    "ANN204",
+    "ANN102",
+]
+lint.select = ["D", "E", "F", "N", "ANN"]
+lint.fixable = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "I",
+    "N",
+    "Q",
+    "S",
+    "T",
+    "W",
+    "ANN",
+    "ARG",
+    "BLE",
+    "COM",
+    "DJ",
+    "DTZ",
+    "EM",
+    "ERA",
+    "EXE",
+    "FBT",
+    "ICN",
+    "INP",
+    "ISC",
+    "NPY",
+    "PD",
+    "PGH",
+    "PIE",
+    "PL",
+    "PT",
+    "PTH",
+    "PYI",
+    "RET",
+    "RSE",
+    "RUF",
+    "SIM",
+    "SLF",
+    "TCH",
+    "TID",
+    "TRY",
+    "UP",
+    "YTT",
+]
+lint.unfixable = []
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/**/*.py" = ["D"]
