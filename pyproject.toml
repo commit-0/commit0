@@ -30,10 +30,13 @@ classifiers = [
 
 [project.scripts]
 commit0 = "commit0.__main__:main"
-agent = "agent.__main__:main"
+agent = "commit0.optional.agent.__main__:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["commit0", "agent"]
+packages = ["commit0"]
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "build.py"
 
 [project.optional-dependencies]
 core = [
