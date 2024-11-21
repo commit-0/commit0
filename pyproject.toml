@@ -11,17 +11,13 @@ requires-python = ">=3.11"
 dependencies = [
     "ruff>=0.6.4",
     "pre-commit>=3.8.0",
-    "import-deps>=0.3.0",
-    "PyMuPDF>=1.24.5",
     "typer>=0.12.0",
-    "tenacity>=8.5.0",
     "docker>=7.1.0",
     "fastcore>=1.7.8",
     "ghapi>=1.0.6",
     "gitpython>=3.1.43",
     "pytest>=8.3.3",
     "datasets==3.0.1",
-    "aider-chat",
     "modal>=0.66.26",
 ]
 classifiers = [
@@ -36,7 +32,11 @@ agent = "agent.__main__:main"
 packages = ["commit0", "agent"]
 
 [project.optional-dependencies]
-agent = []
+agent = [
+    "import-deps>=0.3.0",
+    "PyMuPDF>=1.24.5",
+    "aider-chat",
+]
 
 [project.urls]
 Homepage = "https://commit-0.github.io/"

@@ -370,37 +370,39 @@ name = "commit0"
 version = "0.1.6"
 source = { editable = "." }
 dependencies = [
-    { name = "aider-chat" },
     { name = "datasets" },
     { name = "docker" },
     { name = "fastcore" },
     { name = "ghapi" },
     { name = "gitpython" },
-    { name = "import-deps" },
     { name = "modal" },
     { name = "pre-commit" },
-    { name = "pymupdf" },
     { name = "pytest" },
     { name = "ruff" },
-    { name = "tenacity" },
     { name = "typer" },
+]
+
+[package.optional-dependencies]
+agent = [
+    { name = "aider-chat" },
+    { name = "import-deps" },
+    { name = "pymupdf" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "aider-chat", git = "https://github.com/wenting-zhao/aider.git" },
+    { name = "aider-chat", marker = "extra == 'agent'", git = "https://github.com/wenting-zhao/aider.git" },
     { name = "datasets", specifier = "==3.0.1" },
     { name = "docker", specifier = ">=7.1.0" },
     { name = "fastcore", specifier = ">=1.7.8" },
     { name = "ghapi", specifier = ">=1.0.6" },
     { name = "gitpython", specifier = ">=3.1.43" },
-    { name = "import-deps", specifier = ">=0.3.0" },
+    { name = "import-deps", marker = "extra == 'agent'", specifier = ">=0.3.0" },
     { name = "modal", specifier = ">=0.66.26" },
     { name = "pre-commit", specifier = ">=3.8.0" },
-    { name = "pymupdf", specifier = ">=1.24.5" },
+    { name = "pymupdf", marker = "extra == 'agent'", specifier = ">=1.24.5" },
     { name = "pytest", specifier = ">=8.3.3" },
     { name = "ruff", specifier = ">=0.6.4" },
-    { name = "tenacity", specifier = ">=8.5.0" },
     { name = "typer", specifier = ">=0.12.0" },
 ]
 
@@ -1894,15 +1896,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/d9/d2/1356871a266d43f2f71a0f48ee1c3ccf3143b5d1a1ee5775f880875425a1/synchronicity-0.9.3.tar.gz", hash = "sha256:d3856601e63e518a143ec42f57988d9e88e4f94716168b717fd4b1b64f4704fd", size = 46699 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/37/3c/8688b93ec7c3fe3cbb9c34ab16773c436fc3c92ced5c465e491192afca68/synchronicity-0.9.3-py3-none-any.whl", hash = "sha256:73c06fe6613c698cbcfa6e77ab6b8d49cce3494c5afc3ef23b007b1fdff2256d", size = 34016 },
-]
-
-[[package]]
-name = "tenacity"
-version = "9.0.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/cd/94/91fccdb4b8110642462e653d5dcb27e7b674742ad68efd146367da7bdb10/tenacity-9.0.0.tar.gz", hash = "sha256:807f37ca97d62aa361264d497b0e31e92b8027044942bfa756160d908320d73b", size = 47421 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b6/cb/b86984bed139586d01532a587464b5805f12e397594f19f931c4c2fbfa61/tenacity-9.0.0-py3-none-any.whl", hash = "sha256:93de0c98785b27fcf659856aa9f54bfbd399e29969b0621bc7f762bd441b4539", size = 28169 },
 ]
 
 [[package]]
