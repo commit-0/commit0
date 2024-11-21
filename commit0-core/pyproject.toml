@@ -3,28 +3,35 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "commit0"
+name = "commit0-core"
 version = "0.1.6"
-description = "A development and evaluation framework for using language models to generate libraries."
+description = "Core functionality of commit0 - A development and evaluation framework for using language models to generate libraries."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "commit0-core==0.1.6",
-    "aider-chat",
+    "ruff>=0.6.4",
+    "pre-commit>=3.8.0",
+    "import-deps>=0.3.0",
+    "PyMuPDF>=1.24.5",
+    "modal>=0.64.95",
+    "typer>=0.12.0",
+    "tenacity>=8.5.0",
+    "docker>=7.1.0",
+    "fastcore>=1.7.8",
+    "ghapi>=1.0.6",
+    "gitpython>=3.1.43",
+    "pytest>=8.3.3",
+    "datasets==3.0.1",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 
 [project.scripts]
-commit0 = "commit0.__main__:main"
-agent = "agent.__main__:main"
+commit0-core = "commit0_core.__main__:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["commit0"]
-
-[project.optional-dependencies]
-agent = []
+packages = ["commit0_core"]
 
 [project.urls]
 Homepage = "https://commit-0.github.io/"
@@ -32,7 +39,7 @@ Repository = "https://github.com/commit-0/commit0"
 Issues = "https://github.com/commit-0/commit0/issues"
 
 [tool.pyright]
-include = ["**/commit0", "**/agent"]
+include = ["**/commit0_core"]
 ignore = ["**/docs", "**/logs"]
 venvPath = "."
 venv = ".venv"
@@ -47,7 +54,6 @@ reportUnknownLambdaType = "none"
 reportIncompatibleMethodOverride = "none"
 reportPrivateUsage = "none"
 reportMissingParameterType = "error"
-
 
 [tool.ruff]
 exclude = [
@@ -134,6 +140,3 @@ lint.unfixable = []
 
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/**/*.py" = ["D"]
-
-[tool.uv.sources]
-aider-chat = { git = "https://github.com/wenting-zhao/aider.git" }

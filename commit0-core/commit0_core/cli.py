@@ -2,15 +2,15 @@ import typer
 from pathlib import Path
 from typing import Union, List
 from typing_extensions import Annotated
-import commit0.harness.run_pytest_ids
-import commit0.harness.get_pytest_ids
-import commit0.harness.build
-import commit0.harness.setup
-import commit0.harness.evaluate
-import commit0.harness.lint
-import commit0.harness.save
-from commit0.harness.constants import SPLIT, SPLIT_ALL
-from commit0.harness.utils import get_active_branch
+import commit0_core.harness.run_pytest_ids
+import commit0_core.harness.get_pytest_ids
+import commit0_core.harness.build
+import commit0_core.harness.setup
+import commit0_core.harness.evaluate
+import commit0_core.harness.lint
+import commit0_core.harness.save
+from commit0_core.harness.constants import SPLIT, SPLIT_ALL
+from commit0_core.harness.utils import get_active_branch
 import subprocess
 import yaml
 import os
