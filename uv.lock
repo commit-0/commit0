@@ -386,22 +386,52 @@ dependencies = [
     { name = "typer" },
 ]
 
+[package.optional-dependencies]
+core = [
+    { name = "datasets" },
+    { name = "docker" },
+    { name = "fastcore" },
+    { name = "ghapi" },
+    { name = "gitpython" },
+    { name = "import-deps" },
+    { name = "modal" },
+    { name = "pre-commit" },
+    { name = "pymupdf" },
+    { name = "pytest" },
+    { name = "ruff" },
+    { name = "tenacity" },
+    { name = "typer" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aider-chat", git = "https://github.com/wenting-zhao/aider.git" },
     { name = "datasets", specifier = "==3.0.1" },
+    { name = "datasets", marker = "extra == 'core'", specifier = "==3.0.1" },
     { name = "docker", specifier = ">=7.1.0" },
+    { name = "docker", marker = "extra == 'core'", specifier = ">=7.1.0" },
     { name = "fastcore", specifier = ">=1.7.8" },
+    { name = "fastcore", marker = "extra == 'core'", specifier = ">=1.7.8" },
     { name = "ghapi", specifier = ">=1.0.6" },
+    { name = "ghapi", marker = "extra == 'core'", specifier = ">=1.0.6" },
     { name = "gitpython", specifier = ">=3.1.43" },
+    { name = "gitpython", marker = "extra == 'core'", specifier = ">=3.1.43" },
     { name = "import-deps", specifier = ">=0.3.0" },
+    { name = "import-deps", marker = "extra == 'core'", specifier = ">=0.3.0" },
     { name = "modal", specifier = ">=0.64.95" },
+    { name = "modal", marker = "extra == 'core'", specifier = ">=0.64.95" },
     { name = "pre-commit", specifier = ">=3.8.0" },
+    { name = "pre-commit", marker = "extra == 'core'", specifier = ">=3.8.0" },
     { name = "pymupdf", specifier = ">=1.24.5" },
+    { name = "pymupdf", marker = "extra == 'core'", specifier = ">=1.24.5" },
     { name = "pytest", specifier = ">=8.3.3" },
+    { name = "pytest", marker = "extra == 'core'", specifier = ">=8.3.3" },
     { name = "ruff", specifier = ">=0.6.4" },
+    { name = "ruff", marker = "extra == 'core'", specifier = ">=0.6.4" },
     { name = "tenacity", specifier = ">=8.5.0" },
+    { name = "tenacity", marker = "extra == 'core'", specifier = ">=8.5.0" },
     { name = "typer", specifier = ">=0.12.0" },
+    { name = "typer", marker = "extra == 'core'", specifier = ">=0.12.0" },
 ]
 
 [[package]]

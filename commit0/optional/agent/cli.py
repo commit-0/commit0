@@ -1,9 +1,9 @@
 import typer
-from agent.run_agent_no_rich import run_agent as run_agent_no_rich
-from agent.run_agent import run_agent
+from commit0.optional.agent.run_agent_no_rich import run_agent as run_agent_no_rich
+from commit0.optional.agent.run_agent import run_agent
 from commit0.harness.constants import RUN_AGENT_LOG_DIR
 import subprocess
-from agent.agent_utils import write_agent_config
+from commit0.optional.agent.agent_utils import write_agent_config
 
 agent_app = typer.Typer(
     no_args_is_help=True,

@@ -10,7 +10,7 @@ from import_deps import ModuleSet
 from graphlib import TopologicalSorter, CycleError
 import yaml
 
-from agent.class_types import AgentConfig
+from commit0.optional.agent.class_types import AgentConfig
 
 PROMPT_HEADER = ">>> Here is the Task:\n"
 REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"

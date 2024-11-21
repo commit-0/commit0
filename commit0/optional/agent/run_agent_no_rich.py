@@ -4,7 +4,7 @@ import multiprocessing
 from tqdm import tqdm
 from datasets import load_dataset
 from git import Repo
-from agent.agent_utils import (
+from commit0.optional.agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
@@ -15,16 +15,16 @@ from agent.agent_utils import (
 )
 import subprocess
 import json
-from agent.agents import AiderAgents
+from commit0.optional.agent.agents import AiderAgents
 from typing import cast
-from agent.class_types import AgentConfig
+from commit0.optional.agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AGENT_LOG_DIR, RepoInstance
 from commit0.cli import read_commit0_config_file
 from pathlib import Path
 from datetime import datetime
-from agent.run_agent import DirContext, run_eval_after_each_commit
+from commit0.optional.agent.run_agent import DirContext, run_eval_after_each_commit
 
 
 def run_agent_for_repo(

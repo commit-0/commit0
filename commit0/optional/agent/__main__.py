@@ -1,4 +1,4 @@
-from agent.cli import agent_app
+from commit0.optional.agent.cli import agent_app
 
 
 def main() -> None:

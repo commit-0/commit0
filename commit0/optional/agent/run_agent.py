@@ -3,7 +3,7 @@ import yaml
 import multiprocessing
 from datasets import load_dataset
 from git import Repo
-from agent.agent_utils import (
+from commit0.optional.agent.agent_utils import (
     create_branch,
     get_message,
     get_target_edit_files,
@@ -14,17 +14,17 @@ from agent.agent_utils import (
 )
 import json
 import subprocess
-from agent.agents import AiderAgents
+from commit0.optional.agent.agents import AiderAgents
 from typing import Optional, Type, cast
 from types import TracebackType
-from agent.class_types import AgentConfig
+from commit0.optional.agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
 from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.constants import RUN_AGENT_LOG_DIR, RepoInstance
 from commit0.cli import read_commit0_config_file
 from pathlib import Path
 from datetime import datetime
-from agent.display import TerminalDisplay
+from commit0.optional.agent.display import TerminalDisplay
 import queue
 import time
 
