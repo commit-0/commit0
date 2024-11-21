@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Install uv
+      - name: Install uv --extra agent
         uses: astral-sh/setup-uv@v2
       - name: Set up Python
         run: uv venv --python 3.12
