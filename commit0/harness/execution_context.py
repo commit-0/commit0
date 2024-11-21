@@ -159,7 +159,7 @@ class Modal(ExecutionContext):
             files_to_collect=files_to_collect,
         )
 
-        self.app = modal.App()
+        self.app = modal.App.lookup("commit0", create_if_missing=True)
 
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
