@@ -19,6 +19,7 @@ dependencies = [
     "pytest>=8.3.3",
     "datasets==3.0.1",
     "modal>=0.66.26",
+    "strenum>=0.4.15",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",

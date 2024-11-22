@@ -9,7 +9,8 @@ import docker
 import logging
 import modal
 import modal.io_streams
-from enum import StrEnum, auto
+from enum import auto
+from strenum import StrEnum
 from pathlib import Path
 import time
 from typing import Optional, Type
