@@ -90,6 +90,8 @@ def main(
         # Check if it's a local branch
         if branch in local_repo.branches:
             commit_id = local_repo.commit(branch).hexsha
+            if local_repo.commit(branch).hexsha != local_repo.commit().hexsha:
+                commit_id = local_repo.commit().hexsha
         else:
             found_remote_branch = False
             for remote in local_repo.remotes:

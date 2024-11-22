@@ -15,7 +15,7 @@ from agent.agent_utils import (
 import json
 import subprocess
 from agent.agents import AiderAgents
-from typing import Optional, Type, cast
+from typing import Optional, Type, cast, Dict
 from types import TracebackType
 from agent.class_types import AgentConfig
 from commit0.harness.constants import SPLIT
@@ -46,19 +46,31 @@ class DirContext:
         os.chdir(self.cwd)
 
 
-def run_eval_after_each_commit(
-    branch: str, backend: str, commit0_config_file: str
-) -> str:
+def run_eval_after_all_changes(
+    repo: Repo, start_commit: str, branch: str, backend: str, commit0_config_file: str
+) -> Dict[str, str]:
     """Run the eval command after each commit."""
     eval_cmd = f"python -m commit0 evaluate --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
-    try:
-        result = subprocess.run(
-            eval_cmd, shell=True, capture_output=True, text=True, check=True
-        )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        print(f"Error running eval command: {e}")
-        return e.stdout if e.stdout else str(e)
+
+    results = {}
+    commits = list(repo.iter_commits(f"{start_commit}..{branch}"))
+    commits.reverse()  # Go from oldest to newest
+
+    for commit in commits:
+        repo.git.checkout(commit.hexsha, detach=True)
+        try:
+            result = subprocess.run(
+                eval_cmd, shell=True, capture_output=True, text=True, check=True
+            )
+            results[commit.hexsha] = result.stdout
+        except subprocess.CalledProcessError as e:
+            print(f"Error running eval command for commit {commit.hexsha}: {e}")
+            results[commit.hexsha] = e.stdout if e.stdout else str(e)
+
+    # Return to original branch
+    repo.git.checkout(branch)
+
+    return results
 
 
 def run_agent_for_repo(
@@ -178,11 +190,6 @@ def run_agent_for_repo(
                     test_log_dir,
                     test_first=True,
                 )
-                if agent_config.record_test_for_each_commit:
-                    current_commit = local_repo.head.commit.hexsha
-                    eval_results[current_commit] = run_eval_after_each_commit(
-                        branch, backend, commit0_config_file
-                    )
 
                 # after running the agent, update the money display
                 update_queue.put(
@@ -211,11 +218,6 @@ def run_agent_for_repo(
                     lint_log_dir,
                     lint_first=True,
                 )
-                if agent_config.record_test_for_each_commit:
-                    current_commit = local_repo.head.commit.hexsha
-                    eval_results[current_commit] = run_eval_after_each_commit(
-                        branch, backend, commit0_config_file
-                    )
 
                 # after running the agent, update the money display
                 update_queue.put(
@@ -240,11 +242,6 @@ def run_agent_for_repo(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
                 agent_return = agent.run(message, "", lint_cmd, [f], file_log_dir)
-                if agent_config.record_test_for_each_commit:
-                    current_commit = local_repo.head.commit.hexsha
-                    eval_results[current_commit] = run_eval_after_each_commit(
-                        branch, backend, commit0_config_file
-                    )
 
                 update_queue.put(
                     (
@@ -253,6 +250,9 @@ def run_agent_for_repo(
                     )
                 )
     if agent_config.record_test_for_each_commit:
+        eval_results = run_eval_after_all_changes(
+            local_repo, example["base_commit"], branch, backend, commit0_config_file
+        )
         with open(experiment_log_dir / "eval_results.json", "w") as f:
             json.dump(eval_results, f)
 
