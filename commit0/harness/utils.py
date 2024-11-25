@@ -172,6 +172,7 @@ def generate_patch_between_commits(
         repo (git.Repo): An instance of the git.Repo object representing the repository.
         old_commit (str): The hash or reference to the old commit.
         new_commit (str): The hash or reference to the new commit.
+        src_dir (str): The source directory to exclude from the patch.
 
     Returns:
     -------
