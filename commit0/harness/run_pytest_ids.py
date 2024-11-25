@@ -108,7 +108,7 @@ def main(
             if not found_remote_branch:
                 raise Exception(f"Branch {branch} does not exist locally or remotely.")
     patch = generate_patch_between_commits(
-        local_repo, example["base_commit"], commit_id
+        local_repo, example["base_commit"], commit_id, example["src_dir"]
     )
     patch_file = Path(log_dir / "patch.diff")
     patch_file.write_text(patch)

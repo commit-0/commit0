@@ -163,7 +163,7 @@ def create_repo_on_github(
 
 
 def generate_patch_between_commits(
-    repo: git.Repo, old_commit: str, new_commit: str
+    repo: git.Repo, old_commit: str, new_commit: str, src_dir: str
 ) -> str:
     """Generate a patch string by comparing two specified commits.
 
