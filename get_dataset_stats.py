@@ -91,13 +91,11 @@ def _find_files_to_edit(base_dir: str, src_dir: str, test_dir: str) -> list[str]
     
 
 def get_dataset_stats(
-    base_dir, src_dir, test_dir,
+    repo_name,
+    files_to_edit,
     spec_filename,
     tokenizer,
 ):
-    repo_name = os.path.basename(base_dir.rstrip("/"))
-    files_to_edit = _find_files_to_edit(base_dir, src_dir, test_dir)
-
     fns_to_edit = []
     for filename in files_to_edit:
         try:
@@ -134,47 +132,49 @@ def get_dataset_stats(
                     )
 
     # Get spec metrics
-    concatted_spec = ""
-    reader = pypdf.PdfReader(spec_filename)
-    for p_idx, page in enumerate(reader.pages):
-        try:
-            concatted_spec += page.extract_text()
-        except Exception as e:
-            print(f"{e}: Could not load page {p_idx} of {spec_filename}, excluding...")
+    # concatted_spec = ""
+    # reader = pypdf.PdfReader(spec_filename)
+    # for p_idx, page in enumerate(reader.pages):
+    #     try:
+    #         concatted_spec += page.extract_text()
+    #     except Exception as e:
+    #         print(f"{e}: Could not load page {p_idx} of {spec_filename}, excluding...")
 
 
     repo_tests = subprocess.run(['commit0', 'get-tests', repo_name], capture_output=True, text=True).stdout.strip()
 
-    dataset_metrics = {
-        "repo_name": repo_name,
-        "no_fns_to_edit": len(fns_to_edit),
-        "no_tokens_in_spec": tokenizer(
-            concatted_spec, return_tensors="pt"
-        ).input_ids.shape[-1],
-        "no_files_to_edit": len(files_to_edit),
-        "no_unit_tests": len(repo_tests.splitlines())
-    }
-    return dataset_metrics, fns_to_edit
+    # dataset_metrics = {
+    #     "repo_name": repo_name,
+    #     "no_fns_to_edit": len(fns_to_edit),
+    #     "no_tokens_in_spec": tokenizer(
+    #         concatted_spec, return_tensors="pt"
+    #     ).input_ids.shape[-1],
+    #     "no_files_to_edit": len(files_to_edit),
+    #     "no_unit_tests": len(repo_tests.splitlines())
+    # }
+    return None, fns_to_edit
 
 
 def get_impls(
     path_to_repo_src,
     files_to_edit,
+    filefuncs_to_edit,
 ):
     fn_impls = {}
     for filename in files_to_edit:
         try:
-            code = open(os.path.join(path_to_repo_src, filename), encoding="utf-8").read()
+            code = open(filename, encoding="utf-8").read()
         except Exception as e:
-            print(f"{e}: Trouble opening {os.path.join(path_to_repo_src, filename)}")
+            print(f"{e}: Trouble opening {filename}")
             continue
         try:
             code_tree = ast.parse(code)
         except Exception as e:
             print(
-                f"{e}: Trouble parsing {os.path.join(path_to_repo_src, filename)}"
+                f"{e}: Trouble parsing {filename}"
             )
             continue
+        filename = filename[len(path_to_repo_src)+1:]
         code_lines = code.splitlines(keepends=True)
         for node in ast.walk(code_tree):
             if isinstance(node, ast.ClassDef):
@@ -187,10 +187,11 @@ def get_impls(
                 if len(node.body) > 0:
                     start_idx = sum(len(line) for line in code_lines[:node.body[0].lineno-1]) + node.body[0].col_offset
                     end_idx =  sum(len(line) for line in code_lines[:node.body[-1].end_lineno-1]) + node.body[-1].end_col_offset
+                    if f"{filename}::{classname}{node.name}" not in filefuncs_to_edit: continue
                     fn_impls[f"{filename}::{classname}{node.name}"] = code[start_idx:end_idx]
     return fn_impls
 
-def get_coverage_info(path_to_logs, repo_name, branch_name, files_to_edit):
+def get_coverage_info(path_to_logs, repo_name, branch_name, filefuncs_to_edit):
     coverage_info = {} # unit test -> [ fnname ]
     for pytest_hash in os.listdir(path_to_logs):
         if not os.path.exists(os.path.join(path_to_logs, pytest_hash, "eval.sh")):
@@ -203,8 +204,8 @@ def get_coverage_info(path_to_logs, repo_name, branch_name, files_to_edit):
         coverage_file_path = os.path.join(path_to_logs, pytest_hash, "coverage.json")
         coverage_report = json.load(open(coverage_file_path))
         for filename, file_coverage in coverage_report['files'].items():
-            if filename not in files_to_edit: continue
             for function in file_coverage["functions"]:
+                if f"{filename}::{function}" not in filefuncs_to_edit: continue
                 coverage_info[testname].append(f"{filename}::{function}")
     return coverage_info
 
@@ -249,6 +250,7 @@ def main(args):
     #     f"--commit0-dot-file-path {analysis_files_path}/repos/.commit0.yaml"
     # )
 
+    repo_to_fns_to_edit = {}
     repo_to_files_to_edit = {}
     # tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name)
     # output_file = "dataset_metrics.csv"
@@ -269,21 +271,23 @@ def main(args):
         test_dir = os.path.join(
             analysis_files_path, "repos", repo_name, example["test"]['test_dir']
         )
-    #         spec_filepath = os.path.join(
-    #             analysis_files_path, "repos", repo_name, "spec.pdf"
-    #         )
-    #         datasaset_metrics, files_to_edit = get_dataset_stats(
-    #             base_dir, source_code_folder, test_dir,
-    #             spec_filepath,
-    #             tokenizer,
-    #         )
-    #         csv_writer.writerow(datasaset_metrics)
-    #         print(datasaset_metrics)
+#         spec_filepath = os.path.join(
+#             analysis_files_path, "repos", repo_name, "spec.pdf"
+#         )
         files_to_edit = _find_files_to_edit(base_dir, source_code_folder, test_dir)
-        repo_to_files_to_edit[repo_name] = [filename[len(base_dir)+1:] for filename in files_to_edit]
+        _, fns_to_edit = get_dataset_stats(
+            repo_name,
+            files_to_edit,
+            None,# spec_filepath,
+            None # tokenizer,
+        )
+#         csv_writer.writerow(datasaset_metrics)
+#         print(datasaset_metrics)
+        repo_to_fns_to_edit[repo_name] = [f"{example['src_dir'].rstrip('/')}/{filefunc}" for filefunc in fns_to_edit] #[filename[len(base_dir)+1:] for filename in files_to_edit]
+        repo_to_files_to_edit[repo_name] = files_to_edit
 
     branch_name = "reference"
-    org_name = f"commit0_{args.split}"
+    org_name = f"commit0_lite"
     commit0_dot_file_path = os.path.join(
         analysis_files_path, "repos", org_name, branch_name, ".commit0.yaml"
     )
@@ -304,7 +308,7 @@ def main(args):
         if repo_name not in SPLIT["lite"]:
             continue
         path_to_logs = f"{os.getcwd()}/logs/pytest/{repo_name}/{branch_name}"
-        existing_tests_to_fnnames = get_coverage_info(path_to_logs, repo_name, branch_name, repo_to_files_to_edit[repo_name])
+        existing_tests_to_fnnames = get_coverage_info(path_to_logs, repo_name, branch_name, repo_to_fns_to_edit[repo_name])
         repo_tests = subprocess.run(['commit0', 'get-tests', repo_name], capture_output=True, text=True).stdout.strip()
         for testname in repo_tests.splitlines():
             if testname.strip() not in existing_tests_to_fnnames:
@@ -314,12 +318,12 @@ def main(args):
                 )
                 print(command)
                 os.system(command)
-        tests_to_fnnames = get_coverage_info(path_to_logs, repo_name, branch_name, repo_to_files_to_edit[repo_name])
+        tests_to_fnnames = get_coverage_info(path_to_logs, repo_name, branch_name, repo_to_fns_to_edit[repo_name])
         base_dir = os.path.join(
             analysis_files_path, "repos", repo_name
         )
-        fnnames_to_impls = get_impls(base_dir, repo_to_files_to_edit[repo_name])
-        coverage_details[repo_name] = {}
+        fnnames_to_impls = get_impls(base_dir, repo_to_files_to_edit[repo_name], repo_to_fns_to_edit[repo_name])
+        coverage_details[repo_name] = {"tests_to_fnnames": tests_to_fnnames, "fnnames_to_impls": fnnames_to_impls}
         for testname, fnnames in tests_to_fnnames.items():
             coverage_details[repo_name][testname] = []
             for fnname in fnnames:
@@ -327,11 +331,11 @@ def main(args):
                     coverage_details[repo_name][testname].append((fnname, fnnames_to_impls[fnname]))
                 else:
                     coverage_details[repo_name][testname].append((fnname, None))
-
-    json.dump(
-        coverage_details, open(coverage_output_file, "w"), indent=4
-    )
-    print(f"Saved coverage info to {coverage_output_file}")
+        json.dump(
+            coverage_details, open(coverage_output_file, "w"), indent=4
+        )
+        print(f"Saved coverage info to {coverage_output_file}, incremental {repo_name}")
+    print(f"Saved FINAL coverage info to {coverage_output_file}")
 
 
 main(get_args())
