@@ -136,6 +136,7 @@ def main(
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
+    backend = backend.upper()
     if ExecutionBackend(backend) == ExecutionBackend.MODAL:
         logger.info("Runnning on Modal")
         execution_context = Modal

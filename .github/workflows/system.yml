@@ -17,7 +17,7 @@ jobs:
       - name: Set up Docker
         uses: docker/setup-buildx-action@v3
       - name: Install the project
-        run: uv sync
+        run: uv sync --extra agent
       - name: Set up commit0
         run: uv run commit0 setup simpy
       - name: Build docker images

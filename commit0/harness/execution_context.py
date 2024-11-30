@@ -9,7 +9,8 @@ import docker
 import logging
 import modal
 import modal.io_streams
-from enum import StrEnum, auto
+from enum import auto
+from strenum import StrEnum
 from pathlib import Path
 import time
 from typing import Optional, Type
@@ -159,7 +160,7 @@ class Modal(ExecutionContext):
             files_to_collect=files_to_collect,
         )
 
-        self.app = modal.App()
+        self.app = modal.App.lookup("commit0", create_if_missing=True)
 
         # the image must exist on dockerhub
         reponame = spec.repo.split("/")[-1]
