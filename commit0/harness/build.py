@@ -39,7 +39,7 @@ def main(
         specs.append(spec)
 
     client = docker.from_env()
-    build_repo_images(client, specs, num_workers, verbose)
+    build_repo_images(client, specs, dataset_type, num_workers, verbose)
 
 
 __all__ = []
