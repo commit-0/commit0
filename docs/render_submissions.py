@@ -493,6 +493,7 @@ def main(args):
             )
             if os.path.exists(submission_repos_path):
                 shutil.rmtree(submission_repos_path)
+                print(f"Removed existing at {submission_repos_path}")
             os.makedirs(os.path.join(analysis_files_path, org_name), exist_ok=True)
             commit0_dot_file_path = os.path.join(
                 analysis_files_path,
@@ -530,7 +531,7 @@ def main(args):
             )
             # run pytests
             os.system(
-                f"commit0 evaluate --branch {branch_name} --timeout 200"
+                f"commit0 evaluate --branch {branch_name} --timeout 1800"
                 f"--commit0-config-file {commit0_dot_file_path}"
             )
             for example in dataset:

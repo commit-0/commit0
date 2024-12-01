@@ -5,6 +5,6 @@ python docs/render_submissions.py --analyze_submissions --render_webpages --spli
 ```
 
 ```
-cd ..
-mkdocs gh-deploy --config-file mkdocs.yml --site-dir ../commit-0.github.io/ --remote-branch master
+cd ../commit-0.github.io
+mkdocs gh-deploy --config-file ../commit0/mkdocs.yml --remote-branch master
 ```
