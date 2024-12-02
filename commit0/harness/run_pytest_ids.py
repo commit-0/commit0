@@ -84,7 +84,7 @@ def main(
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo_name, log_file, verbose=verbose)
 
-    if isinstance(example, RepoInstance):
+    if dataset_type != "simple":
         try:
             local_repo = git.Repo(repo_or_repo_dir)
             logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
@@ -154,7 +154,7 @@ def main(
             coverage_text = ""
         eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)
 
-    else:  # if example is of type SimpleInstance
+    else:
         if branch == "reference":
             patch = (
                 example["prompt"]
