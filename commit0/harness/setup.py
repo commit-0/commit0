@@ -23,6 +23,8 @@ def main(
     base_dir: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    if "humaneval" in dataset_name.lower():
+        return
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         clone_url = f"https://github.com/{example['repo']}.git"

@@ -5,6 +5,7 @@ from typing import Union, cast, Optional
 
 from commit0.harness.constants import (
     RepoInstance,
+    SimpleInstance,
 )
 from commit0.harness.dockerfiles import (
     get_dockerfile_base,
@@ -19,7 +20,7 @@ class Spec(ABC):
     repo: str
     # repo dir on docker
     repo_directory: str
-    instance: RepoInstance
+    instance: Union[RepoInstance, SimpleInstance]
 
     @property
     def setup_script(self) -> str:
@@ -175,6 +176,31 @@ class Commit0Spec(Spec):
         return eval_script_list
 
 
+class SimpleSpec(Spec):
+    def make_repo_script_list(self) -> list[str]:
+        """Create a list of bash commands to set up the repository for testing.
+        This is the setup script for the instance image.
+        """
+        setup_commands = [
+            f"mkdir {self.repo_directory} && cd {self.repo_directory}",
+            f"uv venv --python 3.12",
+            "source .venv/bin/activate",
+            "which python",
+        ]
+        return setup_commands
+
+    def make_eval_script_list(self) -> list[str]:
+        """Run the tests."""
+        eval_script_list = [
+            f"cd {self.repo_directory}",
+            "source .venv/bin/activate",
+            "cat /patch.diff > test.py",
+            "uv run test.py > test_output.txt 2>&1",
+            "echo $? > pytest_exit_code.txt",
+        ]
+        return eval_script_list
+
+
 class SWEBenchSpec(Spec):
     def make_repo_script_list(self) -> list[str]:
         """Create a list of bash commands to set up the repository for testing.
@@ -277,7 +303,7 @@ class SWEBenchSpec(Spec):
 
 
 def get_specs_from_dataset(
-    dataset: Union[list[RepoInstance], list[Spec]], dataset_type: str
+    dataset: Union[list[Union[RepoInstance, SimpleInstance]], list[Spec]], dataset_type: str
 ) -> list[Spec]:
     """Idempotent function that converts a list of RepoInstance objects to a list of Spec objects."""
     if isinstance(dataset[0], Spec):
@@ -290,7 +316,7 @@ def get_specs_from_dataset(
     )
 
 
-def make_spec(instance: RepoInstance, dataset_type: str) -> Spec:
+def make_spec(instance: Union[RepoInstance, SimpleInstance], dataset_type: str) -> Spec:
     if isinstance(instance, Spec):
         return instance
     repo_directory = "/testbed"
@@ -303,6 +329,12 @@ def make_spec(instance: RepoInstance, dataset_type: str) -> Spec:
     elif dataset_type == "swebench":
         return SWEBenchSpec(
             repo=instance["instance_id"],
+            repo_directory=repo_directory,
+            instance=instance,
+        )
+    elif dataset_type == "simple":
+        return SimpleSpec(
+            repo="simple",  # all benchmarks with mere function writing will share the simple docker image
             repo_directory=repo_directory,
             instance=instance,
         )

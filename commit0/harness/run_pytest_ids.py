@@ -1,5 +1,6 @@
 import git
 import os
+import re
 import sys
 import traceback
 from datasets import load_dataset
@@ -11,6 +12,7 @@ from commit0.harness.constants import (
     Files,
     RUN_PYTEST_LOG_DIR,
     RepoInstance,
+    SimpleInstance,
 )
 from commit0.harness.spec import make_spec
 from commit0.harness.utils import (
@@ -46,7 +48,7 @@ def main(
     Tests are run either locally through docker
     or remotely through Modal.
     """
-    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     spec = None
     example = None
     repo_name = None
@@ -56,10 +58,13 @@ def main(
         if "swe" in dataset_name.lower():
             repo_name = example["instance_id"]
             dataset_type = "swebench"
+        elif "humaneval" in dataset_name.lower():
+            repo_name = example["instance_id"]
+            dataset_type = "simple"
         else:
             repo_name = example["repo"].split("/")[-1]
             dataset_type = "commit0"
-        if repo_name in os.path.basename(repo_or_repo_dir):
+        if repo_name in os.path.basename(repo_or_repo_dir) or repo_or_repo_dir.endswith(repo_name):
             spec = make_spec(example, dataset_type)
             break
     assert spec is not None, "No spec available"
@@ -73,46 +78,61 @@ def main(
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo_name, log_file, verbose=verbose)
 
-    try:
-        local_repo = git.Repo(repo_or_repo_dir)
-        logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
-    except (git.exc.NoSuchPathError, git.exc.InvalidGitRepositoryError):  # type: ignore
-        repo_dir = os.path.join(base_dir, repo_name)
-        logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
+    if dataset_type != "simple":  # if dataset_type is not simple, load git repo
         try:
-            local_repo = git.Repo(repo_dir)
-            logger.info(f"Retried succeeded. Loaded a git repo from {repo_dir}")
-        except git.exc.NoSuchPathError:  # type: ignore
-            raise Exception(
-                f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}"
-            )
-        except Exception as e:
-            raise e
-    commit_id = ""
-    if branch == "reference":
-        commit_id = example["reference_commit"]
-    else:
-        # Check if it's a local branch
-        if branch in local_repo.branches:
-            commit_id = local_repo.commit(branch).hexsha
+            local_repo = git.Repo(repo_or_repo_dir)
+            logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
+        except (git.exc.NoSuchPathError, git.exc.InvalidGitRepositoryError):  # type: ignore
+            repo_dir = os.path.join(base_dir, repo_name)
+            logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
+            try:
+                local_repo = git.Repo(repo_dir)
+                logger.info(f"Retried succeeded. Loaded a git repo from {repo_dir}")
+            except git.exc.NoSuchPathError:  # type: ignore
+                raise Exception(
+                    f"{repo_dir} and {repo_or_repo_dir} are not git directories.\nUsage: commit0 test {{repo_dir}} {{branch}} {{test_ids}}"
+                )
+            except Exception as e:
+                raise e
+        commit_id = ""
+        if branch == "reference":
+            commit_id = example["reference_commit"]
         else:
-            found_remote_branch = False
-            for remote in local_repo.remotes:
-                remote.fetch()  # Fetch latest updates from each remote
+            # Check if it's a local branch
+            if branch in local_repo.branches:
+                commit_id = local_repo.commit(branch).hexsha
+            else:
+                found_remote_branch = False
+                for remote in local_repo.remotes:
+                    remote.fetch()  # Fetch latest updates from each remote
 
-                # Check if the branch exists in this remote
-                for ref in remote.refs:
-                    if (
-                        ref.remote_head == branch
-                    ):  # Compare branch name without remote prefix
-                        commit_id = local_repo.commit(ref.name).hexsha
-                        found_remote_branch = True
-                        break  # Branch found, no need to keep checking this remote
-                if found_remote_branch:
-                    break  # Stop checking other remotes if branch is found
-            if not found_remote_branch:
-                raise Exception(f"Branch {branch} does not exist locally or remotely.")
-    if "swe" in dataset_name.lower():
+                    # Check if the branch exists in this remote
+                    for ref in remote.refs:
+                        if (
+                            ref.remote_head == branch
+                        ):  # Compare branch name without remote prefix
+                            commit_id = local_repo.commit(ref.name).hexsha
+                            found_remote_branch = True
+                            break  # Branch found, no need to keep checking this remote
+                    if found_remote_branch:
+                        break  # Stop checking other remotes if branch is found
+                if not found_remote_branch:
+                    raise Exception(f"Branch {branch} does not exist locally or remotely.")
+    if dataset_type == "simple":
+        if branch == "reference":
+            patch = example["prompt"] + "\n\n" + example["canonical_solution"] + "\n\n" + example["test"]
+        else:
+            solution = open(test_ids).read()
+            pattern = r"```python\n(.*?)```"
+            matches = re.finditer(pattern, solution, re.DOTALL)
+            matches = [match.group(1).strip() for match in matches]
+            if len(matches) > 0:
+                solution = "\n\n".join(matches)
+            else:
+                solution = example["prompt"] + "\n\n" + solution
+            patch = solution + "\n\n" + example["test"]
+        patch = patch + "\n\n" + f"check({example['entry_point']})"
+    elif "swe" in dataset_name.lower():
         if branch == "reference":
             patch = example["test"]["patch"] + "\n\n" + example["test"]["test_patch"]
         else:
@@ -127,12 +147,15 @@ def main(
     patch_file = Path(log_dir / "patch.diff")
     patch_file.write_text(patch, encoding="utf-8", errors="ignore")
 
-    # make eval file
-    if coverage:
-        coverage_text = f" --cov={example['src_dir']} --cov-branch --cov-report json"
+    if dataset_type != "simple":
+        # make eval file
+        if coverage:
+            coverage_text = f" --cov={example['src_dir']} --cov-branch --cov-report json"
+        else:
+            coverage_text = ""
+        eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)
     else:
-        coverage_text = ""
-    eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)
+        eval_script = spec.eval_script
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 

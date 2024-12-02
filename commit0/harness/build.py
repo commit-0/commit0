@@ -4,7 +4,7 @@ import docker
 from datasets import load_dataset
 from typing import Iterator
 
-from commit0.harness.constants import RepoInstance, SPLIT
+from commit0.harness.constants import RepoInstance, SimpleInstance, SPLIT
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 
@@ -17,23 +17,25 @@ logger = logging.getLogger(__name__)
 def main(
     dataset_name: str,
     dataset_split: str,
-    repo_split: str,
+    split: str,
     num_workers: int,
     verbose: int,
 ) -> None:
-    dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     specs = []
     if "swe" in dataset_name.lower():
         dataset_type = "swebench"
+    elif "humaneval" in dataset_name.lower():
+        dataset_type = "simple"
     else:
         dataset_type = "commit0"
     for example in dataset:
-        repo_name = example["repo"].split("/")[-1]
-        if "swe" in dataset_name.lower():
-            if repo_split != "all" and repo_split not in example["instance_id"]:
+        if "swe" in dataset_name.lower() or dataset_type == "simple":
+            if split != "all" and split not in example["instance_id"]:
                 continue
         else:
-            if repo_split != "all" and repo_name not in SPLIT[repo_split]:
+            repo_name = example["repo"].split("/")[-1]
+            if split != "all" and repo_name not in SPLIT[split]:
                 continue
         spec = make_spec(example, dataset_type)
         specs.append(spec)

@@ -13,6 +13,14 @@ class RepoInstance(TypedDict):
     src_dir: str
 
 
+class SimpleInstance(TypedDict):
+    instance_id: str
+    prompt: str
+    canonical_solution: str
+    test: str
+    entry_point: str
+
+
 class Files(TypedDict):
     eval_script: Dict[str, Path]
     patch: Dict[str, Path]
