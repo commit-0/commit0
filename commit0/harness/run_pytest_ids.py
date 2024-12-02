@@ -84,9 +84,7 @@ def main(
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo_name, log_file, verbose=verbose)
 
-    if not isinstance(
-        example, SimpleInstance
-    ):  # if dataset_type is not simple, load git repo
+    if isinstance(example, RepoInstance):
         try:
             local_repo = git.Repo(repo_or_repo_dir)
             logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
@@ -130,7 +128,33 @@ def main(
                     raise Exception(
                         f"Branch {branch} does not exist locally or remotely."
                     )
-    if isinstance(example, SimpleInstance):
+
+        # make patch file
+        if "swe" in dataset_name.lower():
+            if branch == "reference":
+                patch = (
+                    example["test"]["patch"] + "\n\n" + example["test"]["test_patch"]
+                )
+            else:
+                patch = generate_patch_between_commits(
+                    local_repo, example["base_commit"], commit_id
+                )
+                patch += "\n\n" + example["test"]["test_patch"]
+        else:
+            patch = generate_patch_between_commits(
+                local_repo, example["base_commit"], commit_id
+            )
+
+        # make eval file
+        if coverage:
+            coverage_text = (
+                f" --cov={example['src_dir']} --cov-branch --cov-report json"
+            )
+        else:
+            coverage_text = ""
+        eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)
+
+    else:  # if example is of type SimpleInstance
         if branch == "reference":
             patch = (
                 example["prompt"]
@@ -150,32 +174,10 @@ def main(
                 solution = example["prompt"] + "\n\n" + solution
             patch = solution + "\n\n" + example["test"]
         patch = patch + "\n\n" + f"check({example['entry_point']})"
-    elif "swe" in dataset_name.lower():
-        if branch == "reference":
-            patch = example["test"]["patch"] + "\n\n" + example["test"]["test_patch"]
-        else:
-            patch = generate_patch_between_commits(
-                local_repo, example["base_commit"], commit_id
-            )
-            patch += "\n\n" + example["test"]["test_patch"]
-    else:
-        patch = generate_patch_between_commits(
-            local_repo, example["base_commit"], commit_id
-        )
+        eval_script = spec.eval_script
+
     patch_file = Path(log_dir / "patch.diff")
     patch_file.write_text(patch, encoding="utf-8", errors="ignore")
-
-    if not isinstance(example, SimpleInstance):
-        # make eval file
-        if coverage:
-            coverage_text = (
-                f" --cov={example['src_dir']} --cov-branch --cov-report json"
-            )
-        else:
-            coverage_text = ""
-        eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)
-    else:
-        eval_script = spec.eval_script
     eval_file = Path(log_dir / "eval.sh")
     eval_file.write_text(eval_script)
 
