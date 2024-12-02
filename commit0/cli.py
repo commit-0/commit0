@@ -118,7 +118,8 @@ def setup(
 ) -> None:
     """Commit0 clone a repo split."""
     check_commit0_path()
-    check_valid(repo_split, SPLIT)
+    if "commit0" in dataset_name.split("/")[-1].lower():
+        check_valid(repo_split, SPLIT)
 
     base_dir = str(Path(base_dir).resolve())
 
@@ -168,7 +169,8 @@ def build(
     check_commit0_path()
 
     commit0_config = read_commit0_config_file(commit0_config_file)
-    check_valid(commit0_config["repo_split"], SPLIT)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(
         f"Building repository for split: {highlight(commit0_config['repo_split'], Colors.ORANGE)}"
@@ -199,7 +201,6 @@ def get_tests(
 ) -> None:
     """Get tests for a Commit0 repository."""
     check_commit0_path()
-    check_valid(repo_name, SPLIT_ALL)
 
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
@@ -247,19 +248,23 @@ def test(
 ) -> None:
     """Run tests on a Commit0 repository."""
     check_commit0_path()
+    commit0_config = read_commit0_config_file(commit0_config_file)
     if repo_or_repo_path.endswith("/"):
         repo_or_repo_path = repo_or_repo_path[:-1]
-    check_valid(repo_or_repo_path.split("/")[-1], SPLIT_ALL)
-
-    commit0_config = read_commit0_config_file(commit0_config_file)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(repo_or_repo_path.split("/")[-1], SPLIT)
 
     if reference:
         branch = "reference"
-    if branch is None and not reference:
-        git_path = os.path.join(
-            commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
-        )
-        branch = get_active_branch(git_path)
+    else:
+        if "humaneval" not in commit0_config["dataset_name"].split("/")[-1].lower():
+            if branch is None and not reference:
+                git_path = os.path.join(
+                    commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
+                )
+                branch = get_active_branch(git_path)
+        else:
+            branch = test_ids
 
     if stdin:
         # Read test names from stdin
@@ -316,7 +321,8 @@ def evaluate(
         branch = "reference"
 
     commit0_config = read_commit0_config_file(commit0_config_file)
-    check_valid(commit0_config["repo_split"], SPLIT)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(f"Evaluating repository split: {commit0_config['repo_split']}")
     typer.echo(f"Branch: {branch}")
@@ -391,7 +397,8 @@ def save(
     """Save Commit0 split you choose in Setup Stage to GitHub."""
     check_commit0_path()
     commit0_config = read_commit0_config_file(commit0_config_file)
-    check_valid(commit0_config["repo_split"], SPLIT)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(f"Saving repository split: {commit0_config['repo_split']}")
     typer.echo(f"Owner: {owner}")

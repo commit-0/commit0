@@ -1,9 +1,11 @@
 from enum import Enum
 from pathlib import Path
-from typing import Dict, TypedDict
+from typing import Dict, ItemsView
+from pydantic import BaseModel
 
 
-class RepoInstance(TypedDict):
+class RepoInstance(BaseModel):
+    instance_id: str
     repo: str
     base_commit: str
     reference_commit: str
@@ -11,10 +13,33 @@ class RepoInstance(TypedDict):
     test: Dict[str, str]
     src_dir: str
 
+    def __getitem__(self, item: str):
+        return getattr(self, item)
 
-class Files(TypedDict):
+
+class SimpleInstance(BaseModel):
+    instance_id: str
+    prompt: str
+    canonical_solution: str
+    test: str
+    entry_point: str
+
+    def __getitem__(self, item: str):
+        return getattr(self, item)
+
+
+class Files(BaseModel):
     eval_script: Dict[str, Path]
     patch: Dict[str, Path]
+
+    def __getitem__(self, item: str):
+        return getattr(self, item)
+
+    def items(self) -> ItemsView[str, object]:
+        """Using self.dict() to obtain the underlying data as a dictionary,
+        which is then iterated to yield key-value pairs.
+        """
+        return self.dict().items()
 
 
 BASE_BRANCH = "commit0"

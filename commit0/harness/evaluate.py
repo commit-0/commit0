@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from collections import Counter
@@ -32,20 +33,35 @@ def main(
     rebuild_image: bool,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
-    repos = SPLIT[repo_split]
+    if "swe" in dataset_name.lower():
+        if repo_split == "all":
+            repos = dataset["instance_id"]  # type: ignore
+        else:
+            repos = [one for one in dataset["instance_id"] if repo_split in one]  # type: ignore
+    else:
+        repos = SPLIT[repo_split]
     triples = []
     log_dirs = []
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
-        if repo_split != "all" and repo_name not in SPLIT[repo_split]:
-            continue
+        if "swe" in dataset_name.lower():
+            if repo_split != "all" and repo_split not in example["instance_id"]:
+                continue
+        else:
+            if repo_split != "all" and repo_name not in SPLIT[repo_split]:
+                continue
         hashed_test_ids = get_hash_string(example["test"]["test_dir"])
         if branch is None:
-            git_path = os.path.join(base_dir, repo_name)
+            git_path = os.path.join(base_dir, example["instance_id"])
             branch = get_active_branch(git_path)
-        log_dir = RUN_PYTEST_LOG_DIR / repo_name / branch / hashed_test_ids
+        log_dir = (
+            RUN_PYTEST_LOG_DIR
+            / example["instance_id"].split("/")[-1]
+            / branch
+            / hashed_test_ids
+        )
         log_dirs.append(str(log_dir))
-        triples.append((repo_name, example["test"]["test_dir"], branch))
+        triples.append((example["instance_id"], example["test"]["test_dir"], branch))
 
     with tqdm(total=len(repos), smoothing=0, desc="Evaluating repos") as pbar:
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -78,6 +94,7 @@ def main(
         report_file = os.path.join(name, "report.json")
         name = name.split("/")[2]
         test_ids = get_tests(name, verbose=0)
+        test_ids = [xx for x in test_ids for xx in x]
         if not os.path.exists(report_file):
             out.append(
                 {
@@ -89,8 +106,18 @@ def main(
                 }
             )
             continue
-        report = load_dataset("json", data_files=report_file, split="train")  # type: ignore
-        tests = {x["nodeid"]: x["call"] for x in report["tests"][0] if "call" in x}  # type: ignore
+        with open(report_file, "r") as file:
+            report = json.load(file)
+        # new version of pytest json
+        if "created" in report:
+            tests = {x["nodeid"]: x["call"] for x in report["tests"] if "call" in x}
+        # old version of pytest json
+        else:
+            tests = {
+                x["nodeid"]: {"outcome": x["outcome"], "duration": x["duration"]}
+                for x in report
+                if x["when"] == "call"
+            }
         status = []
         runtimes = []
         no_runs = 0

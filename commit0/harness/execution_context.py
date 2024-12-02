@@ -102,7 +102,7 @@ class Docker(ExecutionContext):
         self.client = docker.from_env()
         self.container = create_container(
             client=self.client,
-            image_name=spec.repo_image_tag,
+            image_name=spec.repo_image_key,
             container_name=spec.get_container_name(),
             nano_cpus=num_cpus,
             logger=logger,
