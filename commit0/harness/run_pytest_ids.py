@@ -6,7 +6,7 @@ import traceback
 from datasets import load_dataset
 from pathlib import Path
 
-from typing import Iterator
+from typing import Iterator, Union
 from commit0.harness.constants import (
     EVAL_BACKENDS,
     Files,
@@ -48,10 +48,13 @@ def main(
     Tests are run either locally through docker
     or remotely through Modal.
     """
-    dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(
+        dataset_name, split=dataset_split
+    )  # type: ignore
     spec = None
     example = None
     repo_name = None
+    dataset_type = None
     for example in dataset:
         if repo_or_repo_dir.endswith("/"):
             repo_or_repo_dir = repo_or_repo_dir[:-1]
@@ -64,12 +67,15 @@ def main(
         else:
             repo_name = example["repo"].split("/")[-1]
             dataset_type = "commit0"
-        if repo_name in os.path.basename(repo_or_repo_dir) or repo_or_repo_dir.endswith(repo_name):
+        if repo_name in os.path.basename(repo_or_repo_dir) or repo_or_repo_dir.endswith(
+            repo_name
+        ):
             spec = make_spec(example, dataset_type)
             break
     assert spec is not None, "No spec available"
     assert example is not None, "No example available"
     assert repo_name is not None, "No repo available"
+    assert dataset_type is not None, "No dataset_type available"
 
     hashed_test_ids = get_hash_string(test_ids)
     # set up logging
@@ -78,13 +84,17 @@ def main(
     log_file = log_dir / "run_pytest.log"
     logger = setup_logger(repo_name, log_file, verbose=verbose)
 
-    if dataset_type != "simple":  # if dataset_type is not simple, load git repo
+    if not isinstance(
+        example, SimpleInstance
+    ):  # if dataset_type is not simple, load git repo
         try:
             local_repo = git.Repo(repo_or_repo_dir)
             logger.info(f"Loaded a git repo from {repo_or_repo_dir}")
         except (git.exc.NoSuchPathError, git.exc.InvalidGitRepositoryError):  # type: ignore
             repo_dir = os.path.join(base_dir, repo_name)
-            logger.error(f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again")
+            logger.error(
+                f"{repo_or_repo_dir} is not a git dir, trying {repo_dir} again"
+            )
             try:
                 local_repo = git.Repo(repo_dir)
                 logger.info(f"Retried succeeded. Loaded a git repo from {repo_dir}")
@@ -117,10 +127,18 @@ def main(
                     if found_remote_branch:
                         break  # Stop checking other remotes if branch is found
                 if not found_remote_branch:
-                    raise Exception(f"Branch {branch} does not exist locally or remotely.")
-    if dataset_type == "simple":
+                    raise Exception(
+                        f"Branch {branch} does not exist locally or remotely."
+                    )
+    if isinstance(example, SimpleInstance):
         if branch == "reference":
-            patch = example["prompt"] + "\n\n" + example["canonical_solution"] + "\n\n" + example["test"]
+            patch = (
+                example["prompt"]
+                + "\n\n"
+                + example["canonical_solution"]
+                + "\n\n"
+                + example["test"]
+            )
         else:
             solution = open(test_ids).read()
             pattern = r"```python\n(.*?)```"
@@ -147,10 +165,12 @@ def main(
     patch_file = Path(log_dir / "patch.diff")
     patch_file.write_text(patch, encoding="utf-8", errors="ignore")
 
-    if dataset_type != "simple":
+    if not isinstance(example, SimpleInstance):
         # make eval file
         if coverage:
-            coverage_text = f" --cov={example['src_dir']} --cov-branch --cov-report json"
+            coverage_text = (
+                f" --cov={example['src_dir']} --cov-branch --cov-report json"
+            )
         else:
             coverage_text = ""
         eval_script = spec.eval_script.format(test_ids=test_ids, coverage=coverage_text)

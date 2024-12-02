@@ -183,7 +183,7 @@ class SimpleSpec(Spec):
         """
         setup_commands = [
             f"mkdir {self.repo_directory} && cd {self.repo_directory}",
-            f"uv venv --python 3.12",
+            "uv venv --python 3.12",
             "source .venv/bin/activate",
             "which python",
         ]
@@ -303,7 +303,8 @@ class SWEBenchSpec(Spec):
 
 
 def get_specs_from_dataset(
-    dataset: Union[list[Union[RepoInstance, SimpleInstance]], list[Spec]], dataset_type: str
+    dataset: Union[list[Union[RepoInstance, SimpleInstance]], list[Spec]],
+    dataset_type: str,
 ) -> list[Spec]:
     """Idempotent function that converts a list of RepoInstance objects to a list of Spec objects."""
     if isinstance(dataset[0], Spec):

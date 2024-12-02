@@ -2,7 +2,7 @@ import logging
 
 import docker
 from datasets import load_dataset
-from typing import Iterator
+from typing import Iterator, Union
 
 from commit0.harness.constants import RepoInstance, SimpleInstance, SPLIT
 from commit0.harness.docker_build import build_repo_images
@@ -21,7 +21,9 @@ def main(
     num_workers: int,
     verbose: int,
 ) -> None:
-    dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
+    dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(
+        dataset_name, split=dataset_split
+    )  # type: ignore
     specs = []
     if "swe" in dataset_name.lower():
         dataset_type = "swebench"
