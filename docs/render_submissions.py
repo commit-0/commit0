@@ -203,8 +203,11 @@ def render_mds(overwrite_previous, subfolder="docs"):
             continue
         for branch_path in glob.glob(os.path.join(org_path, "*.json")):
             cum_tests_passed = 0
+            lite_cum_tests_passed = 0
             repos_resolved = 0
+            lite_repos_resolved = 0
             total_duration = 0.0
+            lite_total_duration = 0.0
             branch_metrics = json.load(open(branch_path))
             submission_info = branch_metrics["submission_info"]
             split = submission_info["split"]
@@ -298,6 +301,10 @@ def render_mds(overwrite_previous, subfolder="docs"):
                         cum_tests_passed += pytest_info["summary"]["passed"]
                         total_duration += pytest_info["duration"]
                         repos_resolved += int(resolved)
+                        if repo_name in SPLIT["lite"]:
+                            lite_cum_tests_passed += pytest_info["summary"]["passed"]
+                            lite_total_duration += pytest_info["duration"]
+                            lite_repos_resolved += int(resolved)
                         if write_submission:
                             pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['total']}"
                             duration = f"{pytest_info['duration']:.2f}"
@@ -331,6 +338,16 @@ def render_mds(overwrite_previous, subfolder="docs"):
                 f"{analysis_link}|"
                 f"{github_link}|"
             )
+            if split == "all":
+                leaderboard["lite"] += (
+                    f"\n|{display_name}|"
+                    f"{lite_repos_resolved}|"
+                    f"{lite_cum_tests_passed}|"
+                    f"{lite_total_duration:.2f}|"
+                    f"{submission_date}|"
+                    f"{analysis_link}|"
+                    f"{github_link}|"
+                )
 
     leaderboard_filepath = os.path.join(subfolder, "analysis.md")
     with open(leaderboard_filepath, "w") as wf:
