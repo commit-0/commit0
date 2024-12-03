@@ -13,6 +13,7 @@ from datasets import load_dataset
 from transformers import AutoTokenizer
 
 from commit0.harness.constants import SPLIT
+from commit0.harness.get_pytest_ids import main as get_tests
 from commit0.harness.utils import clone_repo
 from commit0.cli import write_commit0_config_file
 
@@ -164,7 +165,7 @@ def get_blank_repo_metrics(
 
 
 leaderboard_header = """\n\n## Leaderboard ({split})
-| Name | Repos Resolved (/{num_repos}) | Total Tests Passed (/{total_num_tests}) | Test Duration (s) | Date | Analysis | Github |
+| Name | Repos Resolved (/{num_repos}) | Tests Passed (Total: {total_num_tests}) | Test Duration (s) | Date | Analysis | Github |
 |------|:-------------------------:|:--------------------:|:--------------------:|:----------:|----|----| """
 
 submission_table_header = """# Submission Name: **{display_name}** (split: {split})
@@ -203,10 +204,12 @@ def render_mds(overwrite_previous, subfolder="docs"):
         if org_name in {"blank", "repos", "submission_repos"}:
             continue
         for branch_path in glob.glob(os.path.join(org_path, "*.json")):
-            cum_tests_passed = 0
+            evaluate_numbers = []
+            lite_evaluate_numbers = []
+            # cum_tests_passed = 0
             repos_resolved = 0
             total_duration = 0.0
-            lite_cum_tests_passed = 0
+            # lite_cum_tests_passed = 0
             lite_repos_resolved = 0
             lite_total_duration = 0.0
             branch_metrics = json.load(open(branch_path))
@@ -299,11 +302,14 @@ def render_mds(overwrite_previous, subfolder="docs"):
                                     f"### {shortened_testname}\n\n<details><summary> <pre>{shortened_testname}"
                                     f"</pre></summary><pre>\n{failure['failure_string']}\n</pre>\n</details>\n"
                                 )
-                        cum_tests_passed += pytest_info["summary"]["passed"]
+                        # cum_tests_passed += pytest_info["summary"]["passed"]
+                        num_tests = len(get_tests(repo_name, verbose=0))
+                        evaluate_numbers.append(pytest_info["summary"]["passed"] / num_tests)
                         total_duration += pytest_info["duration"]
                         repos_resolved += int(resolved)
-                        if split == "all":
-                            lite_cum_tests_passed += pytest_info["summary"]["passed"]
+                        if split == "all" and repo_name in SPLIT['lite']:
+                            lite_evaluate_numbers.append(pytest_info["summary"]["passed"] / num_tests)
+                            # lite_cum_tests_passed += pytest_info["summary"]["passed"]
                             lite_total_duration += pytest_info["duration"]
                             lite_repos_resolved += int(resolved)
 
@@ -331,20 +337,22 @@ def render_mds(overwrite_previous, subfolder="docs"):
                     wf.write(back_button + "\n" + submission_page)
             analysis_link = f"[Analysis](/{f'analysis_{org_name}_{branch_name}'})"
             github_link = f"[Github]({project_page_link})"
-            leaderboard[split].append((cum_tests_passed,
+            avg_pass_rate = sum(evaluate_numbers) / len(evaluate_numbers)
+            leaderboard[split].append((avg_pass_rate * 100,
                 f"\n|{display_name}|"
                 f"{repos_resolved}|"
-                f"{cum_tests_passed}|"
+                f"{avg_pass_rate*100:.2f}%|"
                 f"{total_duration:.2f}|"
                 f"{submission_date}|"
                 f"{analysis_link}|"
                 f"{github_link}|"
             ))
             if ((split == "all") and ("Reference (Gold)" not in display_name)):
-                leaderboard["lite"].append((lite_cum_tests_passed,
+                avg_lite_pass_rate = sum(lite_evaluate_numbers) / len(lite_evaluate_numbers)
+                leaderboard["lite"].append((avg_lite_pass_rate * 100,
                     f"\n|{display_name} (subset of `all`)|"
                     f"{lite_repos_resolved}|"
-                    f"{lite_cum_tests_passed}|"
+                    f"{avg_lite_pass_rate*100:.2f}%|"
                     f"{lite_total_duration:.2f}|"
                     f"{submission_date}|"
                     f"{analysis_link}|"
