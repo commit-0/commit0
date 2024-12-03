@@ -274,6 +274,9 @@ def render_mds(overwrite_previous, subfolder="docs"):
                             )
                             pytest_details = "Pytest failed"
                             duration = "Failed."
+                        evaluate_numbers.append(0.)
+                        if split == "all" and repo_name in SPLIT['lite']:
+                            lite_evaluate_numbers.append(0.)
                     else:
                         resolved = False
                         if "passed" in pytest_info["summary"]:
