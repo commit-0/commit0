@@ -185,17 +185,18 @@ def render_mds(overwrite_previous, subfolder="docs"):
         "lite": 3628,
         "all": 140926,
     }  # hard-coded to skip running it later
-    for split in tqdm.tqdm(["lite", "all"]):
+    for split in ["lite", "all"]:
         num_repos = len(SPLIT[split])
         # total_num_tests = 0
         # for repo_name in SPLIT[split]:
         #     repo_tests = subprocess.run(['commit0', 'get-tests', repo_name], capture_output=True, text=True).stdout.strip()
         #     total_num_tests += len(repo_tests.splitlines())
-        leaderboard[split] = leaderboard_header.format(
+        leaderboard[split] = []
+        leaderboard[split].append((split_to_total_tests[split]+1, leaderboard_header.format(
             split=split,
             num_repos=num_repos,
             total_num_tests=split_to_total_tests[split],
-        )
+        )))
 
     for org_path in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
         org_name = os.path.basename(org_path)
@@ -203,10 +204,10 @@ def render_mds(overwrite_previous, subfolder="docs"):
             continue
         for branch_path in glob.glob(os.path.join(org_path, "*.json")):
             cum_tests_passed = 0
-            lite_cum_tests_passed = 0
             repos_resolved = 0
-            lite_repos_resolved = 0
             total_duration = 0.0
+            lite_cum_tests_passed = 0
+            lite_repos_resolved = 0
             lite_total_duration = 0.0
             branch_metrics = json.load(open(branch_path))
             submission_info = branch_metrics["submission_info"]
@@ -301,10 +302,11 @@ def render_mds(overwrite_previous, subfolder="docs"):
                         cum_tests_passed += pytest_info["summary"]["passed"]
                         total_duration += pytest_info["duration"]
                         repos_resolved += int(resolved)
-                        if repo_name in SPLIT["lite"]:
+                        if split == "all":
                             lite_cum_tests_passed += pytest_info["summary"]["passed"]
                             lite_total_duration += pytest_info["duration"]
                             lite_repos_resolved += int(resolved)
+
                         if write_submission:
                             pytest_details = f"{pytest_info['summary']['passed']} / {pytest_info['summary']['total']}"
                             duration = f"{pytest_info['duration']:.2f}"
@@ -329,7 +331,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
                     wf.write(back_button + "\n" + submission_page)
             analysis_link = f"[Analysis](/{f'analysis_{org_name}_{branch_name}'})"
             github_link = f"[Github]({project_page_link})"
-            leaderboard[split] += (
+            leaderboard[split].append((cum_tests_passed,
                 f"\n|{display_name}|"
                 f"{repos_resolved}|"
                 f"{cum_tests_passed}|"
@@ -337,21 +339,25 @@ def render_mds(overwrite_previous, subfolder="docs"):
                 f"{submission_date}|"
                 f"{analysis_link}|"
                 f"{github_link}|"
-            )
-            if split == "all":
-                leaderboard["lite"] += (
-                    f"\n|{display_name}|"
+            ))
+            if ((split == "all") and ("Reference (Gold)" not in display_name)):
+                leaderboard["lite"].append((lite_cum_tests_passed,
+                    f"\n|{display_name} (subset of `all`)|"
                     f"{lite_repos_resolved}|"
                     f"{lite_cum_tests_passed}|"
                     f"{lite_total_duration:.2f}|"
                     f"{submission_date}|"
                     f"{analysis_link}|"
                     f"{github_link}|"
-                )
+                ))
 
     leaderboard_filepath = os.path.join(subfolder, "analysis.md")
+    for split in ["lite", "all"]:
+        leaderboard[split] = sorted(leaderboard[split], key=lambda elt: -elt[0])
     with open(leaderboard_filepath, "w") as wf:
-        wf.write(leaderboard["lite"] + "\n\n" + leaderboard["all"])
+        lite_leaderboard_string = "".join(string for (_, string) in leaderboard["lite"])
+        all_leaderboard_string = "".join(string for (_, string) in leaderboard["all"])
+        wf.write(lite_leaderboard_string + "\n\n" + all_leaderboard_string)
 
 
 def get_args():
