@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Dict, ItemsView
+from typing import Dict, ItemsView, KeysView
 from pydantic import BaseModel
 
 
@@ -16,16 +16,23 @@ class RepoInstance(BaseModel):
     def __getitem__(self, item: str):
         return getattr(self, item)
 
+    def keys(self) -> KeysView[str]:
+        """Return the field names of the model as dictionary keys."""
+        return self.__annotations__.keys()
+
 
 class SimpleInstance(BaseModel):
     instance_id: str
     prompt: str
     canonical_solution: str
     test: str
-    entry_point: str
 
     def __getitem__(self, item: str):
         return getattr(self, item)
+
+    def keys(self) -> KeysView[str]:
+        """Return the field names of the model as dictionary keys."""
+        return self.__annotations__.keys()
 
 
 class Files(BaseModel):

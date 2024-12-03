@@ -185,6 +185,7 @@ class SimpleSpec(Spec):
             f"mkdir {self.repo_directory} && cd {self.repo_directory}",
             "uv venv --python 3.12",
             "source .venv/bin/activate",
+            "uv pip install -U pytest pytest-cov coverage pytest-json-report",
             "which python",
         ]
         return setup_commands
@@ -195,7 +196,7 @@ class SimpleSpec(Spec):
             f"cd {self.repo_directory}",
             "source .venv/bin/activate",
             "cat /patch.diff > test.py",
-            "uv run test.py > test_output.txt 2>&1",
+            "pytest test.py > test_output.txt 2>&1",
             "echo $? > pytest_exit_code.txt",
         ]
         return eval_script_list

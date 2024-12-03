@@ -4,9 +4,10 @@ import hashlib
 import logging
 import os
 import time
+import re
 import sys
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from fastcore.net import HTTP404NotFoundError, HTTP403ForbiddenError  # type: ignore
 from ghapi.core import GhApi
@@ -218,6 +219,29 @@ def get_active_branch(repo_path: Union[str, Path]) -> str:
         )
 
     return branch
+
+
+def extract_code_blocks(text: str) -> List[str]:
+    """Extract Python code blocks from a given text wrapped in markdown markers.
+
+    This function identifies and extracts all Python code blocks within a provided
+    text. The code blocks should be surrounded by markdown-style markers, such as
+    ```python ... ```.
+
+    Args:
+    ----
+        text (str): The input text containing Python code blocks marked with
+                    ```python ... ```.
+
+    Returns:
+    -------
+        List[str]: A list of strings, each containing a Python code block extracted
+                   from the text.
+
+    """
+    pattern = r"```python\n(.*?)```"
+    matches = re.finditer(pattern, text, re.DOTALL)
+    return [match.group(1).strip() for match in matches]
 
 
 __all__ = []
