@@ -25,14 +25,20 @@ def main(
         dataset_name, split=dataset_split
     )  # type: ignore
     specs = []
-    if "swe" in dataset_name.lower():
+    dataset_name = dataset_name.lower()
+    if "swe" in dataset_name:
         dataset_type = "swebench"
-    elif "humaneval" in dataset_name.lower():
+    elif (
+        "humaneval" in dataset_name
+        or "mbpp" in dataset_name
+        or "bigcodebench" in dataset_name
+        or "codecontests" in dataset_name
+    ):
         dataset_type = "simple"
     else:
         dataset_type = "commit0"
     for example in dataset:
-        if "swe" in dataset_name.lower() or dataset_type == "simple":
+        if "swe" in dataset_name or dataset_type == "simple":
             if split != "all" and split not in example["instance_id"]:
                 continue
         else:
