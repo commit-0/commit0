@@ -257,18 +257,19 @@ def test(
     if reference:
         branch = "reference"
     else:
-        if "humaneval" not in commit0_config["dataset_name"].split("/")[-1].lower():
+        dataset_name = commit0_config["dataset_name"].lower()
+        if "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
+            branch = repo_or_repo_path
+        else:
             if branch is None and not reference:
                 git_path = os.path.join(
                     commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
                 )
                 branch = get_active_branch(git_path)
-        else:
-            branch = test_ids
 
     if stdin:
         # Read test names from stdin
-        test_ids = sys.stdin.read().strip()
+        test_ids = sys.stdin.read()
     elif test_ids is None:
         typer.echo("Error: test_ids must be provided or use --stdin option", err=True)
         raise typer.Exit(code=1)

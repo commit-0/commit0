@@ -51,6 +51,7 @@ def main(
     dataset: Iterator[Union[RepoInstance, SimpleInstance]] = load_dataset(
         dataset_name, split=dataset_split
     )  # type: ignore
+    dataset_name = dataset_name.lower()
     spec = None
     example = None
     repo_name = None
@@ -58,10 +59,10 @@ def main(
     for example in dataset:
         if repo_or_repo_dir.endswith("/"):
             repo_or_repo_dir = repo_or_repo_dir[:-1]
-        if "swe" in dataset_name.lower():
+        if "swe" in dataset_name:
             repo_name = example["instance_id"]
             dataset_type = "swebench"
-        elif "humaneval" in dataset_name.lower():
+        elif "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
             repo_name = example["instance_id"]
             dataset_type = "simple"
         else:
@@ -130,7 +131,7 @@ def main(
                     )
 
         # make patch file
-        if "swe" in dataset_name.lower():
+        if "swe" in dataset_name:
             if branch == "reference":
                 patch = (
                     example["test"]["patch"] + "\n\n" + example["test"]["test_patch"]
@@ -164,7 +165,7 @@ def main(
                 + example["test"]
             )
         else:
-            solution = open(test_ids).read()
+            solution = test_ids
             prompt = example["prompt"] if "prompt" in example.keys() else ""
             matches = extract_code_blocks(solution)
             if len(matches) > 0:

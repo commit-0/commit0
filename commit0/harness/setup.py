@@ -23,12 +23,13 @@ def main(
     base_dir: str,
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
-    if "humaneval" in dataset_name.lower():
+    dataset_name = dataset_name.lower()
+    if "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
         return
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
         clone_url = f"https://github.com/{example['repo']}.git"
-        if "swe" in dataset_name.lower():
+        if "swe" in dataset_name:
             if repo_split != "all" and repo_split not in example["instance_id"]:
                 continue
             clone_dir = os.path.abspath(os.path.join(base_dir, example["instance_id"]))
