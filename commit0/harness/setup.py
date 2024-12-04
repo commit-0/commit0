@@ -24,7 +24,12 @@ def main(
 ) -> None:
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     dataset_name = dataset_name.lower()
-    if "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
+    if (
+        "humaneval" in dataset_name
+        or "mbpp" in dataset_name
+        or "bigcodebench" in dataset_name
+        or "codecontests" in dataset_name
+    ):
         return
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]

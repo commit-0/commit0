@@ -258,7 +258,12 @@ def test(
         branch = "reference"
     else:
         dataset_name = commit0_config["dataset_name"].lower()
-        if "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
+        if (
+            "humaneval" in dataset_name
+            or "mbpp" in dataset_name
+            or "bigcodebench" in dataset_name
+            or "codecontests" in dataset_name
+        ):
             branch = repo_or_repo_path
         else:
             if branch is None and not reference:

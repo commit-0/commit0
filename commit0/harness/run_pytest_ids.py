@@ -62,7 +62,12 @@ def main(
         if "swe" in dataset_name:
             repo_name = example["instance_id"]
             dataset_type = "swebench"
-        elif "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
+        elif (
+            "humaneval" in dataset_name
+            or "mbpp" in dataset_name
+            or "bigcodebench" in dataset_name
+            or "codecontests" in dataset_name
+        ):
             repo_name = example["instance_id"]
             dataset_type = "simple"
         else:

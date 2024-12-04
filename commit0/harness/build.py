@@ -28,7 +28,12 @@ def main(
     dataset_name = dataset_name.lower()
     if "swe" in dataset_name:
         dataset_type = "swebench"
-    elif "humaneval" in dataset_name or "mbpp" in dataset_name or "bigcodebench" in dataset_name or "codecontests" in dataset_name:
+    elif (
+        "humaneval" in dataset_name
+        or "mbpp" in dataset_name
+        or "bigcodebench" in dataset_name
+        or "codecontests" in dataset_name
+    ):
         dataset_type = "simple"
     else:
         dataset_type = "commit0"
