@@ -1,6 +1,5 @@
 import git
 import os
-import re
 import sys
 import traceback
 from datasets import load_dataset
@@ -21,6 +20,7 @@ from commit0.harness.utils import (
     generate_patch_between_commits,
     setup_logger,
     close_logger,
+    extract_code_blocks,
 )
 from commit0.harness.execution_context import (
     ExecutionBackend,
@@ -165,15 +165,13 @@ def main(
             )
         else:
             solution = open(test_ids).read()
-            pattern = r"```python\n(.*?)```"
-            matches = re.finditer(pattern, solution, re.DOTALL)
-            matches = [match.group(1).strip() for match in matches]
+            prompt = example["prompt"] if "prompt" in example.keys() else ""
+            matches = extract_code_blocks(solution)
             if len(matches) > 0:
                 solution = "\n\n".join(matches)
             else:
-                solution = example["prompt"] + "\n\n" + solution
+                solution = prompt + "\n\n" + solution
             patch = solution + "\n\n" + example["test"]
-        patch = patch + "\n\n" + f"check({example['entry_point']})"
         eval_script = spec.eval_script
 
     patch_file = Path(log_dir / "patch.diff")
