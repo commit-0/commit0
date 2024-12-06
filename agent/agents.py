@@ -7,6 +7,7 @@ from aider.coders import Coder
 from aider.models import Model
 from aider.io import InputOutput
 import re
+import os
 
 
 def handle_logging(logging_name: str, log_file: Path) -> None:
@@ -24,6 +25,23 @@ def handle_logging(logging_name: str, log_file: Path) -> None:
 class AgentReturn(ABC):
     def __init__(self, log_file: Path):
         self.log_file = log_file
+
+        self.last_cost = 0.0
+
+
+class Agents(ABC):
+    def __init__(self, max_iteration: int):
+        self.max_iteration = max_iteration
+
+    @abstractmethod
+    def run(self) -> AgentReturn:
+        """Start agent"""
+        raise NotImplementedError
+
+
+class AiderReturn(AgentReturn):
+    def __init__(self, log_file: Path):
+        super().__init__(log_file)
         self.last_cost = self.get_money_cost()
 
     def get_money_cost(self) -> float:
@@ -40,20 +58,25 @@ class AgentReturn(ABC):
         return last_cost
 
 
-class Agents(ABC):
-    def __init__(self, max_iteration: int):
-        self.max_iteration = max_iteration
-
-    @abstractmethod
-    def run(self) -> AgentReturn:
-        """Start agent"""
-        raise NotImplementedError
-
-
 class AiderAgents(Agents):
     def __init__(self, max_iteration: int, model_name: str):
         super().__init__(max_iteration)
         self.model = Model(model_name)
+        # Check if API key is set for the model
+        if "gpt" in model_name:
+            api_key = os.environ.get("OPENAI_API_KEY", None)
+        elif "claude" in model_name:
+            api_key = os.environ.get("ANTHROPIC_API_KEY", None)
+        elif "gemini" in model_name:
+            api_key = os.environ.get("API_KEY", None)
+        else:
+            raise ValueError(f"Unsupported model: {model_name}")
+
+        if not api_key:
+            raise ValueError(
+                "API Key Error: There is no API key associated with the model for this agent. "
+                "Edit model_name parameter in .agent.yaml, export API key for that model, and try again."
+            )
 
     def run(
         self,
@@ -63,6 +86,7 @@ class AiderAgents(Agents):
         fnames: list[str],
         log_dir: Path,
         test_first: bool = False,
+        lint_first: bool = False,
     ) -> AgentReturn:
         """Start aider agent"""
         if test_cmd:
@@ -108,7 +132,7 @@ class AiderAgents(Agents):
             test_cmd=test_cmd,
             io=io,
         )
-        coder.max_reflection = self.max_iteration
+        coder.max_reflections = self.max_iteration
         coder.stream = True
 
         # Run the agent
@@ -116,22 +140,10 @@ class AiderAgents(Agents):
             test_errors = coder.commands.cmd_test(test_cmd)
             if test_errors:
                 coder.run(test_errors)
+        elif lint_first:
+            coder.commands.cmd_lint(fnames=fnames)
         else:
             coder.run(message)
-
-        # #### TMP
-
-        # #### TMP
-        # import time
-        # import random
-
-        # time.sleep(random.random() * 5)
-        # n = random.random() / 10
-        # with open(log_file, "a") as f:
-        #     f.write(
-        #         f"> Tokens: 33k sent, 1.3k received. Cost: $0.12 message, ${n} session.  \n"
-        #     )
-        # #### TMP
 
         # Close redirected stdout and stderr
         sys.stdout.close()
@@ -140,4 +152,4 @@ class AiderAgents(Agents):
         sys.stdout = sys.__stdout__
         sys.stderr = sys.__stderr__
 
-        return AgentReturn(log_file)
+        return AiderReturn(log_file)

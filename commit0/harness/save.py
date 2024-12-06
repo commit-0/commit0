@@ -30,8 +30,12 @@ def main(
     dataset: Iterator[RepoInstance] = load_dataset(dataset_name, split=dataset_split)  # type: ignore
     for example in dataset:
         repo_name = example["repo"].split("/")[-1]
-        if repo_split != "all" and repo_name not in SPLIT[repo_split]:
-            continue
+        if "swe" in dataset_name.lower():
+            if repo_split != "all" and repo_split not in example["instance_id"]:
+                continue
+        else:
+            if repo_split != "all" and repo_name not in SPLIT[repo_split]:
+                continue
         local_repo_path = f"{base_dir}/{repo_name}"
         github_repo_url = f"https://github.com/{owner}/{repo_name}.git"
         github_repo_url = github_repo_url.replace(
@@ -75,7 +79,9 @@ def main(
             origin.push(refspec=f"{branch}:{branch}")
             logger.info(f"Pushed to {github_repo_url} on branch {branch}")
         except Exception as e:
-            raise Exception(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
+            logger.error(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
+            continue
+            # raise Exception(f"Push {branch} to {owner}/{repo_name} fails.\n{str(e)}")
 
 
 __all__ = []
