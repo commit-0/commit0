@@ -86,12 +86,12 @@ def check_valid(one: str, total: Union[list[str], dict[str, list[str]]]) -> None
         )
 
 
-def write_commit0_dot_file(dot_file_path: str, config: dict) -> None:
+def write_commit0_config_file(dot_file_path: str, config: dict) -> None:
     with open(dot_file_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False)
 
 
-def read_commit0_dot_file(dot_file_path: str) -> dict:
+def read_commit0_config_file(dot_file_path: str) -> dict:
     # Check if the file exists before attempting to read it
     if not os.path.exists(dot_file_path):
         raise FileNotFoundError(
@@ -112,13 +112,14 @@ def setup(
     ),
     dataset_split: str = typer.Option("test", help="Split of the Huggingface dataset"),
     base_dir: str = typer.Option("repos/", help="Base directory to clone repos to"),
-    commit0_dot_file_path: str = typer.Option(
+    commit0_config_file: str = typer.Option(
         ".commit0.yaml", help="Storing path for stateful commit0 configs"
     ),
 ) -> None:
     """Commit0 clone a repo split."""
     check_commit0_path()
-    check_valid(repo_split, SPLIT)
+    if "commit0" in dataset_name.split("/")[-1].lower():
+        check_valid(repo_split, SPLIT)
 
     base_dir = str(Path(base_dir).resolve())
 
@@ -127,7 +128,7 @@ def setup(
     typer.echo(f"Dataset split: {highlight(dataset_split, Colors.ORANGE)}")
     typer.echo(f"Base directory: {highlight(base_dir, Colors.ORANGE)}")
     typer.echo(
-        f"Commit0 dot file path: {highlight(commit0_dot_file_path, Colors.ORANGE)}"
+        f"Commit0 dot file path: {highlight(commit0_config_file, Colors.ORANGE)}"
     )
 
     commit0.harness.setup.main(
@@ -138,8 +139,8 @@ def setup(
     )
 
     # after successfully setup, write the commit0 dot file
-    write_commit0_dot_file(
-        commit0_dot_file_path,
+    write_commit0_config_file(
+        commit0_config_file,
         {
             "dataset_name": dataset_name,
             "dataset_split": dataset_split,
@@ -152,7 +153,7 @@ def setup(
 @commit0_app.command()
 def build(
     num_workers: int = typer.Option(8, help="Number of workers"),
-    commit0_dot_file_path: str = typer.Option(
+    commit0_config_file: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
@@ -167,8 +168,9 @@ def build(
     """Build Commit0 split you choose in Setup Stage."""
     check_commit0_path()
 
-    commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    check_valid(commit0_config["repo_split"], SPLIT)
+    commit0_config = read_commit0_config_file(commit0_config_file)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(
         f"Building repository for split: {highlight(commit0_config['repo_split'], Colors.ORANGE)}"
@@ -199,7 +201,6 @@ def get_tests(
 ) -> None:
     """Get tests for a Commit0 repository."""
     check_commit0_path()
-    check_valid(repo_name, SPLIT_ALL)
 
     commit0.harness.get_pytest_ids.main(repo_name, verbose=1)
 
@@ -228,7 +229,7 @@ def test(
     rebuild: bool = typer.Option(
         False, "--rebuild", help="Whether to rebuild an image"
     ),
-    commit0_dot_file_path: str = typer.Option(
+    commit0_config_file: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
@@ -247,23 +248,33 @@ def test(
 ) -> None:
     """Run tests on a Commit0 repository."""
     check_commit0_path()
+    commit0_config = read_commit0_config_file(commit0_config_file)
     if repo_or_repo_path.endswith("/"):
         repo_or_repo_path = repo_or_repo_path[:-1]
-    check_valid(repo_or_repo_path.split("/")[-1], SPLIT_ALL)
-
-    commit0_config = read_commit0_dot_file(commit0_dot_file_path)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(repo_or_repo_path.split("/")[-1], SPLIT)
 
     if reference:
         branch = "reference"
-    if branch is None and not reference:
-        git_path = os.path.join(
-            commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
-        )
-        branch = get_active_branch(git_path)
+    else:
+        dataset_name = commit0_config["dataset_name"].lower()
+        if (
+            "humaneval" in dataset_name
+            or "mbpp" in dataset_name
+            or "bigcodebench" in dataset_name
+            or "codecontests" in dataset_name
+        ):
+            branch = repo_or_repo_path
+        else:
+            if branch is None and not reference:
+                git_path = os.path.join(
+                    commit0_config["base_dir"], repo_or_repo_path.split("/")[-1]
+                )
+                branch = get_active_branch(git_path)
 
     if stdin:
         # Read test names from stdin
-        test_ids = sys.stdin.read().strip()
+        test_ids = sys.stdin.read()
     elif test_ids is None:
         typer.echo("Error: test_ids must be provided or use --stdin option", err=True)
         raise typer.Exit(code=1)
@@ -304,7 +315,7 @@ def evaluate(
     coverage: Annotated[
         bool, typer.Option("--coverage", help="Whether to get coverage information")
     ] = False,
-    commit0_dot_file_path: str = typer.Option(
+    commit0_config_file: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
@@ -315,8 +326,9 @@ def evaluate(
     if reference:
         branch = "reference"
 
-    commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    check_valid(commit0_config["repo_split"], SPLIT)
+    commit0_config = read_commit0_config_file(commit0_config_file)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(f"Evaluating repository split: {commit0_config['repo_split']}")
     typer.echo(f"Branch: {branch}")
@@ -344,7 +356,7 @@ def lint(
     files: Union[List[Path], None] = typer.Option(
         None, help="Files to lint. If not provided, all files will be linted."
     ),
-    commit0_dot_file_path: str = typer.Option(
+    commit0_config_file: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
@@ -358,7 +370,7 @@ def lint(
 ) -> None:
     """Lint given files if provided, otherwise lint all files in the base directory."""
     check_commit0_path()
-    commit0_config = read_commit0_dot_file(commit0_dot_file_path)
+    commit0_config = read_commit0_config_file(commit0_config_file)
     appended_files = None
     if files is not None:
         appended_files = []
@@ -383,15 +395,16 @@ def save(
     owner: str = typer.Argument(..., help="Owner of the repository"),
     branch: str = typer.Argument(..., help="Branch to save"),
     github_token: str = typer.Option(None, help="GitHub token for authentication"),
-    commit0_dot_file_path: str = typer.Option(
+    commit0_config_file: str = typer.Option(
         ".commit0.yaml",
         help="Path to the commit0 dot file, where the setup config is stored",
     ),
 ) -> None:
     """Save Commit0 split you choose in Setup Stage to GitHub."""
     check_commit0_path()
-    commit0_config = read_commit0_dot_file(commit0_dot_file_path)
-    check_valid(commit0_config["repo_split"], SPLIT)
+    commit0_config = read_commit0_config_file(commit0_config_file)
+    if "commit0" in commit0_config["dataset_name"].split("/")[-1].lower():
+        check_valid(commit0_config["repo_split"], SPLIT)
 
     typer.echo(f"Saving repository split: {commit0_config['repo_split']}")
     typer.echo(f"Owner: {owner}")
