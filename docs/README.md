@@ -6,9 +6,9 @@ python docs/update_submissions_dataset.py
 
 Run submissions analysis on SPLIT
 ```
-python docs/render_submissions.py 
+python docs/render_submissions.py
                        --do_setup --get_blank_details --get_reference_details # only once, at beginning of setting up environment
-                       --analyze_submissions 
+                       --analyze_submissions
                        --split SPLIT
 ```
 
