@@ -18,6 +18,7 @@ from commit0.harness.utils import clone_repo
 from commit0.cli import write_commit0_config_file
 
 import logging
+from typing import Any, NoReturn
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -27,9 +28,13 @@ logger = logging.getLogger(__name__)
 analysis_files_path = "/share/rush/commit0_analysis_temp"
 
 
-def get_pytest_info(path_to_logs, repo_name, branch_name):
+def get_pytest_info(
+    path_to_logs: str, repo_name: str, branch_name: str
+) -> dict[str, dict[str, Any]]:
     pytest_info = {}
     for pytest_hash in os.listdir(path_to_logs):
+        if not os.path.exists(os.path.join(path_to_logs, pytest_hash, "eval.sh")):
+            continue
         eval_script = open(os.path.join(path_to_logs, pytest_hash, "eval.sh")).read()
         testname = re.search(r"([\S]+) > test_output", eval_script).group(1)
         patch_diff = open(os.path.join(path_to_logs, pytest_hash, "patch.diff")).read()
@@ -85,19 +90,19 @@ def get_pytest_info(path_to_logs, repo_name, branch_name):
                 "failure_string": failure_string,
                 "duration": duration,
             }
-    return pytest_info
+    return pytest_info if len(pytest_info) else "Could not evaluate"
 
 
-def get_coverage_info(path_to_logs, repo_name, branch_name):
+def get_coverage_info(path_to_logs: str, repo_name: str, branch_name: str) -> Any:
     raise NotImplementedError
 
 
 def get_blank_repo_metrics(
-    blank_source_code_folder,
-    spec_filename,
+    blank_source_code_folder: str,
+    spec_filename: str,
     tokenizer,
     code_file_filter=lambda filename: filename,
-):
+) -> dict[str, Any]:
     blank_repo_metrics = {
         "functions_to_edit": [],
     }
@@ -165,7 +170,7 @@ def get_blank_repo_metrics(
 
 
 leaderboard_header = """\n\n## Leaderboard ({split})
-| Name | Repos Resolved (/{num_repos}) | Tests Passed (Total: {total_num_tests}) | Test Duration (s) | Date | Analysis | Github |
+| Name | Repos Resolved (/{num_repos}) | Avg. pass rate | Test Duration (s) | Date | Analysis | Github |
 |------|:-------------------------:|:--------------------:|:--------------------:|:----------:|----|----| """
 
 submission_table_header = """# Submission Name: **{display_name}** (split: {split})
@@ -179,7 +184,7 @@ pytest_summary_table_header = """\n## Pytest Summary for test `{pytest_group}`
 """
 
 
-def render_mds(overwrite_previous, subfolder="docs"):
+def render_mds(overwrite_previous: bool, subfolder: str = "docs") -> NoReturn:
     leaderboard = {}
 
     split_to_total_tests = {
@@ -193,11 +198,16 @@ def render_mds(overwrite_previous, subfolder="docs"):
         #     repo_tests = subprocess.run(['commit0', 'get-tests', repo_name], capture_output=True, text=True).stdout.strip()
         #     total_num_tests += len(repo_tests.splitlines())
         leaderboard[split] = []
-        leaderboard[split].append((split_to_total_tests[split]+1, leaderboard_header.format(
-            split=split,
-            num_repos=num_repos,
-            total_num_tests=split_to_total_tests[split],
-        )))
+        leaderboard[split].append(
+            (
+                split_to_total_tests[split] + 1,
+                leaderboard_header.format(
+                    split=split,
+                    num_repos=num_repos,
+                    total_num_tests=split_to_total_tests[split],
+                ),
+            )
+        )
 
     for org_path in tqdm.tqdm(glob.glob(os.path.join(analysis_files_path, "*"))):
         org_name = os.path.basename(org_path)
@@ -241,7 +251,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
                         subfolder, f"analysis_{org_name}_{branch_name}_{repo_name}.md"
                     )
                 if isinstance(repo_pytest_results, str):
-                    submission_repo_page = f"# **{display_name}**: {repo_name}\n\n## Failed to clone\n\n{repo_pytest_results}"
+                    submission_repo_page = f"# **{display_name}**: {repo_name}\n\n## Failed\n\n{repo_pytest_results}"
                     org_branch_repo_filepath = os.path.join(
                         subfolder, f"analysis_{org_name}_{branch_name}_{repo_name}.md"
                     )
@@ -253,7 +263,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
                     submission_page = submission_table_header.format(
                         display_name=display_name, split=split
                     ) + (
-                        f"\n| {repo_name} | No; Failed to clone. | - | - | "
+                        f"\n| {repo_name} | No; {repo_pytest_results} | - | - | "
                         f"[Analysis](/{f'analysis_{org_name}_{branch_name}_{repo_name}'}) | "
                         f"[Github]({github_hyperlink}) |"
                     )
@@ -274,16 +284,23 @@ def render_mds(overwrite_previous, subfolder="docs"):
                             )
                             pytest_details = "Pytest failed"
                             duration = "Failed."
-                        evaluate_numbers.append(0.)
-                        if split == "all" and repo_name in SPLIT['lite']:
-                            lite_evaluate_numbers.append(0.)
+                        evaluate_numbers.append(0.0)
+                        if split == "all" and repo_name in SPLIT["lite"]:
+                            lite_evaluate_numbers.append(0.0)
                     else:
                         resolved = False
                         if "passed" in pytest_info["summary"]:
                             if "skipped" in pytest_info["summary"]:
-                                resolved = pytest_info["summary"]["passed"] + pytest_info["summary"]["skipped"] == pytest_info["summary"]["total"]
+                                resolved = (
+                                    pytest_info["summary"]["passed"]
+                                    + pytest_info["summary"]["skipped"]
+                                    == pytest_info["summary"]["total"]
+                                )
                             else:
-                                resolved = pytest_info["summary"]["passed"] == pytest_info["summary"]["total"]
+                                resolved = (
+                                    pytest_info["summary"]["passed"]
+                                    == pytest_info["summary"]["total"]
+                                )
                         if write_submission:
                             submission_repo_page += pytest_summary_table_header.format(
                                 pytest_group=pytest_group
@@ -307,11 +324,15 @@ def render_mds(overwrite_previous, subfolder="docs"):
                                 )
                         # cum_tests_passed += pytest_info["summary"]["passed"]
                         num_tests = len(get_tests(repo_name, verbose=0))
-                        evaluate_numbers.append(pytest_info["summary"]["passed"] / num_tests)
+                        evaluate_numbers.append(
+                            pytest_info["summary"]["passed"] / num_tests
+                        )
                         total_duration += pytest_info["duration"]
                         repos_resolved += int(resolved)
-                        if split == "all" and repo_name in SPLIT['lite']:
-                            lite_evaluate_numbers.append(pytest_info["summary"]["passed"] / num_tests)
+                        if split == "all" and repo_name in SPLIT["lite"]:
+                            lite_evaluate_numbers.append(
+                                pytest_info["summary"]["passed"] / num_tests
+                            )
                             # lite_cum_tests_passed += pytest_info["summary"]["passed"]
                             lite_total_duration += pytest_info["duration"]
                             lite_repos_resolved += int(resolved)
@@ -341,26 +362,34 @@ def render_mds(overwrite_previous, subfolder="docs"):
             analysis_link = f"[Analysis](/{f'analysis_{org_name}_{branch_name}'})"
             github_link = f"[Github]({project_page_link})"
             avg_pass_rate = sum(evaluate_numbers) / len(evaluate_numbers)
-            leaderboard[split].append((avg_pass_rate * 100,
-                f"\n|{display_name}|"
-                f"{repos_resolved}|"
-                f"{avg_pass_rate*100:.2f}%|"
-                f"{total_duration:.2f}|"
-                f"{submission_date}|"
-                f"{analysis_link}|"
-                f"{github_link}|"
-            ))
-            if ((split == "all") and ("Reference (Gold)" not in display_name)):
-                avg_lite_pass_rate = sum(lite_evaluate_numbers) / len(lite_evaluate_numbers)
-                leaderboard["lite"].append((avg_lite_pass_rate * 100,
-                    f"\n|{display_name} (subset of `all`)|"
-                    f"{lite_repos_resolved}|"
-                    f"{avg_lite_pass_rate*100:.2f}%|"
-                    f"{lite_total_duration:.2f}|"
+            leaderboard[split].append(
+                (
+                    avg_pass_rate * 100,
+                    f"\n|{display_name}|"
+                    f"{repos_resolved}|"
+                    f"{avg_pass_rate*100:.2f}%|"
+                    f"{total_duration:.2f}|"
                     f"{submission_date}|"
                     f"{analysis_link}|"
-                    f"{github_link}|"
-                ))
+                    f"{github_link}|",
+                )
+            )
+            if (split == "all") and ("Reference (Gold)" not in display_name):
+                avg_lite_pass_rate = sum(lite_evaluate_numbers) / len(
+                    lite_evaluate_numbers
+                )
+                leaderboard["lite"].append(
+                    (
+                        avg_lite_pass_rate * 100,
+                        f"\n|{display_name} (subset of `all`)|"
+                        f"{lite_repos_resolved}|"
+                        f"{avg_lite_pass_rate*100:.2f}%|"
+                        f"{lite_total_duration:.2f}|"
+                        f"{submission_date}|"
+                        f"{analysis_link}|"
+                        f"{github_link}|",
+                    )
+                )
 
     leaderboard_filepath = os.path.join(subfolder, "analysis.md")
     for split in ["lite", "all"]:
@@ -371,7 +400,7 @@ def render_mds(overwrite_previous, subfolder="docs"):
         wf.write(lite_leaderboard_string + "\n\n" + all_leaderboard_string)
 
 
-def get_args():
+def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--do_setup", action="store_true", help="Run commit0 setup with specified split"
@@ -400,14 +429,14 @@ def get_args():
     parser.add_argument(
         "--overwrite_previous_eval",
         action="store_true",
-        help="Overwrite cached pytest info"
+        help="Overwrite cached pytest info",
         # TODO add finer granularity so can specify which ones to overwrite
     )
 
     return parser.parse_args()
 
 
-def main(args):
+def main(args: argparse.Namespace) -> NoReturn:
     global analysis_files_path
 
     commit0_dataset_name = "wentingzhao/commit0_combined"
@@ -565,7 +594,7 @@ def main(args):
             )
             # run pytests
             os.system(
-                f"commit0 evaluate --branch {branch_name} --timeout 1800"
+                f"commit0 evaluate --branch {branch_name} --timeout 1800 "
                 f"--commit0-config-file {commit0_dot_file_path}"
             )
             for example in dataset:
