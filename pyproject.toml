@@ -38,6 +38,11 @@ agent = [
     "PyMuPDF>=1.24.5",
     "aider-chat",
 ]
+example = [
+    "vllm",
+    "transformers",
+    "setuptools",
+]
 
 [project.urls]
 Homepage = "https://commit-0.github.io/"
