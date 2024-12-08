@@ -2,6 +2,8 @@
 import argparse
 from datasets import Dataset, load_dataset
 from inference import generate_predictions
+from utils import execute_tests
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -13,7 +15,21 @@ def main():
 
     ds = load_dataset(args.dataset_name)
     assert "train" in ds
-    samples = generate_predictions(args.model_name, ds["train"], args.temperature, args.n)
+    all_samples = generate_predictions(args.model_name, ds["train"], args.temperature, args.n)
+    for x in all_samples:
+        for xx in x:
+            print(xx)
+            print("-"*100)
+    assert len(ds["train"]) == len(all_samples)
+    all_traces, all_execution_results = execute_tests(ds["train"], all_samples)
+    passed_examples = []
+    for example, execution_results, samples in zip(ds["train"], all_execution_results, all_samples):
+        for execution_result, sample in zip(execution_results, samples):
+            if execution_result == 0:
+                example['prediction'] = sample
+                passed_examples.append(example)
+                break
+    print(len(passed_examples)/len(ds["train"]))
 
 if __name__ == '__main__':
     main()

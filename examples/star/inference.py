@@ -29,10 +29,21 @@ def generate_predictions(
 
     prompts: List[str] = []
     for example in dataset:
-        prompt = (
-            f"{example['text']} Your code should satisfy these tests:\n\n"
-            f"{'\n'.join(example['test_list'])}"
-        )
+        prompt = example["prompt"]
+        test = example["test"]
+        prompt = f"""Write a Python function implementation for the following prompt:
+
+{prompt}
+
+Your code should satisfy these tests:
+
+{test}
+
+Return only the implementation code, no tests or explanations. Be sure to include the relevant import statements:
+```python
+code
+```
+"""
         prompts.append(prompt)
 
     outputs = llm.generate(prompts, sampling_params)
