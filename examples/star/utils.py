@@ -5,6 +5,7 @@ from datasets import Dataset
 from tqdm import tqdm
 from typing import List, Tuple
 from transformers import MODEL_MAPPING, SchedulerType
+from commit0.harness.utils import extract_code_blocks
 
 
 def execute_tests(
@@ -96,6 +97,16 @@ Return only the implementation code, no tests or explanations. Be sure to includ
 code
 ```
 """
+
+
+def format_solution(text, prompt):
+    matches = extract_code_blocks(text)
+    if len(matches) > 0:
+        solution = matches[0]
+        solution = f"```python\n{solution}\n```"
+    else:
+        solution = prompt + "\n\n" + text
+    return solution
 
 
 def parse_args():

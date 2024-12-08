@@ -1,19 +1,34 @@
 """Main STaR Loop"""
 
-from datasets import Dataset, load_dataset
+from datasets import Dataset, DatasetDict, load_dataset
 from inference import generate_predictions
 from train import train
-from utils import execute_tests, parse_args
+from utils import execute_tests, format_solution, generate_prompt, parse_args
 
 
 def main():
     args = parse_args()
-    ds = load_dataset(args.dataset_name)
+    ds = load_dataset(args.dataset_name, args.dataset_config_name)
     assert "train" in ds
+    # format the dataset for training and evaluation
+    for split in ds:
+        texts = []
+        if split == "train": continue
+        for example in ds[split]:
+            canonical_solution = f"```python\n{example['canonical_solution']}\n```"
+            text = [{"role": "user", "message": generate_prompt(example["prompt"], example["test"])}, {"role": "assistant", "message": format_solution(canonical_solution, example["prompt"])}]
+            texts.append(text)
+            print(text)
+        ds[split] = ds[split].add_column(name="text", column=texts)
+    ds["train"] = ds["train"].select(range(10))
+
+    # sample
     all_samples = generate_predictions(
         args.model_name_or_path, ds["train"], args.temperature, args.n
     )
     assert len(ds["train"]) == len(all_samples)
+
+    # verify and construct the training set
     all_traces, all_execution_results = execute_tests(ds["train"], all_samples)
     passed_examples = []
     for example, execution_results, samples in zip(
@@ -22,13 +37,13 @@ def main():
         for execution_result, sample in zip(execution_results, samples):
             # pytest exit code: https://docs.pytest.org/en/stable/reference/exit-codes.html
             if execution_result == 0:
-                example["prediction"] = sample
+                example["text"] = [{"role": "user", "message": generate_prompt(example["prompt"], example["test"])}, {"role": "assistant", "message": format_solution(sample, example["prompt"])}]
                 passed_examples.append(example)
                 break
-    new_ds = Dataset.from_list(passed_examples)
-    new_ds.to_json("star_training.json")
-    print(len(passed_examples) / len(ds["train"]))
-    train(args)
+    raw_datasets = DatasetDict({"train": Dataset.from_list(passed_examples), "validation": ds["validation"]})
+
+    # train
+    train(raw_datasets, args.model_name_or_path, args)
 
 
 if __name__ == "__main__":

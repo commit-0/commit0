@@ -31,7 +31,7 @@ from pathlib import Path
 
 import datasets
 import torch
-from accelerate import Accelerator, DistributedType
+from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
 from datasets import load_dataset
@@ -234,10 +234,6 @@ def train(raw_datasets, model_name_or_path, args):
         )
     )
 
-    # On TPU, the tie weights in our model have been disconnected, so we need to restore the ties.
-    if accelerator.distributed_type == DistributedType.TPU:
-        model.tie_weights()
-
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(
         len(train_dataloader) / args.gradient_accumulation_steps
@@ -291,17 +287,7 @@ def train(raw_datasets, model_name_or_path, args):
         model.train()
         if args.with_tracking:
             total_loss = 0
-        if (
-            args.resume_from_checkpoint
-            and epoch == starting_epoch
-            and resume_step is not None
-        ):
-            # We skip the first `n` batches in the dataloader when resuming from a checkpoint
-            active_dataloader = accelerator.skip_first_batches(
-                train_dataloader, resume_step
-            )
-        else:
-            active_dataloader = train_dataloader
+        active_dataloader = train_dataloader
         for step, batch in enumerate(active_dataloader):
             with accelerator.accumulate(model):
                 batch["labels"] = batch["input_ids"].clone().detach()
