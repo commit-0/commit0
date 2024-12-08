@@ -20,7 +20,6 @@ def main():
             texts.append(text)
             print(text)
         ds[split] = ds[split].add_column(name="text", column=texts)
-    ds["train"] = ds["train"].select(range(10))
 
     # sample
     all_samples = generate_predictions(
