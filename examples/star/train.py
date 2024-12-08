@@ -42,274 +42,18 @@ from tqdm.auto import tqdm
 import transformers
 from transformers import (
     CONFIG_MAPPING,
-    MODEL_MAPPING,
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
-    SchedulerType,
     DataCollatorForSeq2Seq,
     get_scheduler,
 )
-from transformers.utils import check_min_version
-from transformers.utils.versions import require_version
 
-
-# Will error if the minimal version of Transformers is not installed. Remove at your own risks.
-check_min_version("4.48.0.dev0")
 
 logger = get_logger(__name__)
 
-require_version(
-    "datasets>=2.14.0",
-    "To fix: pip install -r examples/pytorch/language-modeling/requirements.txt",
-)
 
-MODEL_CONFIG_CLASSES = list(MODEL_MAPPING.keys())
-MODEL_TYPES = tuple(conf.model_type for conf in MODEL_CONFIG_CLASSES)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Finetune a transformers model on a causal language modeling task"
-    )
-    parser.add_argument(
-        "--dataset_name",
-        type=str,
-        default=None,
-        help="The name of the dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--dataset_config_name",
-        type=str,
-        default=None,
-        help="The configuration name of the dataset to use (via the datasets library).",
-    )
-    parser.add_argument(
-        "--train_file",
-        type=str,
-        default=None,
-        help="A csv, txt or a json file containing the training data.",
-    )
-    parser.add_argument(
-        "--validation_file",
-        type=str,
-        default=None,
-        help="A csv, txt or a json file containing the validation data.",
-    )
-    parser.add_argument(
-        "--validation_split_percentage",
-        default=5,
-        help="The percentage of the train set used as validation set in case there's no validation split",
-    )
-    parser.add_argument(
-        "--model_name_or_path",
-        type=str,
-        help="Path to pretrained model or model identifier from huggingface.co/models.",
-        required=False,
-    )
-    parser.add_argument(
-        "--config_name",
-        type=str,
-        default=None,
-        help="Pretrained config name or path if not the same as model_name",
-    )
-    parser.add_argument(
-        "--tokenizer_name",
-        type=str,
-        default=None,
-        help="Pretrained tokenizer name or path if not the same as model_name",
-    )
-    parser.add_argument(
-        "--use_slow_tokenizer",
-        action="store_true",
-        help="If passed, will use a slow tokenizer (not backed by the 🤗 Tokenizers library).",
-    )
-    parser.add_argument(
-        "--per_device_train_batch_size",
-        type=int,
-        default=8,
-        help="Batch size (per device) for the training dataloader.",
-    )
-    parser.add_argument(
-        "--per_device_eval_batch_size",
-        type=int,
-        default=8,
-        help="Batch size (per device) for the evaluation dataloader.",
-    )
-    parser.add_argument(
-        "--learning_rate",
-        type=float,
-        default=5e-5,
-        help="Initial learning rate (after the potential warmup period) to use.",
-    )
-    parser.add_argument(
-        "--weight_decay", type=float, default=0.0, help="Weight decay to use."
-    )
-    parser.add_argument(
-        "--num_train_epochs",
-        type=int,
-        default=3,
-        help="Total number of training epochs to perform.",
-    )
-    parser.add_argument(
-        "--max_train_steps",
-        type=int,
-        default=None,
-        help="Total number of training steps to perform. If provided, overrides num_train_epochs.",
-    )
-    parser.add_argument(
-        "--gradient_accumulation_steps",
-        type=int,
-        default=1,
-        help="Number of updates steps to accumulate before performing a backward/update pass.",
-    )
-    parser.add_argument(
-        "--lr_scheduler_type",
-        type=SchedulerType,
-        default="linear",
-        help="The scheduler type to use.",
-        choices=[
-            "linear",
-            "cosine",
-            "cosine_with_restarts",
-            "polynomial",
-            "constant",
-            "constant_with_warmup",
-        ],
-    )
-    parser.add_argument(
-        "--num_warmup_steps",
-        type=int,
-        default=0,
-        help="Number of steps for the warmup in the lr scheduler.",
-    )
-    parser.add_argument(
-        "--output_dir", type=str, default=None, help="Where to store the final model."
-    )
-    parser.add_argument(
-        "--seed", type=int, default=None, help="A seed for reproducible training."
-    )
-    parser.add_argument(
-        "--model_type",
-        type=str,
-        default=None,
-        help="Model type to use if training from scratch.",
-        choices=MODEL_TYPES,
-    )
-    parser.add_argument(
-        "--block_size",
-        type=int,
-        default=None,
-        help=(
-            "Optional input sequence length after tokenization. The training dataset will be truncated in block of"
-            " this size for training. Default to the model max input length for single sentence inputs (take into"
-            " account special tokens)."
-        ),
-    )
-    parser.add_argument(
-        "--preprocessing_num_workers",
-        type=int,
-        default=None,
-        help="The number of processes to use for the preprocessing.",
-    )
-    parser.add_argument(
-        "--overwrite_cache",
-        action="store_true",
-        help="Overwrite the cached training and evaluation sets",
-    )
-    parser.add_argument(
-        "--no_keep_linebreaks",
-        action="store_true",
-        help="Do not keep line breaks when using TXT files.",
-    )
-    parser.add_argument(
-        "--push_to_hub",
-        action="store_true",
-        help="Whether or not to push the model to the Hub.",
-    )
-    parser.add_argument(
-        "--hub_model_id",
-        type=str,
-        help="The name of the repository to keep in sync with the local `output_dir`.",
-    )
-    parser.add_argument(
-        "--hub_token", type=str, help="The token to use to push to the Model Hub."
-    )
-    parser.add_argument(
-        "--trust_remote_code",
-        action="store_true",
-        help=(
-            "Whether to trust the execution of code from datasets/models defined on the Hub."
-            " This option should only be set to `True` for repositories you trust and in which you have read the"
-            " code, as it will execute code present on the Hub on your local machine."
-        ),
-    )
-    parser.add_argument(
-        "--checkpointing_steps",
-        type=str,
-        default=None,
-        help="Whether the various states should be saved at the end of every n steps, or 'epoch' for each epoch.",
-    )
-    parser.add_argument(
-        "--resume_from_checkpoint",
-        type=str,
-        default=None,
-        help="If the training should continue from a checkpoint folder.",
-    )
-    parser.add_argument(
-        "--with_tracking",
-        action="store_true",
-        help="Whether to enable experiment trackers for logging.",
-    )
-    parser.add_argument(
-        "--report_to",
-        type=str,
-        default="all",
-        help=(
-            'The integration to report the results and logs to. Supported platforms are `"tensorboard"`,'
-            ' `"wandb"`, `"comet_ml"` and `"clearml"`. Use `"all"` (default) to report to all integrations. '
-            "Only applicable when `--with_tracking` is passed."
-        ),
-    )
-    parser.add_argument(
-        "--low_cpu_mem_usage",
-        action="store_true",
-        help=(
-            "It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights are loaded. "
-            "If passed, LLM loading time and RAM consumption will be benefited."
-        ),
-    )
-    args = parser.parse_args()
-
-    # Sanity checks
-    if (
-        args.dataset_name is None
-        and args.train_file is None
-        and args.validation_file is None
-    ):
-        raise ValueError("Need either a dataset name or a training/validation file.")
-    else:
-        if args.train_file is not None:
-            extension = args.train_file.split(".")[-1]
-            if extension not in ["csv", "json", "txt"]:
-                raise ValueError("`train_file` should be a csv, json or txt file.")
-        if args.validation_file is not None:
-            extension = args.validation_file.split(".")[-1]
-            if extension not in ["csv", "json", "txt"]:
-                raise ValueError("`validation_file` should be a csv, json or txt file.")
-
-    if args.push_to_hub:
-        if args.output_dir is None:
-            raise ValueError(
-                "Need an `output_dir` to create a repo when `--push_to_hub` is passed."
-            )
-
-    return args
-
-
-def main():
-    args = parse_args()
-
+def train(raw_datasets, model_name_or_path, args):
     # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
@@ -364,118 +108,30 @@ def main():
             os.makedirs(args.output_dir, exist_ok=True)
     accelerator.wait_for_everyone()
 
-    # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
-    # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
-    # (the dataset will be downloaded automatically from the datasets Hub).
-    #
-    # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
-    # 'text' is found. You can easily tweak this behavior (see below).
-    #
-    # In distributed training, the load_dataset function guarantee that only one local process can concurrently
-    # download the dataset.
-    if args.dataset_name is not None:
-        # Downloading and loading a dataset from the hub.
-        raw_datasets = load_dataset(
-            args.dataset_name,
-            args.dataset_config_name,
-            trust_remote_code=args.trust_remote_code,
-        )
-        if "validation" not in raw_datasets.keys():
-            raw_datasets["validation"] = load_dataset(
-                args.dataset_name,
-                args.dataset_config_name,
-                split=f"train[:{args.validation_split_percentage}%]",
-                trust_remote_code=args.trust_remote_code,
-            )
-            raw_datasets["train"] = load_dataset(
-                args.dataset_name,
-                args.dataset_config_name,
-                split=f"train[{args.validation_split_percentage}%:]",
-                trust_remote_code=args.trust_remote_code,
-            )
-    else:
-        data_files = {}
-        dataset_args = {}
-        if args.train_file is not None:
-            data_files["train"] = args.train_file
-            extension = args.train_file.split(".")[-1]
-        if args.validation_file is not None:
-            data_files["validation"] = args.validation_file
-            extension = args.validation_file.split(".")[-1]
-        if extension == "txt":
-            extension = "text"
-            dataset_args["keep_linebreaks"] = not args.no_keep_linebreaks
-        raw_datasets = load_dataset(extension, data_files=data_files, **dataset_args)
-        # If no validation data is there, validation_split_percentage will be used to divide the dataset.
-        if "validation" not in raw_datasets.keys():
-            raw_datasets["validation"] = load_dataset(
-                extension,
-                data_files=data_files,
-                split=f"train[:{args.validation_split_percentage}%]",
-                **dataset_args,
-            )
-            raw_datasets["train"] = load_dataset(
-                extension,
-                data_files=data_files,
-                split=f"train[{args.validation_split_percentage}%:]",
-                **dataset_args,
-            )
-
-    # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
-    # https://huggingface.co/docs/datasets/loading_datasets.
-
     # Load pretrained model and tokenizer
     #
     # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
-    if args.config_name:
-        config = AutoConfig.from_pretrained(
-            args.config_name,
-            trust_remote_code=args.trust_remote_code,
-        )
-    elif args.model_name_or_path:
-        config = AutoConfig.from_pretrained(
-            args.model_name_or_path,
-            trust_remote_code=args.trust_remote_code,
-        )
-    else:
-        config = CONFIG_MAPPING[args.model_type]()
-        logger.warning("You are instantiating a new config instance from scratch.")
-
-    if args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(
-            args.tokenizer_name,
-            use_fast=not args.use_slow_tokenizer,
-            trust_remote_code=args.trust_remote_code,
-        )
-    elif args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(
-            args.model_name_or_path,
-            use_fast=not args.use_slow_tokenizer,
-            trust_remote_code=args.trust_remote_code,
-        )
-    else:
-        raise ValueError(
-            "You are instantiating a new tokenizer from scratch. This is not supported by this script. "
-            "You can do it from another script, save it, and load it from here, using --tokenizer_name."
-        )
+    config = AutoConfig.from_pretrained(
+        model_name_or_path,
+        trust_remote_code=args.trust_remote_code,
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name_or_path,
+        use_fast=not args.use_slow_tokenizer,
+        trust_remote_code=args.trust_remote_code,
+    )
     tokenizer.padding_side = "right"
 
-    if args.model_name_or_path:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model_name_or_path,
-            from_tf=bool(".ckpt" in args.model_name_or_path),
-            config=config,
-            low_cpu_mem_usage=args.low_cpu_mem_usage,
-            trust_remote_code=args.trust_remote_code,
-            torch_dtype=torch.bfloat16,
-            device_map="auto",
-        )
-    else:
-        logger.info("Training new model from scratch")
-        model = AutoModelForCausalLM.from_config(
-            config, trust_remote_code=args.trust_remote_code
-        )
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name_or_path,
+        from_tf=bool(".ckpt" in args.model_name_or_path),
+        config=config,
+        low_cpu_mem_usage=args.low_cpu_mem_usage,
+        trust_remote_code=args.trust_remote_code,
+        torch_dtype=torch.bfloat16,
+        device_map="auto",
+    )
 
     # We resize the embeddings only when necessary to avoid index errors. If you are creating a model from scratch
     # on a small vocab and want a smaller embedding size, remove this test.
@@ -630,43 +286,6 @@ def main():
     )
     completed_steps = 0
     starting_epoch = 0
-
-    # Potentially load in the weights and states from a previous save
-    if args.resume_from_checkpoint:
-        if args.resume_from_checkpoint is not None or args.resume_from_checkpoint != "":
-            checkpoint_path = args.resume_from_checkpoint
-            path = os.path.basename(args.resume_from_checkpoint)
-        else:
-            # Get the most recent checkpoint
-            dirs = [f.name for f in os.scandir(os.getcwd()) if f.is_dir()]
-            dirs.sort(key=os.path.getctime)
-            path = dirs[
-                -1
-            ]  # Sorts folders by date modified, most recent checkpoint is the last
-            checkpoint_path = path
-            path = os.path.basename(checkpoint_path)
-
-        accelerator.print(f"Resumed from checkpoint: {checkpoint_path}")
-        accelerator.load_state(checkpoint_path)
-        # Extract `epoch_{i}` or `step_{i}`
-        training_difference = os.path.splitext(path)[0]
-
-        if "epoch" in training_difference:
-            starting_epoch = int(training_difference.replace("epoch_", "")) + 1
-            resume_step = None
-            completed_steps = starting_epoch * num_update_steps_per_epoch
-        else:
-            # need to multiply `gradient_accumulation_steps` to reflect real steps
-            resume_step = (
-                int(training_difference.replace("step_", ""))
-                * args.gradient_accumulation_steps
-            )
-            starting_epoch = resume_step // len(train_dataloader)
-            completed_steps = resume_step // args.gradient_accumulation_steps
-            resume_step -= starting_epoch * len(train_dataloader)
-
-    # update the progress_bar if load from checkpoint
-    progress_bar.update(completed_steps)
 
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()

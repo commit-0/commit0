@@ -8,6 +8,24 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "accelerate"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "packaging" },
+    { name = "psutil" },
+    { name = "pyyaml" },
+    { name = "safetensors" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d5/8e/a9827d6df00381f4815ddf84d79bb089783a569e29665e4cf03e808ddebc/accelerate-1.2.0.tar.gz", hash = "sha256:4187a9dea21101255ada3a1974532585feeb6ca8b681693dba362d6d25e85ef2", size = 341495 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7b/92/e3f810d0910a71979fe7341803e187cbf85e2b50146c8aa3796eb7bc51b4/accelerate-1.2.0-py3-none-any.whl", hash = "sha256:815708367eb83cd682e120da634b2cf318729bff95f30e2f046c086aae20201e", size = 336311 },
+]
+
+[[package]]
 name = "aider-chat"
 version = "0.1.dev7624+g1e4fb74"
 source = { git = "https://github.com/wenting-zhao/aider.git#1e4fb74e9cc207f3d3f8ac6106e31401f1cfbc2f" }
@@ -454,6 +472,7 @@ agent = [
     { name = "pymupdf" },
 ]
 example = [
+    { name = "accelerate" },
     { name = "setuptools" },
     { name = "transformers" },
     { name = "vllm" },
@@ -461,6 +480,7 @@ example = [
 
 [package.metadata]
 requires-dist = [
+    { name = "accelerate", marker = "extra == 'example'" },
     { name = "aider-chat", marker = "extra == 'agent'", git = "https://github.com/wenting-zhao/aider.git" },
     { name = "datasets", specifier = "==3.0.1" },
     { name = "docker", specifier = ">=7.1.0" },
