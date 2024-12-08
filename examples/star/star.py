@@ -16,10 +16,6 @@ def main():
     ds = load_dataset(args.dataset_name)
     assert "train" in ds
     all_samples = generate_predictions(args.model_name, ds["train"], args.temperature, args.n)
-    for x in all_samples:
-        for xx in x:
-            print(xx)
-            print("-"*100)
     assert len(ds["train"]) == len(all_samples)
     all_traces, all_execution_results = execute_tests(ds["train"], all_samples)
     passed_examples = []
