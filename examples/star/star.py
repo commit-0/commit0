@@ -18,31 +18,36 @@ def main():
             canonical_solution = f"```python\n{example['canonical_solution']}\n```"
             text = [{"role": "user", "message": generate_prompt(example["prompt"], example["test"])}, {"role": "assistant", "message": format_solution(canonical_solution, example["prompt"])}]
             texts.append(text)
-            print(text)
         ds[split] = ds[split].add_column(name="text", column=texts)
 
-    # sample
-    all_samples = generate_predictions(
-        args.model_name_or_path, ds["train"], args.temperature, args.n
-    )
-    assert len(ds["train"]) == len(all_samples)
+    model_name = args.model_name_or_path
+    for i in range(args.iteration):
+        # sample
+        all_samples = generate_predictions(
+            model_name, ds["train"], args.temperature, args.n
+        )
+        ds["train"].add_column(name="sample", column=all_samples).to_json(f"{args.output_dir}/data/samples-iter{i}.json")
+        assert len(ds["train"]) == len(all_samples)
 
-    # verify and construct the training set
-    all_traces, all_execution_results = execute_tests(ds["train"], all_samples)
-    passed_examples = []
-    for example, execution_results, samples in zip(
-        ds["train"], all_execution_results, all_samples
-    ):
-        for execution_result, sample in zip(execution_results, samples):
-            # pytest exit code: https://docs.pytest.org/en/stable/reference/exit-codes.html
-            if execution_result == 0:
-                example["text"] = [{"role": "user", "message": generate_prompt(example["prompt"], example["test"])}, {"role": "assistant", "message": format_solution(sample, example["prompt"])}]
-                passed_examples.append(example)
-                break
-    raw_datasets = DatasetDict({"train": Dataset.from_list(passed_examples), "validation": ds["validation"]})
+        # verify and construct the training set
+        all_traces, all_execution_results = execute_tests(ds["train"], all_samples)
+        passed_examples = []
+        for example, execution_results, samples in zip(
+            ds["train"], all_execution_results, all_samples
+        ):
+            for execution_result, sample in zip(execution_results, samples):
+                # pytest exit code: https://docs.pytest.org/en/stable/reference/exit-codes.html
+                if execution_result == 0:
+                    example["text"] = [{"role": "user", "message": generate_prompt(example["prompt"], example["test"])}, {"role": "assistant", "message": format_solution(sample, example["prompt"])}]
+                    passed_examples.append(example)
+                    break
+        raw_datasets = DatasetDict({"train": Dataset.from_list(passed_examples), "validation": ds["validation"]})
+        raw_datasets["train"].to_json(f"{args.output_dir}/data/verified-samples-iter{i}.json")
 
-    # train
-    train(raw_datasets, args.model_name_or_path, args)
+        # train
+        args.output_dir = f"{args.output_dir}/models-iter{i}"
+        train(raw_datasets, model_name, args)
+        model_name = args.output_dir
 
 
 if __name__ == "__main__":

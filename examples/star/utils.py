@@ -115,6 +115,7 @@ def parse_args():
     )
     parser.add_argument("--temperature", type=float, default=1)
     parser.add_argument("-n", type=int, default=1)
+    parser.add_argument("--iteration", type=int, default=1)
     parser.add_argument(
         "--dataset_name",
         type=str,
