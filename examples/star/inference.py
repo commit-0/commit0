@@ -1,29 +1,8 @@
-import gc
 from typing import List
 from datasets import Dataset
 from vllm import LLM, SamplingParams
-from utils import generate_prompt
+from utils import generate_prompt, cleanup
 
-
-def cleanup(model):
-    try:
-        import torch
-        import contextlib
-        if torch.cuda.is_available():
-            from vllm.distributed.parallel_state import (
-                destroy_model_parallel, destroy_distributed_environment
-            )
-            destroy_model_parallel()
-            destroy_distributed_environment()
-            del model.llm_engine.model_executor
-            del model
-            with contextlib.suppress(AssertionError):
-                torch.distributed.destroy_process_group()
-            gc.collect()
-            torch.cuda.empty_cache()
-            torch.cuda.synchronize()
-    except ImportError:
-        del model
 
 def generate_predictions(
     model_name: str, dataset: Dataset, temperature: float = 1.0, n: int = 1
@@ -62,8 +41,5 @@ def generate_predictions(
     for output in outputs:
         generated_texts = [one.text for one in output.outputs]
         results.append(generated_texts)
-    cleanup(llm)
+    cleanup(llm, vllm=True)
     return results
-    # out_name = dataset_name.split("/")[-1]
-    # out_name = f"wentingzhao/{out_name}_predictions_{n}"
-    # ds.push_to_hub(out_name)

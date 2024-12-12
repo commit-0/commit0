@@ -1,4 +1,5 @@
 import argparse
+import gc
 import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datasets import Dataset
@@ -275,3 +276,35 @@ def parse_args():
             )
 
     return args
+
+
+def cleanup(model, vllm=False):
+    """
+    Clean up resources associated with the given model.
+
+    Parameters
+    ----------
+    model : Any
+        The model object whose resources are to be cleaned up.
+    """
+    try:
+        import torch
+        import contextlib
+        if torch.cuda.is_available():
+            if vllm:
+                from vllm.distributed.parallel_state import (
+                    destroy_model_parallel, destroy_distributed_environment
+                )
+                destroy_model_parallel()
+                destroy_distributed_environment()
+                del model.llm_engine.model_executor
+            if not vllm:
+                model = model.cpu()
+            del model
+            with contextlib.suppress(AssertionError):
+                torch.distributed.destroy_process_group()
+            gc.collect()
+            torch.cuda.empty_cache()
+            torch.cuda.synchronize()
+    except ImportError:
+        del model

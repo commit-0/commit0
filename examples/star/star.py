@@ -21,6 +21,7 @@ def main():
         ds[split] = ds[split].add_column(name="text", column=texts)
 
     model_name = args.model_name_or_path
+    ds["train"] = ds["train"].select(range(10))
     for i in range(args.iteration):
         # sample
         all_samples = generate_predictions(
