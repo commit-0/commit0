@@ -254,10 +254,6 @@ def train(raw_datasets, model_name_or_path, args):
     # The trackers initializes automatically on the main process.
     if args.with_tracking:
         experiment_config = vars(args)
-        # TensorBoard cannot log Enums, need the raw value
-        experiment_config["lr_scheduler_type"] = experiment_config[
-            "lr_scheduler_type"
-        ].value
         accelerator.init_trackers("clm_no_trainer", experiment_config)
 
     # Train!
@@ -407,8 +403,6 @@ def train(raw_datasets, model_name_or_path, args):
             with open(os.path.join(args.output_dir, "all_results.json"), "w") as f:
                 json.dump({"perplexity": perplexity}, f)
     cleanup(model)
-    #cleanup(optimizer)
-    #cleanup(lr_scheduler)
 
 
 if __name__ == "__main__":

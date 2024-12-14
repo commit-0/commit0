@@ -1,5 +1,6 @@
 """Main STaR Loop"""
 
+from copy import deepcopy
 from datasets import Dataset, DatasetDict, load_dataset
 from inference import generate_predictions
 from train import train
@@ -21,13 +22,13 @@ def main():
         ds[split] = ds[split].add_column(name="text", column=texts)
 
     model_name = args.model_name_or_path
-    ds["train"] = ds["train"].select(range(10))
+    output_dir = deepcopy(args.output_dir)
     for i in range(args.iteration):
         # sample
         all_samples = generate_predictions(
             model_name, ds["train"], args.temperature, args.n
         )
-        ds["train"].add_column(name="sample", column=all_samples).to_json(f"{args.output_dir}/data/samples-iter{i}.json")
+        ds["train"].add_column(name="sample", column=all_samples).to_json(f"{output_dir}/data/samples-iter{i}.json")
         assert len(ds["train"]) == len(all_samples)
 
         # verify and construct the training set
@@ -43,10 +44,10 @@ def main():
                     passed_examples.append(example)
                     break
         raw_datasets = DatasetDict({"train": Dataset.from_list(passed_examples), "validation": ds["validation"]})
-        raw_datasets["train"].to_json(f"{args.output_dir}/data/verified-samples-iter{i}.json")
+        raw_datasets["train"].to_json(f"{output_dir}/data/verified-samples-iter{i}.json")
 
         # train
-        args.output_dir = f"{args.output_dir}/models-iter{i}"
+        args.output_dir = f"{output_dir}/models-iter{i}"
         train(raw_datasets, model_name, args)
         model_name = args.output_dir
 
