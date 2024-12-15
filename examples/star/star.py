@@ -32,7 +32,7 @@ def main():
         assert len(ds["train"]) == len(all_samples)
 
         # verify and construct the training set
-        all_traces, all_execution_results = execute_tests(ds["train"], all_samples)
+        all_traces, all_execution_results = execute_tests(ds["train"], all_samples, max_workers=args.max_workers)
         passed_examples = []
         for example, execution_results, samples in zip(
             ds["train"], all_execution_results, all_samples
