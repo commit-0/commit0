@@ -1,7 +1,7 @@
 from typing import List
 from datasets import Dataset
 from vllm import LLM, SamplingParams
-from utils import generate_prompt, cleanup
+from examples.star.utils import generate_prompt, cleanup
 
 
 def generate_predictions(

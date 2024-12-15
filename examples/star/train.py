@@ -21,7 +21,6 @@ https://huggingface.co/models?filter=text-generation
 """
 # You can also adapt this script on your own causal language modeling task. Pointers for this are left as comments.
 
-import argparse
 import json
 import logging
 import math
@@ -34,14 +33,12 @@ import torch
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import set_seed
-from datasets import load_dataset
 from huggingface_hub import HfApi
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 import transformers
 from transformers import (
-    CONFIG_MAPPING,
     AutoConfig,
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -49,13 +46,13 @@ from transformers import (
     get_scheduler,
 )
 
-from utils import cleanup
+from examples.star.utils import cleanup
 
 
 logger = get_logger(__name__)
 
 
-def train(raw_datasets, model_name_or_path, args):
+def train(raw_datasets, model_name_or_path, args) -> None:
     # Initialize the accelerator. We will let the accelerator handle device placement for us in this example.
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
@@ -289,7 +286,9 @@ def train(raw_datasets, model_name_or_path, args):
         for step, batch in enumerate(active_dataloader):
             with accelerator.accumulate(model):
                 batch["labels"] = batch["input_ids"].clone().detach()
-                indices = (batch["input_ids"] == tokenizer.eos_token_id).cumsum(dim=1) == 0
+                indices = (batch["input_ids"] == tokenizer.eos_token_id).cumsum(
+                    dim=1
+                ) == 0
                 batch["labels"][indices] = -100
                 outputs = model(**batch)
                 loss = outputs.loss
@@ -323,7 +322,9 @@ def train(raw_datasets, model_name_or_path, args):
         for step, batch in enumerate(eval_dataloader):
             with torch.no_grad():
                 batch["labels"] = batch["input_ids"].clone().detach()
-                indices = (batch["input_ids"] == tokenizer.eos_token_id).cumsum(dim=1) == 0
+                indices = (batch["input_ids"] == tokenizer.eos_token_id).cumsum(
+                    dim=1
+                ) == 0
                 batch["labels"][indices] = -100
                 outputs = model(**batch)
 
@@ -405,5 +406,4 @@ def train(raw_datasets, model_name_or_path, args):
     cleanup(model)
 
 
-if __name__ == "__main__":
-    main()
+__all__ = []

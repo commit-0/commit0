@@ -4,8 +4,8 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datasets import Dataset
 from tqdm import tqdm
-from typing import List, Tuple
-from transformers import MODEL_MAPPING, SchedulerType
+from typing import Any, List, Tuple
+from transformers import SchedulerType
 from commit0.harness.utils import extract_code_blocks
 
 
@@ -30,7 +30,7 @@ def execute_tests(
 
     Args:
     ----
-        ds (Dataset): A Dataset object.
+        examples (Dataset): A Dataset object.
         all_samples (List[List[str]]): A 2D list of strings, where `all_samples[i]` corresponds to the samples associated with `ds[i]`.
         max_workers (int): The number of worker threads to use for parallel execution. Default is 100.
 
@@ -82,9 +82,7 @@ def execute_tests(
 
 
 def generate_prompt(prompt: str, test: str) -> str:
-    """
-    Generate a Python code request prompt string.
-    """
+    """Generate a Python code request prompt string."""
     return f"""Write a Python function implementation for the following prompt:
 
 {prompt}
@@ -100,7 +98,19 @@ code
 """
 
 
-def format_solution(text, prompt):
+def format_solution(text: str, prompt: str) -> str:
+    """Extracts a code block from the given text and formats it as a Python code snippet.
+
+    Args:
+    ----
+        text (str): The input text which may contain code blocks.
+        prompt (str): A string that will be returned if no code block is found.
+
+    Returns:
+    -------
+        str: A formatted code snippet if a code block exists, otherwise the prompt and text.
+
+    """
     matches = extract_code_blocks(text)
     if len(matches) > 0:
         solution = matches[0]
@@ -110,7 +120,14 @@ def format_solution(text, prompt):
     return solution
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments.
+
+    Returns
+    -------
+        argparse.Namespace: The parsed command-line arguments.
+
+    """
     parser = argparse.ArgumentParser(
         description="Finetune a transformers model on a causal language modeling task"
     )
@@ -279,23 +296,32 @@ def parse_args():
     return args
 
 
-def cleanup(model, vllm=False):
-    """
-    Clean up resources associated with the given model.
+def cleanup(model: Any, vllm: bool = False) -> None:
+    """Clean up resources associated with the given model.
 
     Parameters
     ----------
     model : Any
         The model object whose resources are to be cleaned up.
+    vllm : Boolean
+        The model object whose resources are to be cleaned up.
+
+    Returns
+    -------
+    None
+
     """
     try:
         import torch
         import contextlib
+
         if torch.cuda.is_available():
             if vllm:
                 from vllm.distributed.parallel_state import (
-                    destroy_model_parallel, destroy_distributed_environment
+                    destroy_model_parallel,
+                    destroy_distributed_environment,
                 )
+
                 destroy_model_parallel()
                 destroy_distributed_environment()
                 del model.llm_engine.model_executor
