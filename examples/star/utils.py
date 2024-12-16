@@ -64,6 +64,7 @@ def execute_tests(
                 input=sample,
                 text=True,
                 capture_output=True,
+                timeout=30,
             ): (i, j)
             for (i, j, instance_id, sample) in tasks
         }
@@ -72,9 +73,13 @@ def execute_tests(
             as_completed(futures), total=len(tasks), desc="Executing tests"
         ):
             i, j = futures[future]
-            result = future.result()
-            stdout = result.stdout
-            exit_code = result.returncode
+            try:
+                result = future.result()
+                stdout = result.stdout
+                exit_code = result.returncode
+            except subprocess.TimeoutExpired:
+                stdout = "Timeout"
+                exit_code = -1
             all_traces[i][j] = stdout
             all_execution_results[i][j] = exit_code
 

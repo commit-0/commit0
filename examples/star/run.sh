@@ -9,5 +9,6 @@ python examples/star/star.py \
   --iteration 5 \
   --learning_rate 1e-6 \
   --per_device_train_batch_size 1 \
-  --gradient_accumulation_steps 8
+  --gradient_accumulation_steps 8 \
+  --max_workers 64
 
