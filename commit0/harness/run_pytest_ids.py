@@ -73,9 +73,7 @@ def main(
         else:
             repo_name = example["repo"].split("/")[-1]
             dataset_type = "commit0"
-        if repo_name in os.path.basename(repo_or_repo_dir) or repo_or_repo_dir.endswith(
-            repo_name
-        ):
+        if repo_name == os.path.basename(repo_or_repo_dir):
             spec = make_spec(example, dataset_type)
             break
     assert spec is not None, "No spec available"
