@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List
 from datasets import Dataset
 from vllm import LLM, SamplingParams
 from examples.star.utils import generate_prompt, cleanup
@@ -28,14 +28,14 @@ def generate_predictions(
     sampling_params = SamplingParams(n=n, temperature=temperature, max_tokens=512)
     llm = LLM(model=model_name)
 
-    prompts: List[str] = []
+    prompts: List[List[Dict]] = []
     for example in dataset:
         prompt = example["prompt"]
         test = example["test"]
         prompt = generate_prompt(prompt, test)
-        prompts.append(prompt)
+        prompts.append([{"role": "user", "content": prompt}])
 
-    outputs = llm.generate(prompts, sampling_params)
+    outputs = llm.chat(prompts, sampling_params)
 
     results: List[List[str]] = []
     for output in outputs:
