@@ -36,14 +36,15 @@ packages = ["commit0", "agent"]
 agent = [
     "import-deps>=0.3.0",
     "PyMuPDF>=1.24.5",
-    "aider-chat",
+    #"aider-chat>=0.69.1",
 ]
 example = [
-    "vllm",
-    "transformers",
+    "vllm==0.6.5",
+    "transformers>=4.47.1",
     "setuptools",
     "accelerate",
     "wandb>=0.19.0",
+    "openai>=1.58.1",
 ]
 
 [project.urls]

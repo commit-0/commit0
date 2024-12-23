@@ -239,7 +239,7 @@ def extract_code_blocks(text: str) -> List[str]:
                    from the text.
 
     """
-    pattern = r"```python\n(.*?)```"
+    pattern = r'(?s)```(?:python|py)?(.*?)```'
     matches = re.finditer(pattern, text, re.DOTALL)
     return [match.group(1).strip() for match in matches]
 

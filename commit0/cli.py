@@ -2,6 +2,7 @@ import typer
 from pathlib import Path
 from typing import Union, List
 from typing_extensions import Annotated
+import commit0.harness.batch_run_pytest_ids
 import commit0.harness.run_pytest_ids
 import commit0.harness.get_pytest_ids
 import commit0.harness.build
@@ -291,6 +292,49 @@ def test(
         repo_or_repo_path,
         branch,  # type: ignore
         test_ids,
+        coverage,
+        backend,
+        timeout,
+        num_cpus,
+        rebuild,
+        verbose,
+    )
+
+
+@commit0_app.command()
+def batch_test(
+    test_ids: str = typer.Argument(
+        None,
+        help='All ways pytest supports to run and select tests. Please provide a single string. Example: "test_mod.py", "testing/", "test_mod.py::test_func", "-k \'MyClass and not method\'"',
+    ),
+    backend: str = typer.Option("modal", help="Backend to use for testing"),
+    timeout: int = typer.Option(1800, help="Timeout for tests in seconds"),
+    num_cpus: int = typer.Option(1, help="Number of CPUs to use"),
+    reference: Annotated[
+        bool, typer.Option("--reference", help="Test the reference commit")
+    ] = False,
+    coverage: Annotated[
+        bool, typer.Option("--coverage", help="Whether to get coverage information")
+    ] = False,
+    rebuild: bool = typer.Option(
+        False, "--rebuild", help="Whether to rebuild an image"
+    ),
+    commit0_config_file: str = typer.Option(
+        ".commit0.yaml",
+        help="Path to the commit0 dot file, where the setup config is stored",
+    ),
+    verbose: int = typer.Option(
+        1,
+        "--verbose",
+        "-v",
+        help="Set this to 2 for more logging information",
+        count=True,
+    ),
+) -> None:
+    """Run tests on a Commit0 repository."""
+    commit0.harness.batch_run_pytest_ids.main(
+        test_ids,
+        reference,
         coverage,
         backend,
         timeout,
