@@ -68,14 +68,12 @@ def main(
             or "bigcodebench" in dataset_name
             or "codecontests" in dataset_name
         ):
-            repo_name = example["instance_id"]
+            repo_name = str(example["instance_id"])
             dataset_type = "simple"
         else:
             repo_name = example["repo"].split("/")[-1]
             dataset_type = "commit0"
-        if repo_name in os.path.basename(repo_or_repo_dir) or repo_or_repo_dir.endswith(
-            repo_name
-        ):
+        if repo_name == os.path.basename(repo_or_repo_dir):
             spec = make_spec(example, dataset_type)
             break
     assert spec is not None, "No spec available"
@@ -174,7 +172,7 @@ def main(
             prompt = example["prompt"] if "prompt" in example.keys() else ""
             matches = extract_code_blocks(solution)
             if len(matches) > 0:
-                solution = "\n\n".join(matches)
+                solution = matches[0]
             else:
                 solution = prompt + "\n\n" + solution
             patch = solution + "\n\n" + example["test"]
