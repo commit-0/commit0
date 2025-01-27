@@ -20,6 +20,8 @@ dependencies = [
     "datasets==3.0.1",
     "modal>=0.66.26",
     "strenum>=0.4.15",
+    "e2b-code-interpreter>=1.0.4",
+    "python-dotenv>=1.0.1",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",
