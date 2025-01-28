@@ -64,7 +64,7 @@ PASS_TO_PASS = "PASS_TO_PASS"
 PASS_TO_FAIL = "PASS_TO_FAIL"
 
 # Evaluation backends
-EVAL_BACKENDS = ["local", "modal"]
+EVAL_BACKENDS = ["local", "modal", "e2b"]
 
 # available commands
 COMMANDS = [

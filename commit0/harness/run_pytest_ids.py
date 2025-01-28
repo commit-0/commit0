@@ -26,6 +26,7 @@ from commit0.harness.execution_context import (
     ExecutionBackend,
     Docker,
     Modal,
+    E2B,
 )
 
 
@@ -192,6 +193,9 @@ def main(
     elif ExecutionBackend(backend) == ExecutionBackend.LOCAL:
         logger.info("Runnning locally")
         execution_context = Docker
+    elif ExecutionBackend(backend) == ExecutionBackend.E2B:
+        logger.info("Runnning E2B")
+        execution_context = E2B
     else:
         raise ValueError(
             f"Evaluation must be from {', '.join(EVAL_BACKENDS)}, but {backend} is provided."

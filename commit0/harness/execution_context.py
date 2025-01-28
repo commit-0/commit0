@@ -33,6 +33,7 @@ from commit0.harness.docker_utils import (
 class ExecutionBackend(StrEnum):
     LOCAL = auto()
     MODAL = auto()
+    E2B = auto()
 
 
 class ExecutionContext(ABC):
