@@ -323,7 +323,9 @@ def get_specs_from_dataset(
     )
 
 
-def make_spec(instance: Union[RepoInstance, SimpleInstance], dataset_type: str, absolute: bool) -> Spec:
+def make_spec(
+    instance: Union[RepoInstance, SimpleInstance], dataset_type: str, absolute: bool
+) -> Spec:
     repo_directory = ABSOLUTE_REPO_DIR if absolute else RELATIVE_REPO_DIR
     if isinstance(instance, Spec):
         return instance

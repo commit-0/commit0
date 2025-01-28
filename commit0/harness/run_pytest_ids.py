@@ -205,8 +205,14 @@ def main(
         )
 
     files_to_copy = Files(
-        eval_script={"src": eval_file, "dest": Path("/eval.sh" if absolute else "eval.sh")},
-        patch={"src": patch_file, "dest": Path("/patch.diff" if absolute else "patch.diff")},
+        eval_script={
+            "src": eval_file,
+            "dest": Path("/eval.sh" if absolute else "eval.sh"),
+        },
+        patch={
+            "src": patch_file,
+            "dest": Path("/patch.diff" if absolute else "patch.diff"),
+        },
     )
     files_to_collect = [
         "report.json",
@@ -216,8 +222,11 @@ def main(
     if coverage:
         files_to_collect.append("coverage.json")
 
-
-    eval_command = "/bin/bash /eval.sh" if ExecutionBackend(backend) != ExecutionBackend.E2B else "/bin/bash eval.sh"
+    eval_command = (
+        "/bin/bash /eval.sh"
+        if ExecutionBackend(backend) != ExecutionBackend.E2B
+        else "/bin/bash eval.sh"
+    )
     try:
         with execution_context(
             spec,
