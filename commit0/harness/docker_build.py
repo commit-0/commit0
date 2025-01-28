@@ -166,7 +166,7 @@ def get_repo_configs_to_build(
 
     """
     image_scripts = dict()
-    test_specs = get_specs_from_dataset(dataset, dataset_type)
+    test_specs = get_specs_from_dataset(dataset, dataset_type, absolute=True)
 
     for test_spec in test_specs:
         # Check if the base image exists

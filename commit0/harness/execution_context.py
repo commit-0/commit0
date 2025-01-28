@@ -255,7 +255,7 @@ class E2B(ExecutionContext):
         # prepare for eval
         if files_to_copy:
             for _, f in files_to_copy.items():
-                with open(f["src"], "r") as fp:
+                with open(f["src"], "r") as fp:  # type: ignore
                     content = fp.read()
                     self.sb.files.write(f["dest"].name, content)  # type: ignore
 
@@ -271,9 +271,10 @@ class E2B(ExecutionContext):
         # TODO: setup timeout
         start_time = time.time()
         result = self.sb.commands.run(command, timeout=0)
-        for fname in self.files_to_collect:
-            with (self.log_dir / fname).open("w") as f:
-                f.write(self.sb.files.read(f"testbed/{fname}"))
+        if self.files_to_collect is not None:
+            for fname in self.files_to_collect:
+                with (self.log_dir / fname).open("w") as f:
+                    f.write(self.sb.files.read(f"testbed/{fname}"))
         timed_out = self.sb.is_running()
         end_time = time.time()
         return result.stderr, timed_out, end_time - start_time
