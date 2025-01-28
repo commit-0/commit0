@@ -4,7 +4,7 @@ import docker
 from datasets import load_dataset
 from typing import Iterator, Union
 
-from commit0.harness.constants import RepoInstance, SimpleInstance, SPLIT, ABSOLUTE_REPO_DIR
+from commit0.harness.constants import RepoInstance, SimpleInstance, SPLIT
 from commit0.harness.docker_build import build_repo_images
 from commit0.harness.spec import make_spec
 
@@ -45,7 +45,7 @@ def main(
             repo_name = example["repo"].split("/")[-1]
             if split != "all" and repo_name not in SPLIT[split]:
                 continue
-        spec = make_spec(example, dataset_type, DOCKER_REPO_DIR)
+        spec = make_spec(example, dataset_type, absolute=True)
         specs.append(spec)
 
     client = docker.from_env()
