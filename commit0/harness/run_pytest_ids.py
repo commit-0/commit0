@@ -7,10 +7,8 @@ from pathlib import Path
 
 from typing import Iterator, Union
 from commit0.harness.constants import (
-    ABSOLUTE_REPO_DIR,
     EVAL_BACKENDS,
     Files,
-    RELATIVE_REPO_DIR,
     RUN_PYTEST_LOG_DIR,
     RepoInstance,
     SimpleInstance,

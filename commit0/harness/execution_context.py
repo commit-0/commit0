@@ -13,7 +13,6 @@ from enum import auto
 from e2b_code_interpreter import Sandbox
 from strenum import StrEnum
 from pathlib import Path
-import tempfile
 import time
 from typing import Optional, Type
 from types import TracebackType
@@ -261,15 +260,21 @@ class E2B(ExecutionContext):
                     self.sb.files.write(f["dest"].name, content)  # type: ignore
 
     def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
-        """Execute command on E2B sandbox"""
+        """Execute command on E2B sandbox
+        For timeouts, we could maybe use the error code or check whether the
+        sandbox is still alive.
+
+        The exit code is given by: result.exit_code
+
+        For now, we can just check if the sandbox is still alive.
+        """
         # TODO: setup timeout
         start_time = time.time()
-        result = self.sb.commands.run(command)
-        return_code = result.exit_code
+        result = self.sb.commands.run(command, timeout=0)
         for fname in self.files_to_collect:
             with (self.log_dir / fname).open("w") as f:
                 f.write(self.sb.files.read(f"testbed/{fname}"))
-        timed_out = False  # TODO: figure this out
+        timed_out = self.sb.is_running
         end_time = time.time()
         return result.stderr, timed_out, end_time - start_time
 
