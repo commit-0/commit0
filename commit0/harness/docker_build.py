@@ -125,7 +125,7 @@ def build_base_images(
 
     """
     # Get the base images to build from the dataset
-    test_specs = get_specs_from_dataset(dataset, dataset_type)
+    test_specs = get_specs_from_dataset(dataset, dataset_type, absolute=True)
     base_images = {
         x.base_image_key: (x.base_dockerfile, x.platform) for x in test_specs
     }
