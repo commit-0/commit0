@@ -10,6 +10,7 @@ import logging
 import modal
 import modal.io_streams
 from enum import auto
+from e2b_code_interpreter import Sandbox
 from strenum import StrEnum
 from pathlib import Path
 import time
@@ -33,6 +34,7 @@ from commit0.harness.docker_utils import (
 class ExecutionBackend(StrEnum):
     LOCAL = auto()
     MODAL = auto()
+    E2B = auto()
 
 
 class ExecutionContext(ABC):
@@ -218,4 +220,70 @@ class Modal(ExecutionContext):
         excinst: Optional[BaseException],
         exctb: Optional[TracebackType],
     ) -> None:
+        close_logger(self.logger)
+
+
+class E2B(ExecutionContext):
+    def __init__(
+        self,
+        spec: Spec,
+        logger: logging.Logger,
+        timeout: int,
+        num_cpus: int,
+        log_dir: Path,
+        files_to_copy: Optional[Files] = None,
+        files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
+    ):
+        super().__init__(
+            spec,
+            logger,
+            timeout,
+            num_cpus,
+            log_dir,
+            files_to_copy=files_to_copy,
+            files_to_collect=files_to_collect,
+        )
+
+        self.sb = Sandbox(timeout=timeout)
+        self.sb.commands.run("curl -LsSf https://astral.sh/uv/install.sh | sh")
+
+        # setup sandbox env
+        self.sb.files.write("setup.sh", spec.setup_script)
+        self.sb.commands.run("bash setup.sh")
+
+        # prepare for eval
+        if files_to_copy:
+            for _, f in files_to_copy.items():
+                with open(f["src"], "r") as fp:  # type: ignore
+                    content = fp.read()
+                    self.sb.files.write(f["dest"].name, content)  # type: ignore
+
+    def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
+        """Execute command on E2B sandbox
+        For timeouts, we could maybe use the error code or check whether the
+        sandbox is still alive.
+
+        The exit code is given by: result.exit_code
+
+        For now, we can just check if the sandbox is still alive.
+        """
+        # TODO: setup timeout
+        start_time = time.time()
+        result = self.sb.commands.run(command, timeout=0)
+        if self.files_to_collect is not None:
+            for fname in self.files_to_collect:
+                with (self.log_dir / fname).open("w") as f:
+                    f.write(self.sb.files.read(f"testbed/{fname}"))
+        timed_out = self.sb.is_running()
+        end_time = time.time()
+        return result.stderr, timed_out, end_time - start_time
+
+    def __exit__(
+        self,
+        exctype: Optional[Type[BaseException]],
+        excinst: Optional[BaseException],
+        exctb: Optional[TracebackType],
+    ) -> None:
+        self.sb.kill()
         close_logger(self.logger)

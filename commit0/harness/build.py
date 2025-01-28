@@ -45,7 +45,7 @@ def main(
             repo_name = example["repo"].split("/")[-1]
             if split != "all" and repo_name not in SPLIT[split]:
                 continue
-        spec = make_spec(example, dataset_type)
+        spec = make_spec(example, dataset_type, absolute=True)
         specs.append(spec)
 
     client = docker.from_env()
