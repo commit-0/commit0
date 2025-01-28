@@ -7,8 +7,10 @@ from pathlib import Path
 
 from typing import Iterator, Union
 from commit0.harness.constants import (
+    ABSOLUTE_REPO_DIR,
     EVAL_BACKENDS,
     Files,
+    RELATIVE_REPO_DIR,
     RUN_PYTEST_LOG_DIR,
     RepoInstance,
     SimpleInstance,
@@ -53,6 +55,7 @@ def main(
         dataset_name, split=dataset_split
     )  # type: ignore
     dataset_name = dataset_name.lower()
+    absolute = backend != "e2b"
     spec = None
     example = None
     repo_name = None
@@ -77,7 +80,7 @@ def main(
         if repo_name in os.path.basename(repo_or_repo_dir) or repo_or_repo_dir.endswith(
             repo_name
         ):
-            spec = make_spec(example, dataset_type)
+            spec = make_spec(example, dataset_type, absolute)
             break
     assert spec is not None, "No spec available"
     assert example is not None, "No example available"
@@ -188,13 +191,13 @@ def main(
 
     backend = backend.upper()
     if ExecutionBackend(backend) == ExecutionBackend.MODAL:
-        logger.info("Runnning on Modal")
+        logger.info("Running on Modal")
         execution_context = Modal
     elif ExecutionBackend(backend) == ExecutionBackend.LOCAL:
-        logger.info("Runnning locally")
+        logger.info("Running locally")
         execution_context = Docker
     elif ExecutionBackend(backend) == ExecutionBackend.E2B:
-        logger.info("Runnning E2B")
+        logger.info("Running E2B")
         execution_context = E2B
     else:
         raise ValueError(
@@ -202,8 +205,8 @@ def main(
         )
 
     files_to_copy = Files(
-        eval_script={"src": eval_file, "dest": Path("/eval.sh")},
-        patch={"src": patch_file, "dest": Path("/patch.diff")},
+        eval_script={"src": eval_file, "dest": Path("/eval.sh" if absolute else "eval.sh")},
+        patch={"src": patch_file, "dest": Path("/patch.diff" if absolute else "patch.diff")},
     )
     files_to_collect = [
         "report.json",
@@ -213,6 +216,8 @@ def main(
     if coverage:
         files_to_collect.append("coverage.json")
 
+
+    eval_command = "/bin/bash /eval.sh" if ExecutionBackend(backend) != ExecutionBackend.E2B else "/bin/bash eval.sh"
     try:
         with execution_context(
             spec,
@@ -225,7 +230,7 @@ def main(
             rebuild_image,
         ) as context:
             output, timed_out, total_runtime = context.exec_run_with_timeout(
-                "/bin/bash /eval.sh"
+                eval_command
             )
             logger.info(output)
             if timed_out:

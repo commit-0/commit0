@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import Union, cast, Optional
 
 from commit0.harness.constants import (
+    ABSOLUTE_REPO_DIR,
+    RELATIVE_REPO_DIR,
     RepoInstance,
     SimpleInstance,
 )
@@ -17,6 +19,7 @@ from commit0.harness.dockerfiles import (
 class Spec(ABC):
     """A dataclass that represents a test specification for a single instance of SWE-bench."""
 
+    absolute: bool
     repo: str
     # repo dir on docker
     repo_directory: str
@@ -164,11 +167,12 @@ class Commit0Spec(Spec):
 
     def make_eval_script_list(self) -> list[str]:
         """Run the tests."""
+        diff_path = "/patch.diff" if self.absolute else "../patch.diff"
         eval_script_list = [
             f"cd {self.repo_directory}",
             "source .venv/bin/activate",
             f"git reset --hard {self.instance['base_commit']}",
-            "git apply --allow-empty -v /patch.diff",
+            f"git apply --allow-empty -v {diff_path}",
             "git status",
             f"{self.instance['test']['test_cmd']} --json-report --json-report-file=report.json --continue-on-collection-errors{{coverage}} {{test_ids}} > test_output.txt 2>&1",
             "echo $? > pytest_exit_code.txt",
@@ -306,39 +310,43 @@ class SWEBenchSpec(Spec):
 def get_specs_from_dataset(
     dataset: Union[list[Union[RepoInstance, SimpleInstance]], list[Spec]],
     dataset_type: str,
+    absolute: bool,
 ) -> list[Spec]:
     """Idempotent function that converts a list of RepoInstance objects to a list of Spec objects."""
     if isinstance(dataset[0], Spec):
         return cast(list[Spec], dataset)
     return list(
         map(
-            lambda instance: make_spec(instance, dataset_type),
+            lambda instance: make_spec(instance, dataset_type, absolute),
             cast(list["RepoInstance"], dataset),
         )
     )
 
 
-def make_spec(instance: Union[RepoInstance, SimpleInstance], dataset_type: str) -> Spec:
+def make_spec(instance: Union[RepoInstance, SimpleInstance], dataset_type: str, absolute: bool) -> Spec:
+    repo_directory = ABSOLUTE_REPO_DIR if absolute else RELATIVE_REPO_DIR
     if isinstance(instance, Spec):
         return instance
-    repo_directory = "/testbed"
     if dataset_type == "commit0":
         return Commit0Spec(
             repo=instance["instance_id"],
             repo_directory=repo_directory,
             instance=instance,
+            absolute=absolute,
         )
     elif dataset_type == "swebench":
         return SWEBenchSpec(
             repo=instance["instance_id"],
             repo_directory=repo_directory,
             instance=instance,
+            absolute=absolute,
         )
     elif dataset_type == "simple":
         return SimpleSpec(
             repo="simple",  # all benchmarks with mere function writing will share the simple docker image
             repo_directory=repo_directory,
             instance=instance,
+            absolute=absolute,
         )
     else:
         raise NotImplementedError(

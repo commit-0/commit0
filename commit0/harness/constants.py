@@ -65,6 +65,10 @@ PASS_TO_FAIL = "PASS_TO_FAIL"
 
 # Evaluation backends
 EVAL_BACKENDS = ["local", "modal", "e2b"]
+# Use absolute for docker and modal. Backends with sudo access
+ABSOLUTE_REPO_DIR = "/testbed"
+# Use relative for e2b, with no sudo access
+RELATIVE_REPO_DIR = "testbed"
 
 # available commands
 COMMANDS = [

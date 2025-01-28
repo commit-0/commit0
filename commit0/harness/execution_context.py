@@ -10,8 +10,10 @@ import logging
 import modal
 import modal.io_streams
 from enum import auto
+from e2b_code_interpreter import Sandbox
 from strenum import StrEnum
 from pathlib import Path
+import tempfile
 import time
 from typing import Optional, Type
 from types import TracebackType
@@ -219,4 +221,63 @@ class Modal(ExecutionContext):
         excinst: Optional[BaseException],
         exctb: Optional[TracebackType],
     ) -> None:
+        close_logger(self.logger)
+
+
+class E2B(ExecutionContext):
+    def __init__(
+        self,
+        spec: Spec,
+        logger: logging.Logger,
+        timeout: int,
+        num_cpus: int,
+        log_dir: Path,
+        files_to_copy: Optional[Files] = None,
+        files_to_collect: Optional[list[str]] = None,
+        rebuild_image: bool = False,
+    ):
+        super().__init__(
+            spec,
+            logger,
+            timeout,
+            num_cpus,
+            log_dir,
+            files_to_copy=files_to_copy,
+            files_to_collect=files_to_collect,
+        )
+
+        self.sb = Sandbox(timeout=timeout)
+        self.sb.commands.run("curl -LsSf https://astral.sh/uv/install.sh | sh")
+
+        # setup sandbox env
+        self.sb.files.write("setup.sh", spec.setup_script)
+        self.sb.commands.run("bash setup.sh")
+
+        # prepare for eval
+        if files_to_copy:
+            for _, f in files_to_copy.items():
+                with open(f["src"], "r") as fp:
+                    content = fp.read()
+                    self.sb.files.write(f["dest"].name, content)  # type: ignore
+
+    def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
+        """Execute command on E2B sandbox"""
+        # TODO: setup timeout
+        start_time = time.time()
+        result = self.sb.commands.run(command)
+        return_code = result.exit_code
+        for fname in self.files_to_collect:
+            with (self.log_dir / fname).open("w") as f:
+                f.write(self.sb.files.read(f"testbed/{fname}"))
+        timed_out = False # TODO: figure this out
+        end_time = time.time()
+        return result.stderr, timed_out, end_time - start_time
+
+    def __exit__(
+        self,
+        exctype: Optional[Type[BaseException]],
+        excinst: Optional[BaseException],
+        exctb: Optional[TracebackType],
+    ) -> None:
+        self.sb.kill()
         close_logger(self.logger)
