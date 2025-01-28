@@ -274,7 +274,7 @@ class E2B(ExecutionContext):
         for fname in self.files_to_collect:
             with (self.log_dir / fname).open("w") as f:
                 f.write(self.sb.files.read(f"testbed/{fname}"))
-        timed_out = self.sb.is_running
+        timed_out = self.sb.is_running()
         end_time = time.time()
         return result.stderr, timed_out, end_time - start_time
 
