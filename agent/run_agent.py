@@ -6,6 +6,8 @@ from git import Repo
 from agent.agent_utils import (
     create_branch,
     get_message,
+    get_message_function_by_function,
+    run_eval_after_each_commit,
     get_target_edit_files,
     get_changed_files_from_commits,
     update_message_with_dependencies,
@@ -46,19 +48,82 @@ class DirContext:
         os.chdir(self.cwd)
 
 
-def run_eval_after_each_commit(
-    branch: str, backend: str, commit0_config_file: str
-) -> str:
-    """Run the eval command after each commit."""
-    eval_cmd = f"python -m commit0 evaluate --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
-    try:
-        result = subprocess.run(
-            eval_cmd, shell=True, capture_output=True, text=True, check=True
+def run_agent_multiple_times_on_same_inquiry(
+    agent: AiderAgents,
+    repo: Repo,
+    branch: str,
+    message: str,
+    fnames: list[str],
+    test_cmd: str,
+    test_first: bool,
+    lint_cmd: str,
+    lint_first: bool,
+    log_dir: Path,
+    repeat_times_for_each_inquiry: int,
+    backend: str,
+    commit0_config_file: str,
+) -> None:
+    """Run agent multiple times on the same inquiry and return the best performing agent return"""
+    if repeat_times_for_each_inquiry == 1:
+        return agent.run(
+            message, test_cmd, lint_cmd, fnames, log_dir, test_first, lint_first
         )
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        print(f"Error running eval command: {e}")
-        return e.stdout if e.stdout else str(e)
+    else:
+        commit_before_run = repo.head.commit.hexsha
+        commit_results = {}
+        best_commit_diff = None
+        best_eval_result = float("-inf")
+        best_agent_return = None
+
+        for attempt in range(repeat_times_for_each_inquiry):
+            agent_return = agent.run(
+                message,
+                test_cmd,
+                lint_cmd,
+                fnames,
+                log_dir,
+                test_first,
+                lint_first,
+                attempt,
+            )
+            current_commit = repo.head.commit.hexsha
+            eval_result = run_eval_after_each_commit(
+                branch, backend, commit0_config_file
+            )
+            # Get diff and store results
+            diff = repo.git.diff(commit_before_run, current_commit)
+            commit_results[current_commit] = {"eval_result": eval_result, "diff": diff}
+            # print("current_commit: ", current_commit)
+            # print("commit_results: ", eval_result.split("average pass rate: ")[-1] if "average pass rate: " in eval_result else 0)
+            # with open("/home/nan/commit0_rebuttal/tmp.json", "w") as fuck:
+            #     json.dump(commit_results, fuck)
+            # Track best performing commit's diff
+            score = float(
+                eval_result.split("average pass rate: ")[-1]
+                if "average pass rate: " in eval_result
+                else 0
+            )
+            if best_commit_diff is None:
+                # if score > best_eval_result:
+                best_eval_result = score
+                best_commit_diff = diff
+                best_agent_return = agent_return
+            else:
+                if score > best_eval_result:
+                    best_eval_result = score
+                    best_commit_diff = diff
+                    best_agent_return = agent_return
+
+        repo.git.reset("--hard", commit_before_run)
+        with open(log_dir.resolve() / "eval_results.json", "w") as f:
+            json.dump(commit_results, f, indent=4)
+        patch_path = os.path.abspath(str(log_dir.resolve() / "best_diff.patch"))
+        with open(patch_path, "w") as f:
+            f.write(best_commit_diff + "\n")
+        repo.git.execute(["git", "apply", patch_path])
+        repo.git.add(fnames)
+        repo.git.commit("-m", f"Applied best performing changes for {fnames}")
+        return best_agent_return
 
 
 def run_agent_for_repo(
@@ -170,13 +235,20 @@ def run_agent_for_repo(
                 message = get_message(agent_config, repo_path, test_files=[test_file])
 
                 # display the test file to terminal
-                agent_return = agent.run(
-                    "",
-                    test_cmd,
-                    lint_cmd,
-                    target_edit_files,
-                    test_log_dir,
+                agent_return = run_agent_multiple_times_on_same_inquiry(
+                    agent=agent,
+                    repo=local_repo,
+                    branch=branch,
+                    message=message,
+                    fnames=[test_file],
+                    test_cmd=test_cmd,
                     test_first=True,
+                    lint_cmd=lint_cmd,
+                    lint_first=False,
+                    log_dir=test_log_dir,
+                    repeat_times_for_each_inquiry=agent_config.repeat_times_for_each_inquiry,
+                    backend=backend,
+                    commit0_config_file=commit0_config_file,
                 )
                 if agent_config.record_test_for_each_commit:
                     current_commit = local_repo.head.commit.hexsha
@@ -203,13 +275,20 @@ def run_agent_for_repo(
                 )
 
                 # display the test file to terminal
-                agent_return = agent.run(
-                    "",
-                    "",
-                    lint_cmd,
-                    [lint_file],
-                    lint_log_dir,
+                agent_return = run_agent_multiple_times_on_same_inquiry(
+                    agent=agent,
+                    repo=local_repo,
+                    branch=branch,
+                    message="",
+                    fnames=[lint_file],
+                    test_cmd="",
+                    test_first=False,
+                    lint_cmd=lint_cmd,
                     lint_first=True,
+                    log_dir=lint_log_dir,
+                    repeat_times_for_each_inquiry=agent_config.repeat_times_for_each_inquiry,
+                    backend=backend,
+                    commit0_config_file=commit0_config_file,
                 )
                 if agent_config.record_test_for_each_commit:
                     current_commit = local_repo.head.commit.hexsha
@@ -226,20 +305,65 @@ def run_agent_for_repo(
                 )
         else:
             # when unit test feedback is not available, iterate over target files to edit
-            message = get_message(agent_config, repo_path, test_files=test_files)
-
             update_queue.put(("start_repo", (repo_name, len(target_edit_files))))
             for f in target_edit_files:
                 update_queue.put(("set_current_file", (repo_name, f)))
-                if agent_config.add_import_module_to_context:
-                    dependencies = import_dependencies.get(f, [])
-                    message = update_message_with_dependencies(message, dependencies)
                 file_name = f.replace(".py", "").replace("/", "__")
                 file_log_dir = experiment_log_dir / file_name
                 lint_cmd = get_lint_cmd(
                     repo_name, agent_config.use_lint_info, commit0_config_file
                 )
-                agent_return = agent.run(message, "", lint_cmd, [f], file_log_dir)
+                if agent_config.implementation_strategy == "function_by_function":
+                    messages = get_message_function_by_function(
+                        agent_config, repo_path, f, test_files
+                    )
+                    for message in messages:
+                        agent_return = run_agent_multiple_times_on_same_inquiry(
+                            agent=agent,
+                            repo=local_repo,
+                            branch=branch,
+                            message=message,
+                            fnames=[f],
+                            test_cmd="",
+                            test_first=False,
+                            lint_cmd=lint_cmd,
+                            lint_first=False,
+                            log_dir=file_log_dir,
+                            repeat_times_for_each_inquiry=agent_config.repeat_times_for_each_inquiry,
+                            backend=backend,
+                            commit0_config_file=commit0_config_file,
+                        )
+
+                elif agent_config.implementation_strategy == "module_by_module":
+                    message = get_message(
+                        agent_config, repo_path, test_files=test_files, input_file=f
+                    )
+                    if agent_config.add_import_module_to_context:
+                        dependencies = import_dependencies.get(f, [])
+                        message = update_message_with_dependencies(
+                            message, dependencies
+                        )
+
+                    agent_return = run_agent_multiple_times_on_same_inquiry(
+                        agent=agent,
+                        repo=local_repo,
+                        branch=branch,
+                        message=message,
+                        fnames=[f],
+                        test_cmd="",
+                        test_first=False,
+                        lint_cmd=lint_cmd,
+                        lint_first=False,
+                        log_dir=file_log_dir,
+                        repeat_times_for_each_inquiry=agent_config.repeat_times_for_each_inquiry,
+                        backend=backend,
+                        commit0_config_file=commit0_config_file,
+                    )
+                else:
+                    raise ValueError(
+                        f"Invalid implementation strategy: {agent_config.implementation_strategy}"
+                    )
+
                 if agent_config.record_test_for_each_commit:
                     current_commit = local_repo.head.commit.hexsha
                     eval_results[current_commit] = run_eval_after_each_commit(
@@ -292,10 +416,8 @@ def run_agent(
             in SPLIT.get(commit0_config["repo_split"], [])
         )
     ]
-    assert len(filtered_dataset) > 0, "No examples available"
 
-    # if len(filtered_dataset) > 1:
-    #     sys.stdout = open(os.devnull, "w")
+    assert len(filtered_dataset) > 0, "No examples available"
 
     if agent_config.add_import_module_to_context:
         # Install Chrome for Playwright for browser-based agents

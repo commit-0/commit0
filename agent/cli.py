@@ -135,6 +135,14 @@ def config(
         False,
         help="Run the lint on the entire directory",
     ),
+    implementation_strategy: str = typer.Option(
+        "module_by_module",
+        help="Implementation strategy to use",
+    ),
+    repeat_times_for_each_inquiry: int = typer.Option(
+        1,
+        help="Repeat times for each inquiry",
+    ),
     record_test_for_each_commit: bool = typer.Option(
         False,
         help="Record the test for each commit",
@@ -173,6 +181,8 @@ def config(
         "use_lint_info": use_lint_info,
         "max_lint_info_length": max_lint_info_length,
         "run_entire_dir_lint": run_entire_dir_lint,
+        "implementation_strategy": implementation_strategy,
+        "repeat_times_for_each_inquiry": repeat_times_for_each_inquiry,
         "pre_commit_config_path": pre_commit_config_path,
         "record_test_for_each_commit": record_test_for_each_commit,
     }

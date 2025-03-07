@@ -22,3 +22,5 @@ class AgentConfig:
     run_tests: bool
     max_iteration: int
     record_test_for_each_commit: bool
+    implementation_strategy: str
+    repeat_times_for_each_inquiry: int
