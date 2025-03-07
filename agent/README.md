@@ -10,7 +10,7 @@ This tool provides a command-line interface for configuring and running AI agent
 
 ```
 [core]
-workspace_base="~/OpenHands/evaluation/benchmarks/commit0_bench"
+workspace_base="~/OpenHands/evaluation/benchmarks/commit0"
 
 [llm]
 model="anthropic/claude-3-5-sonnet-20241022"
@@ -23,10 +23,10 @@ caching_prompt = true
 
 **Step 3**: Run
 ```bash
-./evaluation/benchmarks/commit0_bench/scripts/run_infer.sh SPLIT MODEL HEAD CodeActAgent 16 STEPS PARALLEL_NUMBER
+./evaluation/benchmarks/commit0/scripts/run_infer.sh SPLIT MODEL HEAD CodeActAgent 16 STEPS PARALLEL_NUMBER
 
 # Example
-./evaluation/benchmarks/commit0_bench/scripts/run_infer.sh lite llm.eval_deepseekv3 HEAD CodeActAgent 16 100 2
+./evaluation/benchmarks/commit0/scripts/run_infer.sh lite llm.eval_deepseekv3 HEAD CodeActAgent 16 100 2
 ```
 
 **Step 3.1**:
