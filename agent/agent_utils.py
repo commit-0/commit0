@@ -458,7 +458,10 @@ def get_message_function_by_function(
             f"Invalid implementation strategy: {agent_config.implementation_strategy}"
         )
 
-    messages_to_agent = [context + uf for uf in unimplemented_functions]
+    if agent_config.implementation_strategy == "function_by_function":
+        messages_to_agent = [context + uf for uf in function_info if len(uf) > 0]
+    else:
+        messages_to_agent = []
 
     return messages_to_agent
 
@@ -577,7 +580,9 @@ def get_changed_files_from_commits(
 
 
 def run_eval_after_each_commit(
-    branch: str, backend: str, commit0_config_file: str, repo_name: str
+    branch: str,
+    backend: str,
+    commit0_config_file: str,
 ) -> str:
     """Run the eval command after each commit."""
     eval_cmd = f"python -m commit0 evaluate --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"

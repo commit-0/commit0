@@ -1,5 +1,4 @@
 import typer
-from agent.run_agent_no_rich import run_agent as run_agent_no_rich
 from agent.run_agent import run_agent
 from commit0.harness.constants import RUN_AGENT_LOG_DIR
 import subprocess
@@ -242,12 +241,13 @@ def run(
             display_repo_progress_num,
         )
     else:
-        run_agent_no_rich(
-            branch,
-            override_previous_changes,
-            backend,
-            agent_config_file,
-            commit0_config_file,
-            log_dir,
-            max_parallel_repos,
-        )
+        # run_agent_no_rich(
+        #     branch,
+        #     override_previous_changes,
+        #     backend,
+        #     agent_config_file,
+        #     commit0_config_file,
+        #     log_dir,
+        #     max_parallel_repos,
+        # )
+        raise NotImplementedError("Currently not supported")

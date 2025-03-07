@@ -14,6 +14,7 @@ from agent.agent_utils import (
     get_lint_cmd,
     read_yaml_config,
 )
+from agent.agents import AgentReturn
 import json
 import subprocess
 from agent.agents import AiderAgents
@@ -62,7 +63,7 @@ def run_agent_multiple_times_on_same_inquiry(
     repeat_times_for_each_inquiry: int,
     backend: str,
     commit0_config_file: str,
-) -> None:
+) -> AgentReturn | None:
     """Run agent multiple times on the same inquiry and return the best performing agent return"""
     if repeat_times_for_each_inquiry == 1:
         return agent.run(
@@ -71,10 +72,9 @@ def run_agent_multiple_times_on_same_inquiry(
     else:
         commit_before_run = repo.head.commit.hexsha
         commit_results = {}
-        best_commit_diff = None
+        best_commit_diff = ""
         best_eval_result = float("-inf")
         best_agent_return = None
-
         for attempt in range(repeat_times_for_each_inquiry):
             agent_return = agent.run(
                 message,
@@ -221,6 +221,7 @@ def run_agent_for_repo(
         if agent_config is None:
             raise ValueError("Invalid input")
 
+        agent_return = None
         if agent_config.run_tests:
             update_queue.put(("start_repo", (repo_name, len(test_files))))
             # when unit test feedback is available, iterate over test files
@@ -260,7 +261,11 @@ def run_agent_for_repo(
                 update_queue.put(
                     (
                         "update_money_display",
-                        (repo_name, test_file, agent_return.last_cost),
+                        (
+                            repo_name,
+                            test_file,
+                            agent_return.last_cost if agent_return is not None else 0,
+                        ),
                     )
                 )
         elif agent_config.run_entire_dir_lint:
@@ -300,7 +305,11 @@ def run_agent_for_repo(
                 update_queue.put(
                     (
                         "update_money_display",
-                        (repo_name, lint_file, agent_return.last_cost),
+                        (
+                            repo_name,
+                            lint_file,
+                            agent_return.last_cost if agent_return is not None else 0,
+                        ),
                     )
                 )
         else:
@@ -373,7 +382,11 @@ def run_agent_for_repo(
                 update_queue.put(
                     (
                         "update_money_display",
-                        (repo_name, file_name, agent_return.last_cost),
+                        (
+                            repo_name,
+                            file_name,
+                            agent_return.last_cost if agent_return is not None else 0,
+                        ),
                     )
                 )
     if agent_config.record_test_for_each_commit:
