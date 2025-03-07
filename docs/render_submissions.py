@@ -23,7 +23,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-analysis_files_path = "/share/rush/commit0_analysis_temp"
+analysis_files_path = "/Users/willjiang/Desktop/ai2dev/commit0/commit0_analysis_temp"
 
 
 def get_pytest_info(path_to_logs, repo_name, branch_name):
@@ -473,7 +473,21 @@ def main(args):
         print(f"Saved pytest info to {submission_metrics_output_file}")
 
     if args.analyze_submissions:
+        submission_dataset = submission_dataset.add_item({
+            'org_name': 'sweagent-commit0',
+            'branch': 'sweagent',
+            'display_name': 'SWE-Agent',
+            'submission_date': '11/26/2024',
+            'split': 'all',
+            'project_page': 'https://github.com/sweagent-commit0'
+        })
         for submission in tqdm.tqdm(submission_dataset):
+            print(submission['project_page'])
+            continue
+            # if "openhands" not in submission['org_name']:
+            #     continue
+            if "sweagent" not in submission['org_name']:
+                continue
             submission_details = {"submission_info": submission}
             branch_name = submission["branch"]
             org_name = submission["org_name"]
@@ -491,8 +505,8 @@ def main(args):
             submission_repos_path = os.path.join(
                 analysis_files_path, "submission_repos", org_name, branch_name
             )
-            if os.path.exists(submission_repos_path):
-                shutil.rmtree(submission_repos_path)
+            # if os.path.exists(submission_repos_path):
+            #     shutil.rmtree(submission_repos_path)
             os.makedirs(os.path.join(analysis_files_path, org_name), exist_ok=True)
             commit0_dot_file_path = os.path.join(
                 analysis_files_path,
@@ -501,36 +515,38 @@ def main(args):
                 branch_name,
                 ".commit0.yaml",
             )
-            for repo_log_path in glob.glob(f"{os.getcwd()}/logs/pytest/*"):
-                if os.path.exists(os.path.join(repo_log_path, branch_name)):
-                    shutil.rmtree(os.path.join(repo_log_path, branch_name))
-            for example in dataset:
-                repo_name = example["repo"].split("/")[-1]
-                if split != "all" and repo_name not in SPLIT[split]:
-                    continue
-                clone_url = f"https://github.com/{org_name}/{repo_name}.git"
-                clone_dir = os.path.abspath(
-                    os.path.join(submission_repos_path, repo_name)
-                )
-                try:
-                    clone_repo(clone_url, clone_dir, branch_name, logger)
-                except Exception as e:
-                    submission_details[repo_name] = f"Error cloning: {e}"
-                    if os.path.exists(clone_dir):
-                        shutil.rmtree(clone_dir)
+            
+            # for repo_log_path in glob.glob(f"{os.getcwd()}/logs/pytest/*"):
+            #     if os.path.exists(os.path.join(repo_log_path, branch_name)):
+            #         shutil.rmtree(os.path.join(repo_log_path, branch_name))
+            # for example in dataset:
+            #     repo_name = example["repo"].split("/")[-1]
+            #     if split != "all" and repo_name not in SPLIT[split]:
+            #         continue
+            #     clone_url = f"https://github.com/{org_name}/{repo_name}.git"
+            #     clone_dir = os.path.abspath(
+            #         os.path.join(submission_repos_path, repo_name)
+            #     )
+            #     try:
+            #         clone_repo(clone_url, clone_dir, branch_name, logger)
+            #     except Exception as e:
+            #         submission_details[repo_name] = f"Error cloning: {e}"
+            #         if os.path.exists(clone_dir):
+            #             shutil.rmtree(clone_dir)
             # after successfully setup, write the commit0 dot file
-            write_commit0_config_file(
-                commit0_dot_file_path,
-                {
-                    "dataset_name": commit0_dataset_name,
-                    "dataset_split": "test",
-                    "repo_split": split,
-                    "base_dir": submission_repos_path,
-                },
-            )
+            # write_commit0_config_file(
+            #     commit0_dot_file_path,
+            #     {
+            #         "dataset_name": commit0_dataset_name,
+            #         "dataset_split": "test",
+            #         "repo_split": split,
+            #         "base_dir": submission_repos_path,
+            #     },
+            # )
             # run pytests
+            os.system("source /Users/willjiang/Desktop/ai2dev/commit0_rebuttal/.venv/bin/activate")
             os.system(
-                f"commit0 evaluate --branch {branch_name} --timeout 200"
+                f"commit0 evaluate --branch {branch_name} --timeout 500 "
                 f"--commit0-config-file {commit0_dot_file_path}"
             )
             for example in dataset:
@@ -546,7 +562,7 @@ def main(args):
                 submission_details, open(submission_metrics_output_file, "w"), indent=4
             )
             print(f"Saved pytest info to {submission_metrics_output_file}")
-
+        asdf
     if args.render_webpages:
         # Render only updated leaderboard and new submissions
         render_mds(args.overwrite_previous_eval)
