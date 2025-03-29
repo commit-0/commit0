@@ -297,9 +297,9 @@ def get_target_edit_files(
             raise ValueError(
                 "topological_sort_files should not be longer than filtered_files"
             )
-    assert len(topological_sort_files) == len(filtered_files), (
-        "all files should be included"
-    )
+    assert len(topological_sort_files) == len(
+        filtered_files
+    ), "all files should be included"
 
     # change to latest commit
     local_repo.git.checkout(branch)
@@ -356,9 +356,9 @@ def get_target_edit_files_from_patch(
                 raise ValueError(
                     "topological_sort_files should not be longer than target_files_list"
                 )
-        assert len(topological_sort_files) == len(target_files_list), (
-            "all files should be included"
-        )
+        assert len(topological_sort_files) == len(
+            target_files_list
+        ), "all files should be included"
 
         topological_sort_files = [
             file.replace(working_dir, "").lstrip("/") for file in topological_sort_files
