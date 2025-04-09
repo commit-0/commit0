@@ -245,7 +245,10 @@ class E2B(ExecutionContext):
             files_to_collect=files_to_collect,
         )
 
-        self.sb = Sandbox(timeout=timeout)
+        # in modal, we create a sandbox for each operation. this seems super slow.
+        # let's try having a single sandbox for multiple operations
+        # assume the sandbox needs to be alive for 30 operations
+        self.sb = Sandbox(timeout=timeout * 30)
         self.sb.commands.run("curl -LsSf https://astral.sh/uv/install.sh | sh")
 
         # setup sandbox env
@@ -268,14 +271,14 @@ class E2B(ExecutionContext):
 
         For now, we can just check if the sandbox is still alive.
         """
-        # TODO: setup timeout
         start_time = time.time()
-        result = self.sb.commands.run(command, timeout=0)
+        # half-hour timeout per operation
+        result = self.sb.commands.run(command, timeout=self.timeout)
         if self.files_to_collect is not None:
             for fname in self.files_to_collect:
                 with (self.log_dir / fname).open("w") as f:
                     f.write(self.sb.files.read(f"testbed/{fname}"))
-        timed_out = self.sb.is_running()
+        timed_out = not self.sb.is_running()
         end_time = time.time()
         return result.stderr, timed_out, end_time - start_time
 
