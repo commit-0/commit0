@@ -247,8 +247,8 @@ class E2B(ExecutionContext):
 
         # in modal, we create a sandbox for each operation. this seems super slow.
         # let's try having a single sandbox for multiple operations
-        # assume the sandbox needs to be alive for 30 operations
-        self.sb = Sandbox(timeout=timeout * 30)
+        # assume the sandbox needs to be alive for an hour, the max duration
+        self.sb = Sandbox(timeout=60 * 60)
         self.sb.commands.run("curl -LsSf https://astral.sh/uv/install.sh | sh")
 
         # setup sandbox env
