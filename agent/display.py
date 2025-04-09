@@ -215,7 +215,8 @@ class TerminalDisplay:
             ("use_spec_info", "Use Spec", use_spec_info),
             ("use_lint_info", "Use Lint", use_lint_info),
         ]
-
+        self.name_of_agent = agent_name.replace("/", "_")
+        self.name_of_llm = model_name.replace("/", "_")
         for attr_name, title, value in info_items:
             text = Text(f"{value}", justify="center")
             setattr(self, attr_name, text)
@@ -438,11 +439,11 @@ class TerminalDisplay:
         }
 
         with open(
-            f"processing_summary_{self.branch_name}.json",
+            f"{self.log_dir_display}/processing_summary_{self.branch_name}_{self.name_of_agent}_{self.name_of_llm}.json",
             "w",
         ) as json_file:
             json.dump(summary_data, json_file, indent=4)
 
         print(
-            f"\nSummary has been written to processing_summary_{self.branch_name}.json"
+            f"\nSummary has been written to {self.log_dir_display}/processing_summary_{self.branch_name}_{self.name_of_agent}_{self.name_of_llm}.json"
         )

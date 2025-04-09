@@ -1,6 +1,45 @@
 # Agent for Commit0
 This tool provides a command-line interface for configuring and running AI agents to assist with code development and testing.
 
+
+## (Update) Running with OpenHands
+
+**Step 1**: Clone (OpenHands)[https://github.com/All-Hands-AI/OpenHands/tree/main] and install (OpenHands)[https://github.com/All-Hands-AI/OpenHands/blob/main/evaluation/README.md#development-environment]
+
+**Step 2**: Create `config.toml` and write
+
+```
+[core]
+workspace_base="~/OpenHands/evaluation/benchmarks/commit0"
+
+[llm]
+model="anthropic/claude-3-5-sonnet-20241022"
+api_key="..."
+embedding_model=""
+temperature = 0.0
+caching_prompt = true
+```
+
+
+**Step 3**: Run
+```bash
+./evaluation/benchmarks/commit0/scripts/run_infer.sh SPLIT MODEL HEAD CodeActAgent 16 STEPS PARALLEL_NUMBER
+
+# Example
+./evaluation/benchmarks/commit0/scripts/run_infer.sh lite llm.eval_deepseekv3 HEAD CodeActAgent 16 100 2
+```
+
+**Step 3.1**:
+You can do the following before running code to parallelize them on remote server from OpenHands
+
+```bash
+export RUNTIME=remote
+export SANDBOX_REMOTE_RUNTIME_API_URL="https://runtime.eval.all-hands.dev"
+export ALLHANDS_API_KEY=...
+```
+
+
+```python
 ## Quick Start
 Configure an agent:
 ```bash
@@ -10,6 +49,11 @@ agent config [OPTIONS] AGENT_NAME
 Run an agent on a specific branch:
 ```bash
 agent run [OPTIONS] BRANCH
+```
+
+### Example
+```bash
+agent run sonnet --max-parallel-repos 16 --agent-config-file .agent_sonnet.yaml   --commit0-config-file .commit0.yaml
 ```
 
 For more detailed information on available commands and options:

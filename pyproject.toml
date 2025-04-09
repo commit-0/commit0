@@ -22,6 +22,7 @@ dependencies = [
     "strenum>=0.4.15",
     "e2b-code-interpreter>=1.0.4",
     "python-dotenv>=1.0.1",
+    "rank_bm25>=0.2.1",
 ]
 classifiers = [
     "License :: OSI Approved :: MIT License",

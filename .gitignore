@@ -162,9 +162,10 @@ cython_debug/
 #.idea/
 
 logs/
-repos/
+repos*/
 config.yml
 hydra_outputs/
 .commit0*
 .agent*
 docs/analysis*.md
+agent/run_agent_no_rich.py
