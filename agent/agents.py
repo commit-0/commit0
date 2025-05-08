@@ -27,6 +27,8 @@ class AgentReturn(ABC):
         self.log_file = log_file
 
         self.last_cost = 0.0
+        self.total_token_in = 0
+        self.total_token_out = 0
 
 
 class Agents(ABC):
@@ -43,6 +45,8 @@ class AiderReturn(AgentReturn):
     def __init__(self, log_file: Path):
         super().__init__(log_file)
         self.last_cost = self.get_money_cost()
+        self.total_token_in = self.get_total_token_in()
+        self.total_token_out = self.get_total_token_out()
 
     def get_money_cost(self) -> float:
         """Get accumulated money cost from log file"""
@@ -57,18 +61,54 @@ class AiderReturn(AgentReturn):
                         last_cost = float(match.group(1))
         return last_cost
 
+    def get_total_token_in(self) -> int:
+        """Get total token in from log file"""
+        total_tokens = 0
+        with open(self.log_file, "r") as file:
+            for line in file:
+                if "Tokens:" in line:
+                    match = re.search(r"Tokens: ([\d.]+k?) sent", line)
+                    if match:
+                        token_str = match.group(1)
+                        if token_str.endswith("k"):
+                            total_tokens = int(float(token_str[:-1]) * 1000)
+                        else:
+                            total_tokens = int(float(token_str))
+        return total_tokens
+
+    def get_total_token_out(self) -> int:
+        """Get total token out from log file"""
+        total_tokens = 0
+        with open(self.log_file, "r") as file:
+            for line in file:
+                if "Tokens:" in line:
+                    match = re.search(r"(\d+) received", line)
+                    if match:
+                        total_str = match.group(1)
+                        if total_str.endswith("k"):
+                            total_tokens = int(float(total_str[:-1]) * 1000)
+                        else:
+                            total_tokens = int(float(total_str))
+        return total_tokens
+
 
 class AiderAgents(Agents):
     def __init__(self, max_iteration: int, model_name: str):
         super().__init__(max_iteration)
         self.model = Model(model_name)
         # Check if API key is set for the model
-        if "gpt" in model_name:
+        if "openrouter" in model_name:
+            api_key = os.environ.get("OPENROUTER_API_KEY", None)
+        elif "gpt" in model_name:
             api_key = os.environ.get("OPENAI_API_KEY", None)
         elif "claude" in model_name:
             api_key = os.environ.get("ANTHROPIC_API_KEY", None)
         elif "gemini" in model_name:
-            api_key = os.environ.get("API_KEY", None)
+            api_key = os.environ.get("GEMINI_API_KEY", None)
+        elif "deepseek" in model_name:
+            api_key = os.environ.get("DEEPSEEK_API_KEY", None)
+        elif "mistral" in model_name:
+            api_key = os.environ.get("MISTRAL_API_KEY", None)
         else:
             raise ValueError(f"Unsupported model: {model_name}")
 
@@ -87,6 +127,7 @@ class AiderAgents(Agents):
         log_dir: Path,
         test_first: bool = False,
         lint_first: bool = False,
+        current_attempt: int = 0,
     ) -> AgentReturn:
         """Start aider agent"""
         if test_cmd:
@@ -99,11 +140,22 @@ class AiderAgents(Agents):
             auto_lint = False
         log_dir = log_dir.resolve()
         log_dir.mkdir(parents=True, exist_ok=True)
-        input_history_file = log_dir / ".aider.input.history"
-        chat_history_file = log_dir / ".aider.chat.history.md"
-
+        input_history_file = (
+            log_dir / ".aider.input.history"
+            if current_attempt == 0
+            else log_dir / f".aider_{current_attempt}.input.history"
+        )
+        chat_history_file = (
+            log_dir / ".aider.chat.history.md"
+            if current_attempt == 0
+            else log_dir / f".aider_{current_attempt}.chat.history.md"
+        )
         # Set up logging
-        log_file = log_dir / "aider.log"
+        log_file = (
+            log_dir / "aider.log"
+            if current_attempt == 0
+            else log_dir / f"aider_{current_attempt}.log"
+        )
         logging.basicConfig(
             filename=log_file,
             level=logging.INFO,
@@ -133,7 +185,7 @@ class AiderAgents(Agents):
             io=io,
         )
         coder.max_reflections = self.max_iteration
-        coder.stream = True
+        coder.stream = False
 
         # Run the agent
         if test_first:
