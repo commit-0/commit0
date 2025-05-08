@@ -170,7 +170,7 @@ class Modal(ExecutionContext):
         image = modal.Image.from_registry(image_name, force_build=rebuild_image)
         if files_to_copy:
             for _, f in files_to_copy.items():
-                image = image.copy_local_file(f["src"], f["dest"])  # type: ignore
+                image = image.add_local_file(f["src"], f["dest"])  # type: ignore
         self.image = image
 
     def exec_run_with_timeout(self, command: str) -> tuple[str, bool, float]:
