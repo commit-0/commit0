@@ -119,7 +119,8 @@ class Commit0Spec(Spec):
             f"git clone --depth 1 -o origin https://github.com/{repo} {self.repo_directory}",
             f"chmod -R 777 {self.repo_directory}",  # So nonroot user can run tests
             f"cd {self.repo_directory}",
-            f"git fetch --depth 1 origin {env_setup_commit}",
+            # Fetch both commits needed: env_setup_commit for setup and base_commit for later reset
+            f"git fetch --depth 1 origin {env_setup_commit} {base_commit}",
             f"git reset --hard {env_setup_commit}",
             # Remove the remote so the agent won't see newer commits.
             "git remote remove origin",
@@ -220,12 +221,15 @@ class SWEBenchSpec(Spec):
         if version < 7:
             specs["python"] = 3.7
 
+        base_commit = self.instance["base_commit"]
         setup_commands = [
             # Use --depth 1 for shallow clone to prevent agents from accessing
             # git history and exploiting it to retrieve original implementations
             f"git clone --depth 1 -o origin https://github.com/{repo} {self.repo_directory}",
             f"chmod -R 777 {self.repo_directory}",  # So nonroot user can run tests
             f"cd {self.repo_directory}",
+            # Fetch base_commit needed for eval script reset
+            f"git fetch --depth 1 origin {base_commit}",
             # Remove the remote so the agent won't see newer commits.
             "git remote remove origin",
             f"uv venv --python {specs['python']}",
