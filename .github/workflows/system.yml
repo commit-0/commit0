@@ -25,19 +25,13 @@ jobs:
       - name: Get tests
         run: uv run commit0 get-tests simpy
       - name: Test
-        env:
-          MODAL_TOKEN_ID: ${{secrets.MODAL_TOKEN_ID}}
-          MODAL_TOKEN_SECRET: ${{secrets.MODAL_TOKEN_SECRET}}
         run: |
-          uv run commit0 test simpy tests/test_event.py::test_succeed --reference --rebuild
-          uv run commit0 test simpy tests/test_event.py::test_succeed --reference
+          uv run commit0 test simpy tests/test_event.py::test_succeed --reference --rebuild --backend local
+          uv run commit0 test simpy tests/test_event.py::test_succeed --reference --backend local
       - name: Evaluate
-        env:
-          MODAL_TOKEN_ID: ${{secrets.MODAL_TOKEN_ID}}
-          MODAL_TOKEN_SECRET: ${{secrets.MODAL_TOKEN_SECRET}}
         run: |
-          uv run commit0 evaluate --reference  --rebuild
-          uv run commit0 evaluate --reference
+          uv run commit0 evaluate --reference  --rebuild --backend local
+          uv run commit0 evaluate --reference --backend local
       - name: Lint
         run: uv run commit0 lint commit0/harness/
       - name: Save
