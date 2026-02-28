@@ -9,16 +9,22 @@ import fitz
 from import_deps import ModuleSet
 from graphlib import TopologicalSorter, CycleError
 import yaml
-
+from rank_bm25 import BM25Okapi
 from agent.class_types import AgentConfig
+import subprocess
 
 PROMPT_HEADER = ">>> Here is the Task:\n"
+FUNCTION_HEADER = "\n\n>>> Here are all functions in the file, complete the implementations for all functions (i.e., those with pass statements):\n"
 REFERENCE_HEADER = "\n\n>>> Here is the Reference for you to finish the task:\n"
 REPO_INFO_HEADER = "\n\n>>> Here is the Repository Information:\n"
 UNIT_TESTS_INFO_HEADER = "\n\n>>> Here are the Unit Tests Information:\n"
 LINT_INFO_HEADER = "\n\n>>> Here is the Lint Information:\n"
 SPEC_INFO_HEADER = "\n\n>>> Here is the Specification Information:\n"
 IMPORT_DEPENDENCIES_HEADER = "\n\n>>> Here are the Import Dependencies:\n"
+FUNCTION_BY_FUNCTION_HEADER = """"\nYour task is to implement function {unimplemented_functions} by replacing the pass statement with actual functional code.
+Please note that there could be multiple occurrences of {unimplemented_functions}, and you need to implement them all.
+Do not change the names of existing functions or classes, as they may be referenced from other code like unit tests, etc.
+When you generate code, you must maintain the original formatting of the function stubs (such as whitespaces), otherwise we will not able to search/replace blocks for code modifications, and therefore you will receive a score of 0 for your generated code."""
 # prefix components:
 space = "    "
 branch = "│   "
@@ -121,6 +127,32 @@ def get_file_info(file_path: Path, prefix: str = "") -> str:
     for stub in stubs:
         tree_string.append(prefix + space + space + stub)
     return "\n".join(filter(None, tree_string))
+
+
+def get_unimplemented_functions(file_path: Path) -> List[str]:
+    """Get all the functions in a file."""
+    with open(file_path, "r") as f:
+        content = f.read()
+
+    # Find all function definitions with their bodies
+    pattern = r"def\s+(\w+)\s*\([^)]*\)[^:]*:(?:\s*(?:'''[\s\S]*?'''|\"\"\"[\s\S]*?\"\"\"))?\s*((?:(?!\ndef\s+).)*?)(?=\s*def\s+|\s*$)"
+    matches = re.finditer(pattern, content, re.DOTALL)
+
+    # Keep only functions that have just 'pass'
+    # List to store unimplemented function definitions
+    unimplemented_functions = []
+    for match in matches:
+        func_name = match.group(1)
+        func_body = match.group(2).strip()
+        # Check if function only contains 'pass' statement
+        if "pass" in func_body:
+            unimplemented_functions.append(f"def {func_name}()")
+            # # Find the full function definition using regex pattern
+            # func_pattern = rf"def\s+{func_name}\s*\([^)]*\)[^:]*:"
+            # func_match = re.search(func_pattern, content)
+            # if func_match:
+            #     unimplemented.append(func_match.group(0))
+    return unimplemented_functions
 
 
 def collect_test_files(directory: str) -> list[str]:
@@ -347,6 +379,7 @@ def get_message(
     agent_config: AgentConfig,
     repo_path: str,
     test_files: list[str] | None = None,
+    input_file: str | None = None,
 ) -> str:
     """Get the message to Aider."""
     prompt = f"{PROMPT_HEADER}" + agent_config.user_prompt
@@ -383,11 +416,11 @@ def get_message(
         with bz2.open("spec.pdf.bz2", "rb") as in_file:
             with open("spec.pdf", "wb") as out_file:
                 out_file.write(in_file.read())
-        spec_info = (
-            f"\n{SPEC_INFO_HEADER} "
-            + get_specification(specification_pdf_path=Path(repo_path, "spec.pdf"))[
-                : agent_config.max_spec_info_length
-            ]
+        spec_info = f"\n{SPEC_INFO_HEADER} " + get_specification(
+            specification_pdf_path=Path(repo_path, "spec.pdf"),
+            use_retrieval=True,
+            query=input_file if input_file else "",
+            top_k=10,
         )
     else:
         spec_info = ""
@@ -395,6 +428,42 @@ def get_message(
     message_to_agent = prompt + repo_info + unit_tests_info + spec_info
 
     return message_to_agent
+
+
+def get_message_function_by_function(
+    agent_config: AgentConfig,
+    repo_path: str,
+    input_file: str,
+    test_files: list[str] | None = None,
+) -> list[str]:
+    """Get the message to Aider."""
+    context = get_message(agent_config, repo_path, test_files)
+
+    if agent_config.implementation_strategy == "module_by_module":
+        function_info = []
+    elif agent_config.implementation_strategy == "function_by_function":
+        function_info = []
+        unimplemented_functions = get_unimplemented_functions(
+            file_path=Path(os.path.join(repo_path, input_file))
+        )
+        # Get the original function stubs and filter out implemented functions
+        for i in range(len(unimplemented_functions)):
+            function_info.append(
+                FUNCTION_BY_FUNCTION_HEADER.format(
+                    unimplemented_functions=unimplemented_functions[i]
+                )
+            )
+    else:
+        raise ValueError(
+            f"Invalid implementation strategy: {agent_config.implementation_strategy}"
+        )
+
+    if agent_config.implementation_strategy == "function_by_function":
+        messages_to_agent = [context + uf for uf in function_info if len(uf) > 0]
+    else:
+        messages_to_agent = []
+
+    return messages_to_agent
 
 
 def update_message_with_dependencies(message: str, dependencies: list[str]) -> str:
@@ -411,19 +480,43 @@ def update_message_with_dependencies(message: str, dependencies: list[str]) -> s
     return message
 
 
-def get_specification(specification_pdf_path: Path) -> str:
+def get_specification(
+    specification_pdf_path: Path,
+    use_retrieval: bool = True,
+    query: str = "",
+    top_k: int = 20,
+) -> str:
     """Get the reference for a given specification PDF path."""
     # TODO: after pdf_to_text is available, use it to extract the text from the PDF
     # Open the specified PDF file
-    document = fitz.open(specification_pdf_path)
-    text = ""
 
+    document = fitz.open(specification_pdf_path)
+    corpus = []
+
+    # current_trunk = ""
     # Iterate through the pages
     for page_num in range(len(document)):
         page = document.load_page(page_num)  # loads the specified page
-        text += page.get_text()  # type: ignore
 
-    return text
+        current_page_text = page.get_text()  # type: ignore
+        # Cut page text into chunks of 1000 characters
+        text_chunks = [
+            current_page_text[i : i + 1000]
+            for i in range(0, len(current_page_text), 1000)
+        ]
+        corpus.extend(text_chunks)
+        # corpus.append(page.get_text())  # type: ignore
+    if not use_retrieval:
+        return "\n".join(corpus)
+
+    assert query != "", "query should not be empty"
+    query = open(query).read()
+    tokenized_corpus = [doc.split(" ") for doc in corpus]
+    bm25 = BM25Okapi(tokenized_corpus)
+    doc_scores = bm25.get_scores(query)
+    sorted_doc_scores = sorted(enumerate(doc_scores), key=lambda x: x[1], reverse=True)
+    sorted_doc_indices = [i for i, _ in sorted_doc_scores]
+    return "\n".join(corpus[i] for i in sorted_doc_indices[:top_k])
 
 
 def create_branch(repo: git.Repo, branch: str, from_commit: str) -> None:
@@ -484,6 +577,23 @@ def get_changed_files_from_commits(
     except Exception as e:
         print(f"An error occurred: {e}")
         return []
+
+
+def run_eval_after_each_commit(
+    branch: str,
+    backend: str,
+    commit0_config_file: str,
+) -> str:
+    """Run the eval command after each commit."""
+    eval_cmd = f"python -m commit0 evaluate --branch {branch} --backend {backend} --commit0-config-file {commit0_config_file} --timeout 100"
+    try:
+        result = subprocess.run(
+            eval_cmd, shell=True, capture_output=True, text=True, check=True
+        )
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Error running eval command: {e}")
+        return e.stdout if e.stdout else str(e)
 
 
 def args2string(agent_config: AgentConfig) -> str:
