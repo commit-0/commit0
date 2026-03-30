@@ -159,6 +159,7 @@ SPLIT_ALL = [
     "parsel",
     "wcwidth",
     "deprecated",
+    "humanize",
 ]
 SPLIT_MINITORCH = ["minitorch"]
 SPLIT_SIMPY = ["simpy"]
@@ -216,6 +217,7 @@ SPLIT_VOLUPTUOUS = ["voluptuous"]
 SPLIT_PARSEL = ["parsel"]
 SPLIT_WCWIDTH = ["wcwidth"]
 SPLIT_DEPRECATED = ["deprecated"]
+SPLIT_HUMANIZE = ["humanize"]
 
 SPLIT = {
     "all": SPLIT_ALL,
@@ -276,6 +278,7 @@ SPLIT = {
     "parsel": SPLIT_PARSEL,
     "wcwidth": SPLIT_WCWIDTH,
     "deprecated": SPLIT_DEPRECATED,
+    "humanize": SPLIT_HUMANIZE,
 }
 
 
